@@ -89,7 +89,7 @@ export function getStats(): ScrapedStats {
         COUNT(*) as total,
         COUNT(CASE WHEN source != 'non_trouvé' THEN 1 END) as found,
         COUNT(CASE WHEN source = 'non_trouvé' THEN 1 END) as notFound,
-        COUNT(CASE WHEN ${mobileCond} THEN 1 END) as mobile
+        COUNT(CASE WHEN source != 'non_trouvé' AND ${mobileCond} THEN 1 END) as mobile
       FROM scraped`
     )
     .get() as { total: number; found: number; notFound: number; mobile: number };

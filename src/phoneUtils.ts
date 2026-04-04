@@ -3,9 +3,11 @@ export type PhoneType = "mobile" | "fixe" | null;
 export function classifyPhone(phone: string | null): PhoneType {
   if (!phone) return null;
   const cleaned = phone.replace(/[\s.+()-]/g, "");
+  // Normalise +33XXXXXXXXX, 33XXXXXXXXX et 0033XXXXXXXXX vers 0XXXXXXXXX
+  const withoutCountryCode = cleaned.replace(/^00/, "");
   const normalized =
-    cleaned.startsWith("33") && cleaned.length === 11
-      ? "0" + cleaned.slice(2)
+    withoutCountryCode.startsWith("33") && withoutCountryCode.length === 11
+      ? "0" + withoutCountryCode.slice(2)
       : cleaned;
   if (/^0[67]/.test(normalized)) return "mobile";
   if (/^0[1-59]/.test(normalized)) return "fixe";
