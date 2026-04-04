@@ -18,7 +18,8 @@ export type ProgressCallback = (
 
 export async function runPipeline(
   etablissements: Etablissement[],
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  limit?: number
 ): Promise<PipelineResult> {
   initDb();
 
@@ -29,6 +30,7 @@ export async function runPipeline(
 
   let i = 0;
   for (const etab of etablissements) {
+    if (limit !== undefined && newCount + notFoundCount >= limit) break;
     onProgress?.(++i, etablissements.length, etab.nom);
 
     if (isKnown(etab.siret)) {
