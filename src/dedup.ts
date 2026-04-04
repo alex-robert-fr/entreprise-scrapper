@@ -1,9 +1,10 @@
 import Database from "better-sqlite3";
+import path from "path";
 
 export interface ScrapedRecord {
   siret: string;
   nom: string;
-  telephone: string;
+  telephone: string | null;
   ville: string;
   scraped_at: string;
   source: string;
@@ -15,6 +16,8 @@ export interface ScrapedStats {
   notFound: number;
 }
 
+const DB_PATH = path.join(__dirname, "..", "data", "scraper.db");
+
 let db: Database.Database | undefined;
 
 function requireDb(): Database.Database {
@@ -23,26 +26,49 @@ function requireDb(): Database.Database {
 }
 
 export function initDb(): void {
-  // TODO: ouvrir data/scraper.db et créer la table scraped
+  if (db) return;
+  db = new Database(DB_PATH);
+  db.pragma("journal_mode = WAL");
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS scraped (
+      siret       TEXT PRIMARY KEY,
+      nom         TEXT,
+      telephone   TEXT,
+      ville       TEXT,
+      scraped_at  TEXT,
+      source      TEXT
+    )
+  `);
 }
 
 export function isKnown(siret: string): boolean {
-  void requireDb();
-  void siret;
-  return false;
+  const row = requireDb().prepare("SELECT 1 FROM scraped WHERE siret = ?").get(siret);
+  return row !== undefined;
 }
 
 export function insert(record: ScrapedRecord): void {
-  void requireDb();
-  void record;
+  requireDb()
+    .prepare(
+      "INSERT OR IGNORE INTO scraped (siret, nom, telephone, ville, scraped_at, source) VALUES (?, ?, ?, ?, ?, ?)"
+    )
+    .run(record.siret, record.nom, record.telephone, record.ville, record.scraped_at, record.source);
 }
 
 export function getStats(): ScrapedStats {
-  void requireDb();
-  return { total: 0, found: 0, notFound: 0 };
+  const row = requireDb()
+    .prepare(
+      `SELECT
+        COUNT(*) as total,
+        COUNT(CASE WHEN source != 'non_trouvé' THEN 1 END) as found,
+        COUNT(CASE WHEN source = 'non_trouvé' THEN 1 END) as notFound
+      FROM scraped`
+    )
+    .get() as { total: number; found: number; notFound: number };
+  return { total: row.total, found: row.found, notFound: row.notFound };
 }
 
 export function getAll(): ScrapedRecord[] {
-  void requireDb();
-  return [];
+  return requireDb()
+    .prepare("SELECT * FROM scraped ORDER BY scraped_at DESC")
+    .all() as ScrapedRecord[];
 }
