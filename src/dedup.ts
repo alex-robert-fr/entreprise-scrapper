@@ -30,20 +30,22 @@ export interface PaginatedResult<T> {
 }
 
 export interface ResultFilters {
-  sourceFilter?: "found" | "non_trouvé";
-  sourceExact?:  "google" | "non_trouvé";
-  nom?:          string;
-  ville?:        string;
-  phoneType?:    "mobile" | "fixe";
-  effectif?:     string;
-  departement?:  string;
+  sourceFilter?:   "found" | "non_trouvé";
+  sourceExact?:    "google" | "non_trouvé";
+  nom?:            string;
+  ville?:          string;
+  phoneType?:      "mobile" | "fixe";
+  effectif?:       string;
+  departement?:    string;
+  formeJuridique?: string;
 }
 
 export interface FilterOptions {
-  villes:       string[];
-  sources:      string[];
-  effectifs:    Array<{ value: string; label: string }>;
-  departements: string[];
+  villes:           string[];
+  sources:          string[];
+  effectifs:        Array<{ value: string; label: string }>;
+  departements:     string[];
+  formesJuridiques: string[];
 }
 
 const EFFECTIF_LABELS: Record<string, string> = {
@@ -72,7 +74,8 @@ function buildWhereClause(filters: ResultFilters): { where: string; params: unkn
   if (filters.nom?.trim())         { conditions.push("nom LIKE ?");             params.push("%" + filters.nom.trim() + "%"); }
   if (filters.ville?.trim())       { conditions.push("ville LIKE ?");           params.push("%" + filters.ville.trim() + "%"); }
   if (filters.effectif?.trim())    { conditions.push("effectif_tranche = ?");   params.push(filters.effectif.trim()); }
-  if (filters.departement?.trim()) { conditions.push("code_postal LIKE ?");     params.push(filters.departement.trim() + "%"); }
+  if (filters.departement?.trim())    { conditions.push("code_postal LIKE ?");      params.push(filters.departement.trim() + "%"); }
+  if (filters.formeJuridique?.trim()) { conditions.push("forme_juridique = ?");    params.push(filters.formeJuridique.trim()); }
 
   return { where: conditions.length ? "WHERE " + conditions.join(" AND ") : "", params };
 }
@@ -215,5 +218,9 @@ export function getFilterOptions(): FilterOptions {
     .prepare("SELECT DISTINCT SUBSTR(code_postal, 1, 2) as dep FROM scraped WHERE code_postal IS NOT NULL AND code_postal != '' ORDER BY dep")
     .all() as { dep: string }[]).map(r => r.dep);
 
-  return { villes, sources, effectifs, departements };
+  const formesJuridiques = (conn
+    .prepare("SELECT DISTINCT forme_juridique FROM scraped WHERE forme_juridique IS NOT NULL AND forme_juridique != '' ORDER BY forme_juridique")
+    .all() as { forme_juridique: string }[]).map(r => r.forme_juridique);
+
+  return { villes, sources, effectifs, departements, formesJuridiques };
 }
