@@ -877,6 +877,12 @@
   <!-- Vue Doublons -->
   <div class="view" id="view-duplicates">
 
+    <!-- Bandeau archivés -->
+    <div style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 1.2rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-size:0.67rem;color:var(--muted)">
+      <span>SIRET archivés (ne seront pas re-scrapés) :</span>
+      <strong id="excludedCount" style="color:var(--text)">—</strong>
+    </div>
+
     <!-- Section : doublons par numéro -->
     <div class="filter-bar" style="align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border);margin-bottom:0">
       <div style="flex:1">
@@ -885,17 +891,17 @@
       </div>
       <div style="display:flex;gap:0.5rem;flex-shrink:0">
         <button class="btn-export" onclick="fetchPhoneDuplicates()">⟳ &nbsp;Analyser</button>
-        <button class="btn-export" id="btnCleanPhone" style="background:var(--accent);color:#fff;display:none" onclick="cleanPhoneDups()">✕ &nbsp;Nettoyer</button>
+        <button class="btn-export" id="btnCleanPhone" style="background:var(--accent);color:#fff;display:none" onclick="cleanPhoneDups()">✕ &nbsp;Archiver les doublons</button>
       </div>
     </div>
 
-    <div class="table-area" style="max-height:38vh">
+    <div class="table-area" style="max-height:35vh">
       <table>
         <thead>
           <tr>
             <th>Numéro</th>
             <th>×</th>
-            <th>Établissements (le 1er est conservé)</th>
+            <th>Établissements — <span style="color:var(--success)">conservé</span> / <span style="color:var(--muted)">archivé</span></th>
           </tr>
         </thead>
         <tbody id="dupPhoneBody"></tbody>
@@ -905,22 +911,22 @@
     <!-- Section : doublons par nom -->
     <div class="filter-bar" style="align-items:flex-start;gap:1rem;border-top:1px solid var(--border);margin-top:0">
       <div style="flex:1">
-        <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Même nom d'entreprise</div>
+        <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Même nom d'entreprise (sans téléphone, avec doublon qui en a un)</div>
         <div class="filter-count" id="dupNameSummary">Cliquez sur Analyser.</div>
       </div>
       <div style="display:flex;gap:0.5rem;flex-shrink:0">
         <button class="btn-export" onclick="fetchNameDuplicates()">⟳ &nbsp;Analyser</button>
-        <button class="btn-export" id="btnCleanName" style="background:var(--accent);color:#fff;display:none" onclick="cleanNameDups()">✕ &nbsp;Nettoyer</button>
+        <button class="btn-export" id="btnCleanName" style="background:var(--accent);color:#fff;display:none" onclick="cleanNameDups()">✕ &nbsp;Archiver les sans tél.</button>
       </div>
     </div>
 
-    <div class="table-area" style="max-height:38vh">
+    <div class="table-area" style="max-height:35vh">
       <table>
         <thead>
           <tr>
             <th>Nom</th>
             <th>×</th>
-            <th>Entrées (le 1er avec tél. est conservé)</th>
+            <th>Entrées — <span style="color:var(--success)">avec tél. = conservé</span> / <span style="color:var(--muted)">sans tél. = archivé</span></th>
           </tr>
         </thead>
         <tbody id="dupNameBody"></tbody>
@@ -993,22 +999,45 @@
       document.getElementById("navFilters").classList.toggle("active", view === "filters");
       document.getElementById("navDuplicates").classList.toggle("active", view === "duplicates");
       if (view === "filters") fetchAdvResults();
-      if (view === "duplicates") { fetchPhoneDuplicates(); fetchNameDuplicates(); }
+      if (view === "duplicates") { fetchExcludedCount(); fetchPhoneDuplicates(); fetchNameDuplicates(); }
     }
 
     /* ── Doublons helpers ── */
-    function renderDupGroups(groups, tbody, keyField, labelFn) {
+    function fetchExcludedCount() {
+      fetch("/api/duplicates/excluded-count")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          document.getElementById("excludedCount").textContent = data.count;
+        });
+    }
+
+    function renderDupGroups(groups, tbody, keyField, isKeptFn) {
       tbody.innerHTML = "";
       groups.forEach(function(g) {
-        var label = g.records.map(function(r) {
-          var tel = r.telephone ? " [" + r.telephone + "]" : " [sans tél.]";
-          return r.nom + " (" + (r.ville || "?") + ")" + tel;
-        }).join(" | ");
         var tr = document.createElement("tr");
-        var tdKey  = document.createElement("td"); tdKey.className = "col-tel"; tdKey.textContent = g[keyField]; tdKey.title = g[keyField];
-        var tdCount = document.createElement("td"); tdCount.textContent = "×" + g.count;
-        var tdLabel = document.createElement("td"); tdLabel.className = "col-nom"; tdLabel.textContent = label; tdLabel.title = label;
-        tr.append(tdKey, tdCount, tdLabel);
+
+        var tdKey = document.createElement("td");
+        tdKey.className = "col-tel";
+        tdKey.textContent = g[keyField];
+        tdKey.title = g[keyField];
+
+        var tdCount = document.createElement("td");
+        tdCount.textContent = "×" + g.count;
+
+        var tdEntries = document.createElement("td");
+        tdEntries.className = "col-nom";
+        g.records.forEach(function(r, idx) {
+          var kept = isKeptFn(r, idx);
+          var span = document.createElement("span");
+          var tel = r.telephone ? " [" + r.telephone + "]" : " [sans tél.]";
+          span.textContent = r.nom + " (" + (r.ville || "?") + ")" + tel;
+          span.style.color = kept ? "var(--success)" : "var(--muted)";
+          span.title = kept ? "Conservé" : "Archivé (ne sera pas re-scrapé)";
+          if (idx > 0) { var sep = document.createTextNode("  |  "); tdEntries.appendChild(sep); }
+          tdEntries.appendChild(span);
+        });
+
+        tr.append(tdKey, tdCount, tdEntries);
         tbody.appendChild(tr);
       });
     }
@@ -1028,23 +1057,25 @@
             tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong></div></td></tr>';
             return;
           }
-          summary.textContent = data.totalDuplicateGroups + " numéro(s) en double — " + data.totalToDelete + " enregistrement(s) à supprimer (celui avec tél. confirmé conservé)";
+          summary.textContent = data.totalDuplicateGroups + " numéro(s) en double — " + data.totalToDelete + " à archiver (SIRET mémorisé, non re-scrapé)";
           btnClean.style.display = "";
-          renderDupGroups(data.groups, tbody, "telephone", function(g) { return g.telephone; });
+          // conservé = index 0 (source confirmée > plus récent)
+          renderDupGroups(data.groups, tbody, "telephone", function(_r, idx) { return idx === 0; });
         })
         .catch(function() { toast("Erreur lors de l'analyse des doublons de numéros"); });
     }
 
     function cleanPhoneDups() {
-      if (!confirm("Supprimer les doublons de numéros ? L'entrée avec téléphone confirmé (Google) est conservée, sinon la plus récente.")) return;
+      if (!confirm("Archiver les doublons de numéros ?\n\nL'entrée avec téléphone confirmé (Google) est conservée, sinon la plus récente.\nLes autres sont retirées de la base mais leurs SIRET sont mémorisés : ils ne seront pas re-scrapés.")) return;
       fetch("/api/duplicates/phone/clean", { method: "POST" })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-          toast(data.deleted + " enregistrement(s) supprimé(s)");
+          toast(data.deleted + " enregistrement(s) archivé(s)");
+          fetchExcludedCount();
           fetchPhoneDuplicates();
           fetchStats();
         })
-        .catch(function() { toast("Erreur lors du nettoyage"); });
+        .catch(function() { toast("Erreur lors de l'archivage"); });
     }
 
     /* ── Doublons par nom ── */
@@ -1057,24 +1088,26 @@
           var tbody = document.getElementById("dupNameBody");
 
           if (data.totalDuplicateGroups === 0) {
-            summary.textContent = "Aucun doublon de nom d'entreprise détecté.";
+            summary.textContent = "Aucun doublon de nom détecté (avec et sans tél.).";
             btnClean.style.display = "none";
             tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong></div></td></tr>';
             return;
           }
-          summary.textContent = data.totalDuplicateGroups + " nom(s) en double — " + data.totalToDelete + " enregistrement(s) à supprimer (celui avec tél. conservé)";
+          summary.textContent = data.totalDuplicateGroups + " nom(s) concerné(s) — " + data.totalToDelete + " entrée(s) sans tél. à archiver (celles avec tél. différents sont conservées)";
           btnClean.style.display = "";
-          renderDupGroups(data.groups, tbody, "nom", function(g) { return g.nom; });
+          // conservé = a un téléphone (index 0 dans l'ordre trié)
+          renderDupGroups(data.groups, tbody, "nom", function(r) { return !!(r.telephone); });
         })
         .catch(function() { toast("Erreur lors de l'analyse des doublons de noms"); });
     }
 
     function cleanNameDups() {
-      if (!confirm("Supprimer les doublons de noms ? L'entrée avec un téléphone est conservée, sinon la plus récente.")) return;
+      if (!confirm("Archiver les entrées sans téléphone ?\n\nSeules les entrées SANS numéro sont archivées, uniquement si le même nom existe avec un téléphone.\nLes entrées avec des numéros différents ne sont pas touchées.\nLes SIRET archivés ne seront pas re-scrapés.")) return;
       fetch("/api/duplicates/name/clean", { method: "POST" })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-          toast(data.deleted + " enregistrement(s) supprimé(s)");
+          toast(data.deleted + " enregistrement(s) archivé(s)");
+          fetchExcludedCount();
           fetchNameDuplicates();
           fetchStats();
         })

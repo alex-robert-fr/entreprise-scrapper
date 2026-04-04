@@ -1,7 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import express from "express";
-import { initDb, getStats, getAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, ResultFilters } from "./dedup";
+import { initDb, getStats, getAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./dedup";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 
@@ -135,6 +135,10 @@ app.get("/api/duplicates/name", (_req, res) => {
 app.post("/api/duplicates/name/clean", (_req, res) => {
   const deleted = cleanNameDuplicates();
   res.json({ deleted });
+});
+
+app.get("/api/duplicates/excluded-count", (_req, res) => {
+  res.json({ count: getExcludedCount() });
 });
 
 

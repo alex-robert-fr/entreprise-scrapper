@@ -401,3 +401,10 @@ export function cleanNameDuplicates(): number {
 
   return toExclude.length;
 }
+
+export function getExcludedCount(): number {
+  const row = requireDb()
+    .prepare("SELECT COUNT(*) as cnt FROM excluded")
+    .get() as { cnt: number };
+  return row.cnt;
+}
