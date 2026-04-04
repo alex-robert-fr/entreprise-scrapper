@@ -552,6 +552,107 @@
     .toast.warn    { border-color: rgba(245,158,11,0.3); color: var(--warn); }
     .toast.error   { border-color: rgba(239,68,68,0.3); color: #f87171; }
 
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-hover);
+      border-radius: 8px;
+      width: min(860px, 92vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(12px);
+      transition: transform 0.18s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+    .modal-subtitle {
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--bg-elevated); }
+
+    .modal-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-body table { width: 100%; border-collapse: collapse; }
+    .modal-body thead th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-card);
+      padding: 0.55rem 0.9rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-body tbody td {
+      padding: 0.55rem 0.9rem;
+      font-size: 0.72rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .modal-body tbody tr:last-child td { border-bottom: none; }
+
+    .dup-badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .dup-badge.kept     { background: var(--success-dim); color: var(--success); }
+    .dup-badge.archived { background: var(--bg-elevated);  color: var(--muted); }
+
+    tr.dup-row { cursor: pointer; }
+    tr.dup-row:hover td { background: var(--bg-elevated); }
+
     /* ── NAVIGATION VUES ── */
     .nav-tabs {
       display: flex;
@@ -937,6 +1038,35 @@
 
   </main>
 
+  <!-- Modal doublons -->
+  <div class="modal-overlay" id="dupModal" onclick="closeDupModal(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTitle">Détail du groupe</div>
+          <div class="modal-subtitle" id="modalSubtitle"></div>
+        </div>
+        <button class="modal-close" onclick="closeDupModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Statut</th>
+              <th>Nom</th>
+              <th>Ville</th>
+              <th>SIRET</th>
+              <th>Téléphone</th>
+              <th>Source</th>
+              <th>Scrappé le</th>
+            </tr>
+          </thead>
+          <tbody id="modalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -1015,6 +1145,7 @@
       tbody.innerHTML = "";
       groups.forEach(function(g) {
         var tr = document.createElement("tr");
+        tr.className = "dup-row";
 
         var tdKey = document.createElement("td");
         tdKey.className = "col-tel";
@@ -1032,14 +1163,61 @@
           var tel = r.telephone ? " [" + r.telephone + "]" : " [sans tél.]";
           span.textContent = r.nom + " (" + (r.ville || "?") + ")" + tel;
           span.style.color = kept ? "var(--success)" : "var(--muted)";
-          span.title = kept ? "Conservé" : "Archivé (ne sera pas re-scrapé)";
           if (idx > 0) { var sep = document.createTextNode("  |  "); tdEntries.appendChild(sep); }
           tdEntries.appendChild(span);
         });
 
+        var hint = document.createElement("span");
+        hint.style.cssText = "margin-left:0.6rem;font-size:0.6rem;color:var(--dim)";
+        hint.textContent = "↗ détail";
+        tdEntries.appendChild(hint);
+
         tr.append(tdKey, tdCount, tdEntries);
+        tr.addEventListener("click", function() { openDupModal(g, keyField, isKeptFn); });
         tbody.appendChild(tr);
       });
+    }
+
+    /* ── Modal ── */
+    function openDupModal(group, keyField, isKeptFn) {
+      var keyVal = group[keyField];
+      document.getElementById("modalTitle").textContent = keyField === "telephone"
+        ? "Numéro : " + keyVal
+        : keyVal;
+      document.getElementById("modalSubtitle").textContent =
+        group.count + " enregistrement(s) — cliquer en dehors pour fermer";
+
+      var tbody = document.getElementById("modalBody");
+      tbody.innerHTML = "";
+
+      group.records.forEach(function(r, idx) {
+        var kept = isKeptFn(r, idx);
+        var tr = document.createElement("tr");
+
+        var tdStatus = document.createElement("td");
+        var badge = document.createElement("span");
+        badge.className = "dup-badge " + (kept ? "kept" : "archived");
+        badge.textContent = kept ? "conservé" : "archivé";
+        tdStatus.appendChild(badge);
+
+        var tdNom    = document.createElement("td"); tdNom.textContent = r.nom;
+        var tdVille  = document.createElement("td"); tdVille.textContent = r.ville || "—";
+        var tdSiret  = document.createElement("td"); tdSiret.style.fontFamily = "var(--mono)"; tdSiret.textContent = r.siret;
+        var tdTel    = document.createElement("td"); tdTel.textContent = r.telephone || "—";
+        var tdSource = document.createElement("td"); tdSource.textContent = r.source;
+        var tdDate   = document.createElement("td"); tdDate.textContent = r.scraped_at ? r.scraped_at.slice(0, 10) : "—";
+
+        tr.style.opacity = kept ? "1" : "0.5";
+        tr.append(tdStatus, tdNom, tdVille, tdSiret, tdTel, tdSource, tdDate);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("dupModal").classList.add("open");
+    }
+
+    function closeDupModal(e) {
+      if (e && e.target !== document.getElementById("dupModal")) return;
+      document.getElementById("dupModal").classList.remove("open");
     }
 
     /* ── Doublons par numéro ── */
