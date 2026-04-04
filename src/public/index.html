@@ -700,7 +700,7 @@
         <div class="stat-label">Avec téléphone</div>
         <div class="stat-value" id="statFound">0</div>
       </div>
-      <div class="stat" id="tab-mobile" onclick="toggleMobile()">
+      <div class="stat" id="tab-mobile" onclick="setFilter('mobile')">
         <div class="stat-label">Mobile</div>
         <div class="stat-value" id="statMobile">0</div>
       </div>
@@ -754,7 +754,6 @@
     let pollInterval      = null;
     let retryPollInterval = null;
     let activeFilter      = "all";
-    let phoneTypeFilter   = null;
     let exportScope       = "all";
     let activeScope       = "region";
     let searchTimeout     = null;
@@ -801,10 +800,10 @@
     /* ── Filter ── */
     function setFilter(f) {
       activeFilter = f;
-      ["all","found","notfound","dupes"].forEach(function(id) {
+      ["all","found","mobile","notfound","dupes"].forEach(function(id) {
         document.getElementById("tab-" + id).classList.toggle("active", id === f);
       });
-      const labels = { all: "", found: "Avec téléphone", notfound: "Non trouvés", dupes: "" };
+      const labels = { all: "", found: "Avec téléphone", mobile: "Mobile", notfound: "Non trouvés", dupes: "" };
       document.getElementById("filterLabel").textContent = labels[f] || "";
       document.getElementById("retrySection").style.display = f === "notfound" ? "" : "none";
       fetchResults();
@@ -816,12 +815,6 @@
       var cleaned = phone.replace(/[\s.+()-]/g, "");
       var norm = cleaned.startsWith("33") && cleaned.length === 11 ? "0" + cleaned.slice(2) : cleaned;
       return /^0[67]/.test(norm);
-    }
-
-    function toggleMobile() {
-      phoneTypeFilter = phoneTypeFilter === "mobile" ? null : "mobile";
-      document.getElementById("tab-mobile").classList.toggle("active", phoneTypeFilter === "mobile");
-      fetchResults();
     }
 
     /* ── Search ── */
@@ -869,7 +862,7 @@
       let url = "/api/results?page=1&limit=5000";
       if (activeFilter === "found")    url += "&source=found";
       if (activeFilter === "notfound") url += "&source=non_trouv%C3%A9";
-      if (phoneTypeFilter) url += "&phoneType=" + phoneTypeFilter;
+      if (activeFilter === "mobile")   url += "&phoneType=mobile";
       if (searchQuery) url += "&q=" + encodeURIComponent(searchQuery);
 
       const data = await fetch(url).then(r => r.json());
