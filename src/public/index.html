@@ -862,6 +862,7 @@
             <th>CP</th>
             <th>Effectif</th>
             <th>Forme jur.</th>
+            <th>Dirigeants</th>
             <th title="Cliquer pour copier">Téléphone</th>
             <th>Source</th>
           </tr>
@@ -969,7 +970,7 @@
       tbody.innerHTML = "";
 
       if (!data.data.length) {
-        tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
         return;
       }
 
@@ -982,6 +983,7 @@
         var tdCp   = document.createElement("td"); tdCp.className   = "col-ville"; tdCp.textContent   = r.codePostal || "—";
         var tdEff  = document.createElement("td"); tdEff.className  = "col-ville"; tdEff.textContent  = EFFECTIF_LABELS[r.effectifTranche] || r.effectifTranche || "—";
         var tdFj   = document.createElement("td"); tdFj.className   = "col-ville"; tdFj.textContent   = r.formeJuridique || "—";
+        var tdDir  = document.createElement("td"); tdDir.className  = "col-nom";   tdDir.textContent  = r.dirigeants || "—"; tdDir.title = r.dirigeants || "";
 
         var phone = r.telephone || "—";
         var tdTel = document.createElement("td"); tdTel.className = "col-tel";
@@ -1000,7 +1002,7 @@
         var tdSrc = document.createElement("td"); tdSrc.appendChild(badge);
 
         var tr = document.createElement("tr");
-        tr.append(tdNom, tdVille, tdCp, tdEff, tdFj, tdTel, tdSrc);
+        tr.append(tdNom, tdVille, tdCp, tdEff, tdFj, tdDir, tdTel, tdSrc);
         tbody.appendChild(tr);
       });
     }
