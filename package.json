@@ -15,7 +15,6 @@
     "express": "^4",
     "minimist": "^1",
     "ora": "^5",
-    "playwright": "^1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7",

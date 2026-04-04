@@ -1,7 +1,6 @@
 import { Etablissement } from "./sirene";
 import { initDb, isKnown, insert, ScrapedRecord } from "./dedup";
 import { findPhoneGoogle } from "./googleMaps";
-import { findPhonePJ, closeBrowser } from "./pagesJaunes";
 
 export interface PipelineResult {
   newCount: number;
@@ -25,8 +24,7 @@ export async function runPipeline(
   const prospects: ScrapedRecord[] = [];
   let i = 0;
 
-  try {
-    for await (const etab of source) {
+  for await (const etab of source) {
       if (isKnown(etab.siret)) {
         alreadyKnown++;
         continue;
@@ -36,15 +34,8 @@ export async function runPipeline(
 
       onProgress?.(++i, etab.nom);
 
-      let phone = await findPhoneGoogle(etab.nom, etab.ville);
-      let source: string;
-
-      if (phone !== null) {
-        source = "google";
-      } else {
-        phone = await findPhonePJ(etab.nom, etab.ville);
-        source = phone !== null ? "pagesjaunes" : "non_trouvé";
-      }
+      const phone = await findPhoneGoogle(etab.nom, etab.ville);
+      const source = phone !== null ? "google" : "non_trouvé";
 
       if (phone === null) {
         notFoundCount++;
@@ -69,9 +60,6 @@ export async function runPipeline(
       if (source !== "non_trouvé") {
         prospects.push(record);
       }
-    }
-  } finally {
-    await closeBrowser();
   }
 
   return { newCount, alreadyKnown, notFoundCount, prospects };

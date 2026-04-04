@@ -267,49 +267,6 @@
     .result-val.dupe { color: var(--dim); }
     .result-val.nf   { color: var(--muted); }
 
-    /* Retry PJ button */
-    .btn-retry-pj {
-      width: 100%;
-      background: var(--warn-dim);
-      color: var(--warn);
-      border: 1px solid rgba(245,158,11,0.25);
-      padding: 0.45rem 0.8rem;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 0.66rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-      text-align: center;
-    }
-
-    .btn-retry-pj:hover:not(:disabled) { background: rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.4); }
-    .btn-retry-pj:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .retry-track-wrap {
-      display: none;
-      margin-top: 0.6rem;
-    }
-    .retry-track-wrap.visible { display: block; }
-
-    .retry-meta {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.3rem;
-    }
-
-    .retry-label { font-size: 0.6rem; color: var(--muted); }
-
-    .retry-track { height: 3px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden; }
-    .retry-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 3px;
-      background: linear-gradient(90deg, var(--warn) 0%, #fbbf24 100%);
-      transition: width 0.5s cubic-bezier(.4,0,.2,1);
-    }
-
     /* Export button */
     .sidebar-footer {
       padding: 1rem 1.25rem;
@@ -768,22 +725,8 @@
       </div>
     </div>
 
-    <!-- Retry Pages Jaunes -->
-    <div class="s-section" id="retrySection" style="display:none">
-      <div class="s-label">Pages Jaunes</div>
-      <button class="btn-retry-pj" id="btnRetryPj" onclick="startRetryPj()">
-        ↻ &nbsp;Relancer sur non trouvés
-      </button>
-      <div class="retry-track-wrap" id="retryTrackWrap">
-        <div class="retry-meta">
-          <span class="retry-label" id="retryLabel">—</span>
-          <span class="retry-label" id="retryPct">0%</span>
-        </div>
-        <div class="retry-track"><div class="retry-fill" id="retryFill"></div></div>
-      </div>
-    </div>
 
-    <div class="sidebar-footer">
+<div class="sidebar-footer">
       <div class="export-scope" id="exportScopeToggle">
         <button id="exportScopeAll"    class="active" onclick="setExportScope('all')">Tout</button>
         <button id="exportScopeMobile"            onclick="setExportScope('mobile')">Mobile</button>
@@ -936,7 +879,6 @@
     /* ── State ── */
     let lastDupes         = 0;
     let pollInterval      = null;
-    let retryPollInterval = null;
     let activeFilter      = "all";
     let exportScope       = "all";
     let activeView        = "results";
@@ -1105,7 +1047,6 @@
       });
       const labels = { all: "", found: "Avec téléphone", mobile: "Mobile", notfound: "Non trouvés", dupes: "" };
       document.getElementById("filterLabel").textContent = labels[f] || "";
-      document.getElementById("retrySection").style.display = f === "notfound" ? "" : "none";
       fetchResults();
     }
 
@@ -1299,44 +1240,7 @@
       }
     }
 
-    /* ── Retry PJ ── */
-    async function startRetryPj() {
-      const btn = document.getElementById("btnRetryPj");
-      btn.disabled = true;
-      const res = await fetch("/api/retry-pj", { method: "POST" });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        toast(err.error || "Erreur lors du lancement", "error");
-        btn.disabled = false;
-        return;
-      }
-      document.getElementById("retryTrackWrap").classList.add("visible");
-      if (!retryPollInterval) retryPollInterval = setInterval(pollRetryPj, 1200);
-    }
-
-    async function pollRetryPj() {
-      let state;
-      try { state = await fetch("/api/retry-pj/status").then(r => r.json()); }
-      catch { return; }
-
-      const pct = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
-      document.getElementById("retryFill").style.width = pct + "%";
-      document.getElementById("retryPct").textContent  = pct + "%";
-      document.getElementById("retryLabel").textContent =
-        state.status === "done"
-          ? state.found + " trouvé(s) sur " + state.total
-          : state.progress + " / " + state.total;
-
-      if (state.status === "done") {
-        clearInterval(retryPollInterval); retryPollInterval = null;
-        document.getElementById("btnRetryPj").disabled = false;
-        toast("Retry terminé — " + state.found + " nouveaux numéros", "success");
-        fetchStats();
-        fetchResults();
-      }
-    }
-
-    function setExportScope(scope) {
+function setExportScope(scope) {
       exportScope = scope;
       ["all", "mobile", "fixe"].forEach(function(s) {
         document.getElementById("exportScope" + s.charAt(0).toUpperCase() + s.slice(1))
@@ -1362,9 +1266,9 @@
 
     /* Auto-refresh résultats toutes les 10s si idle */
     setInterval(function() {
-      if (!pollInterval && !retryPollInterval) {
+      if (!pollInterval) {
         fetchStats();
-        fetchResults(currentPage);
+        fetchResults();
       }
     }, 10000);
 
