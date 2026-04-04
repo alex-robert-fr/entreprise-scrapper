@@ -58,12 +58,13 @@ app.get("/api/results", (req, res) => {
   const sourceFilter =
     rawSource === "found"      ? "found"      :
     rawSource === "non_trouvé" ? "non_trouvé" : undefined;
-  const search = (req.query.q as string | undefined) || undefined;
+  const nom   = (req.query.nom  as string | undefined) || undefined;
+  const ville = (req.query.ville as string | undefined) || undefined;
   const rawPhoneType = req.query.phoneType as string | undefined;
   const phoneType =
     rawPhoneType === "mobile" ? "mobile" :
     rawPhoneType === "fixe"   ? "fixe"   : undefined;
-  res.json(getPaginated(page, limit, sourceFilter, search, phoneType));
+  res.json(getPaginated(page, limit, sourceFilter, nom, phoneType, ville));
 });
 
 app.post("/api/scrape", (req, res) => {
@@ -166,7 +167,8 @@ app.get("/api/export", (req, res) => {
   const phoneType =
     rawPhoneType === "mobile" ? "mobile" :
     rawPhoneType === "fixe"   ? "fixe"   : undefined;
-  const records = getAll(phoneType);
+  const exportVille = (req.query.ville as string | undefined) || undefined;
+  const records = getAll(phoneType, exportVille);
 
   const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,source,scraped_at";
   const rows = records.map((r) => {

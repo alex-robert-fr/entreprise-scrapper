@@ -114,19 +114,24 @@ export function updateRecord(siret: string, telephone: string, source: string): 
     .run(telephone, source, new Date().toISOString(), siret);
 }
 
-export function getAll(phoneType?: "mobile" | "fixe"): ScrapedRecord[] {
-  const where = phoneType ? `WHERE ${phoneTypeCondition(phoneType)}` : "";
+export function getAll(phoneType?: "mobile" | "fixe", ville?: string): ScrapedRecord[] {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  if (phoneType) conditions.push(phoneTypeCondition(phoneType));
+  if (ville && ville.trim()) { conditions.push("ville LIKE ?"); params.push("%" + ville.trim() + "%"); }
+  const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
   return requireDb()
     .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ${where} ORDER BY scraped_at DESC`)
-    .all() as ScrapedRecord[];
+    .all(params) as ScrapedRecord[];
 }
 
 export function getPaginated(
   page: number,
   limit: number,
   sourceFilter?: "found" | "non_trouvé",
-  search?: string,
-  phoneType?: "mobile" | "fixe"
+  nom?: string,
+  phoneType?: "mobile" | "fixe",
+  ville?: string
 ): PaginatedResult<ScrapedRecord> {
   if (limit < 1) throw new Error("limit doit être >= 1");
   const conn = requireDb();
@@ -139,10 +144,14 @@ export function getPaginated(
 
   if (phoneType) conditions.push(phoneTypeCondition(phoneType));
 
-  if (search && search.trim()) {
-    const like = "%" + search.trim() + "%";
-    conditions.push("(nom LIKE ? OR ville LIKE ?)");
-    params.push(like, like);
+  if (nom && nom.trim()) {
+    conditions.push("nom LIKE ?");
+    params.push("%" + nom.trim() + "%");
+  }
+
+  if (ville && ville.trim()) {
+    conditions.push("ville LIKE ?");
+    params.push("%" + ville.trim() + "%");
   }
 
   const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
