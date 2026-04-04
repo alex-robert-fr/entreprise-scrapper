@@ -1,7 +1,7 @@
 import { Etablissement } from "./sirene";
 import { initDb, isKnown, insert, ScrapedRecord } from "./dedup";
 import { findPhoneGoogle } from "./googleMaps";
-import { findPhonePJ } from "./pagesJaunes";
+import { findPhonePJ, closeBrowser } from "./pagesJaunes";
 
 export interface PipelineResult {
   newCount: number;
@@ -25,49 +25,53 @@ export async function runPipeline(
   const prospects: ScrapedRecord[] = [];
   let i = 0;
 
-  for await (const etab of source) {
-    if (isKnown(etab.siret)) {
-      alreadyKnown++;
-      continue;
+  try {
+    for await (const etab of source) {
+      if (isKnown(etab.siret)) {
+        alreadyKnown++;
+        continue;
+      }
+
+      if (limit !== undefined && newCount + notFoundCount >= limit) break;
+
+      onProgress?.(++i, etab.nom);
+
+      let phone = await findPhoneGoogle(etab.nom, etab.ville);
+      let source: string;
+
+      if (phone !== null) {
+        source = "google";
+      } else {
+        phone = await findPhonePJ(etab.nom, etab.ville);
+        source = phone !== null ? "pagesjaunes" : "non_trouvé";
+      }
+
+      if (phone === null) {
+        notFoundCount++;
+      } else {
+        newCount++;
+      }
+
+      const record: ScrapedRecord = {
+        siret: etab.siret,
+        nom: etab.nom,
+        adresse: etab.adresse,
+        ville: etab.ville,
+        codePostal: etab.codePostal,
+        telephone: phone,
+        effectifTranche: etab.effectifTranche,
+        source,
+        scraped_at: new Date().toISOString(),
+      };
+
+      insert(record);
+
+      if (source !== "non_trouvé") {
+        prospects.push(record);
+      }
     }
-
-    if (limit !== undefined && newCount + notFoundCount >= limit) break;
-
-    onProgress?.(++i, etab.nom);
-
-    let phone = await findPhoneGoogle(etab.nom, etab.ville);
-    let source: string;
-
-    if (phone !== null) {
-      source = "google";
-    } else {
-      phone = await findPhonePJ(etab.nom, etab.ville);
-      source = phone !== null ? "pagesjaunes" : "non_trouvé";
-    }
-
-    if (phone === null) {
-      notFoundCount++;
-    } else {
-      newCount++;
-    }
-
-    const record: ScrapedRecord = {
-      siret: etab.siret,
-      nom: etab.nom,
-      adresse: etab.adresse,
-      ville: etab.ville,
-      codePostal: etab.codePostal,
-      telephone: phone,
-      effectifTranche: etab.effectifTranche,
-      source,
-      scraped_at: new Date().toISOString(),
-    };
-
-    insert(record);
-
-    if (source !== "non_trouvé") {
-      prospects.push(record);
-    }
+  } finally {
+    await closeBrowser();
   }
 
   return { newCount, alreadyKnown, notFoundCount, prospects };

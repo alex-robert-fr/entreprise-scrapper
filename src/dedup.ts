@@ -98,21 +98,55 @@ const SELECT_FIELDS = `
   effectif_tranche as effectifTranche, source, scraped_at
 `;
 
+export function getNotFound(): ScrapedRecord[] {
+  return requireDb()
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped WHERE source = 'non_trouvé' ORDER BY scraped_at DESC`)
+    .all() as ScrapedRecord[];
+}
+
+export function updateRecord(siret: string, telephone: string, source: string): void {
+  requireDb()
+    .prepare("UPDATE scraped SET telephone = ?, source = ?, scraped_at = ? WHERE siret = ?")
+    .run(telephone, source, new Date().toISOString(), siret);
+}
+
 export function getAll(): ScrapedRecord[] {
   return requireDb()
     .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC`)
     .all() as ScrapedRecord[];
 }
 
-export function getPaginated(page: number, limit: number): PaginatedResult<ScrapedRecord> {
+export function getPaginated(
+  page: number,
+  limit: number,
+  sourceFilter?: "found" | "non_trouvé",
+  search?: string
+): PaginatedResult<ScrapedRecord> {
   if (limit < 1) throw new Error("limit doit être >= 1");
   const conn = requireDb();
-  const { count } = conn.prepare("SELECT COUNT(*) as count FROM scraped").get() as { count: number };
+
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (sourceFilter === "found")      conditions.push("source != 'non_trouvé'");
+  if (sourceFilter === "non_trouvé") conditions.push("source = 'non_trouvé'");
+
+  if (search && search.trim()) {
+    const like = "%" + search.trim() + "%";
+    conditions.push("(nom LIKE ? OR ville LIKE ?)");
+    params.push(like, like);
+  }
+
+  const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+
+  const { count } = conn
+    .prepare(`SELECT COUNT(*) as count FROM scraped ${where}`)
+    .get(params) as { count: number };
   const totalPages = Math.max(1, Math.ceil(count / limit));
   const safePage = Math.max(1, Math.min(page, totalPages));
   const offset = (safePage - 1) * limit;
   const data = conn
-    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC LIMIT ? OFFSET ?`)
-    .all(limit, offset) as ScrapedRecord[];
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ${where} ORDER BY scraped_at DESC LIMIT ? OFFSET ?`)
+    .all([...params, limit, offset]) as ScrapedRecord[];
   return { data, total: count, page: safePage, totalPages };
 }
