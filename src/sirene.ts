@@ -12,7 +12,7 @@ const PAGE_SIZE = 100;
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY = 1000;
 
-const REGIONS_DEPARTEMENTS: Record<string, string[]> = {
+export const REGIONS_DEPARTEMENTS: Record<string, string[]> = {
   "auvergne-rhone-alpes": [
     "01", "03", "07", "15", "26", "38", "42", "43", "63", "69", "73", "74",
   ],
