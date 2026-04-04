@@ -316,6 +316,34 @@
       margin-top: auto;
     }
 
+    .export-scope {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border-hover);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .export-scope button {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border-hover);
+      color: var(--muted);
+      padding: 0.35rem 0;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+
+    .export-scope button:last-child { border-right: none; }
+    .export-scope button:hover { background: var(--bg-elevated); color: var(--text); }
+    .export-scope button.active { background: var(--accent); color: #fff; }
+
     .btn-export {
       width: 100%;
       background: transparent;
@@ -650,6 +678,11 @@
     </div>
 
     <div class="sidebar-footer">
+      <div class="export-scope" id="exportScopeToggle">
+        <button id="exportScopeAll"    class="active" onclick="setExportScope('all')">Tout</button>
+        <button id="exportScopeMobile"            onclick="setExportScope('mobile')">Mobile</button>
+        <button id="exportScopeFixe"              onclick="setExportScope('fixe')">Fixe</button>
+      </div>
       <button class="btn-export" onclick="exportCsv()">↓ &nbsp;Exporter CSV</button>
     </div>
 
@@ -722,6 +755,7 @@
     let retryPollInterval = null;
     let activeFilter      = "all";
     let phoneTypeFilter   = null;
+    let exportScope       = "all";
     let activeScope       = "region";
     let searchTimeout     = null;
     let searchQuery       = "";
@@ -1018,11 +1052,20 @@
       }
     }
 
+    function setExportScope(scope) {
+      exportScope = scope;
+      ["all", "mobile", "fixe"].forEach(function(s) {
+        document.getElementById("exportScope" + s.charAt(0).toUpperCase() + s.slice(1))
+          .classList.toggle("active", s === scope);
+      });
+    }
+
     function exportCsv() {
       var url = "/api/export";
-      if (phoneTypeFilter) url += "?phoneType=" + phoneTypeFilter;
+      if (exportScope !== "all") url += "?phoneType=" + exportScope;
       window.location = url;
-      toast("Téléchargement du CSV…");
+      var labels = { all: "Téléchargement du CSV…", mobile: "Export mobiles…", fixe: "Export fixes…" };
+      toast(labels[exportScope] || "Téléchargement du CSV…");
     }
 
     /* ── Init ── */
