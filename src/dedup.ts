@@ -237,3 +237,73 @@ export function getFilterOptions(): FilterOptions {
 
   return { villes, sources, effectifs, departements, formesJuridiques };
 }
+
+export interface PhoneDuplicateGroup {
+  telephone: string;
+  count: number;
+  records: ScrapedRecord[];
+}
+
+export interface PhoneDuplicatesReport {
+  groups: PhoneDuplicateGroup[];
+  totalDuplicateGroups: number;
+  totalToDelete: number;
+}
+
+export function getPhoneDuplicates(): PhoneDuplicatesReport {
+  const conn = requireDb();
+
+  const phones = (conn
+    .prepare(
+      `SELECT telephone, COUNT(*) as cnt FROM scraped
+       WHERE telephone IS NOT NULL AND telephone != ''
+       GROUP BY telephone
+       HAVING cnt > 1
+       ORDER BY cnt DESC`
+    )
+    .all() as { telephone: string; cnt: number }[]);
+
+  const groups: PhoneDuplicateGroup[] = phones.map(({ telephone, cnt }) => {
+    const records = conn
+      .prepare(`SELECT ${SELECT_FIELDS} FROM scraped WHERE telephone = ? ORDER BY scraped_at DESC`)
+      .all(telephone) as ScrapedRecord[];
+    return { telephone, count: cnt, records };
+  });
+
+  const totalToDelete = groups.reduce((sum, g) => sum + g.count - 1, 0);
+
+  return { groups, totalDuplicateGroups: groups.length, totalToDelete };
+}
+
+export function cleanPhoneDuplicates(): number {
+  const conn = requireDb();
+
+  const phones = (conn
+    .prepare(
+      `SELECT telephone FROM scraped
+       WHERE telephone IS NOT NULL AND telephone != ''
+       GROUP BY telephone
+       HAVING COUNT(*) > 1`
+    )
+    .all() as { telephone: string }[]);
+
+  let deleted = 0;
+
+  const deleteStmt = conn.prepare("DELETE FROM scraped WHERE siret = ?");
+
+  const cleanAll = conn.transaction(() => {
+    for (const { telephone } of phones) {
+      const rows = conn
+        .prepare("SELECT siret FROM scraped WHERE telephone = ? ORDER BY scraped_at DESC")
+        .all(telephone) as { siret: string }[];
+      // garder le plus récent (rows[0]), supprimer le reste
+      for (let i = 1; i < rows.length; i++) {
+        deleteStmt.run(rows[i].siret);
+        deleted++;
+      }
+    }
+  });
+
+  cleanAll();
+  return deleted;
+}

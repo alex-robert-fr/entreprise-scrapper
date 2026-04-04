@@ -1,7 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import express from "express";
-import { initDb, getStats, getAll, getPaginated, getFilterOptions, ResultFilters } from "./dedup";
+import { initDb, getStats, getAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, ResultFilters } from "./dedup";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 
@@ -117,6 +117,15 @@ app.post("/api/scrape", (req, res) => {
 
 app.get("/api/status", (_req, res) => {
   res.json(scrapeState);
+});
+
+app.get("/api/duplicates/phone", (_req, res) => {
+  res.json(getPhoneDuplicates());
+});
+
+app.post("/api/duplicates/phone/clean", (_req, res) => {
+  const deleted = cleanPhoneDuplicates();
+  res.json({ deleted });
 });
 
 

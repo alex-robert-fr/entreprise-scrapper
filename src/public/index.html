@@ -665,8 +665,9 @@
     <!-- Navigation vues -->
     <div class="s-section">
       <div class="nav-tabs">
-        <button class="nav-tab active" id="navResults" onclick="setView('results')">Résultats</button>
-        <button class="nav-tab"        id="navFilters" onclick="setView('filters')">Filtres</button>
+        <button class="nav-tab active" id="navResults"  onclick="setView('results')">Résultats</button>
+        <button class="nav-tab"        id="navFilters"  onclick="setView('filters')">Filtres</button>
+        <button class="nav-tab"        id="navDuplicates" onclick="setView('duplicates')">Doublons</button>
       </div>
     </div>
 
@@ -873,6 +874,34 @@
 
   </div><!-- /view-filters -->
 
+  <!-- Vue Doublons -->
+  <div class="view" id="view-duplicates">
+
+    <div class="filter-bar" style="align-items:flex-start;gap:1rem;">
+      <div style="flex:1">
+        <div class="filter-count" id="dupSummary">Cliquez sur Analyser pour détecter les doublons de numéros.</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-shrink:0">
+        <button class="btn-export" onclick="fetchDuplicates()">⟳ &nbsp;Analyser</button>
+        <button class="btn-export" id="btnClean" style="background:var(--accent);color:#fff;display:none" onclick="cleanDuplicates()">✕ &nbsp;Nettoyer</button>
+      </div>
+    </div>
+
+    <div class="table-area">
+      <table>
+        <thead>
+          <tr>
+            <th>Numéro</th>
+            <th>Doublons</th>
+            <th>Établissements concernés</th>
+          </tr>
+        </thead>
+        <tbody id="dupBody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /view-duplicates -->
+
   </main>
 
   <!-- Toast container -->
@@ -932,9 +961,61 @@
       activeView = view;
       document.getElementById("view-results").classList.toggle("active", view === "results");
       document.getElementById("view-filters").classList.toggle("active", view === "filters");
+      document.getElementById("view-duplicates").classList.toggle("active", view === "duplicates");
       document.getElementById("navResults").classList.toggle("active", view === "results");
       document.getElementById("navFilters").classList.toggle("active", view === "filters");
+      document.getElementById("navDuplicates").classList.toggle("active", view === "duplicates");
       if (view === "filters") fetchAdvResults();
+      if (view === "duplicates") fetchDuplicates();
+    }
+
+    /* ── Doublons ── */
+    function fetchDuplicates() {
+      fetch("/api/duplicates/phone")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var summary = document.getElementById("dupSummary");
+          var btnClean = document.getElementById("btnClean");
+          var tbody = document.getElementById("dupBody");
+
+          if (data.totalDuplicateGroups === 0) {
+            summary.textContent = "Aucun doublon de numéro détecté.";
+            btnClean.style.display = "none";
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong>Aucun numéro en double.</div></td></tr>';
+            return;
+          }
+
+          summary.textContent = data.totalDuplicateGroups + " numéro(s) en double — " + data.totalToDelete + " enregistrement(s) à supprimer (le plus récent est conservé)";
+          btnClean.style.display = "";
+
+          tbody.innerHTML = "";
+          data.groups.forEach(function(g) {
+            var names = g.records.map(function(r) { return r.nom + " (" + (r.ville || "?") + ")"; }).join(", ");
+            var tr = document.createElement("tr");
+            var tdPhone = document.createElement("td"); tdPhone.className = "col-tel";
+            var sp = document.createElement("span"); sp.textContent = g.telephone; tdPhone.appendChild(sp);
+            tdPhone.title = "Cliquer pour copier";
+            tdPhone.style.cursor = "pointer";
+            tdPhone.addEventListener("click", function() { copyPhone(tdPhone, g.telephone); });
+            var tdCount = document.createElement("td"); tdCount.textContent = "×" + g.count;
+            var tdNames = document.createElement("td"); tdNames.className = "col-nom"; tdNames.textContent = names; tdNames.title = names;
+            tr.append(tdPhone, tdCount, tdNames);
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(function() { toast("Erreur lors de l'analyse des doublons"); });
+    }
+
+    function cleanDuplicates() {
+      if (!confirm("Supprimer les doublons ? Le plus récent sera conservé pour chaque numéro.")) return;
+      fetch("/api/duplicates/phone/clean", { method: "POST" })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          toast(data.deleted + " enregistrement(s) supprimé(s)");
+          fetchDuplicates();
+          fetchStats();
+        })
+        .catch(function() { toast("Erreur lors du nettoyage"); });
     }
 
     /* ── Filtres avancés ── */
