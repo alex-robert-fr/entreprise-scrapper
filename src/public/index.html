@@ -760,10 +760,6 @@
         <div class="stat-label">Non trouvés</div>
         <div class="stat-value" id="statNotFound">0</div>
       </div>
-      <div class="stat" id="tab-dupes" onclick="setFilter('dupes')">
-        <div class="stat-label">Doublons évités</div>
-        <div class="stat-value" id="statDuplicates">0</div>
-      </div>
     </div>
 
     <div class="toolbar">
@@ -877,7 +873,6 @@
 
   <script>
     /* ── State ── */
-    let lastDupes         = 0;
     let pollInterval      = null;
     let activeFilter      = "all";
     let exportScope       = "all";
@@ -1042,10 +1037,10 @@
     /* ── Filter ── */
     function setFilter(f) {
       activeFilter = f;
-      ["all","found","mobile","notfound","dupes"].forEach(function(id) {
+      ["all","found","mobile","notfound"].forEach(function(id) {
         document.getElementById("tab-" + id).classList.toggle("active", id === f);
       });
-      const labels = { all: "", found: "Avec téléphone", mobile: "Mobile", notfound: "Non trouvés", dupes: "" };
+      const labels = { all: "", found: "Avec téléphone", mobile: "Mobile", notfound: "Non trouvés" };
       document.getElementById("filterLabel").textContent = labels[f] || "";
       fetchResults();
     }
@@ -1206,9 +1201,6 @@
         document.getElementById("btnScrape").disabled = false;
 
         if (state.result) {
-          lastDupes += state.result.alreadyKnown;
-          counter(document.getElementById("statDuplicates"), lastDupes);
-
           const rows = [
             { label: "Nouveaux",    val: "+" + state.result.newCount,  cls: "new"  },
             { label: "Déjà connus", val: state.result.alreadyKnown,    cls: "dupe" },
