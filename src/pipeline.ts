@@ -2,9 +2,9 @@ import { Etablissement } from "./sirene";
 import { ScrapedRecord } from "./dedup";
 
 export interface PipelineResult {
-  nouveaux: number;
+  newCount: number;
   alreadyKnown: number;
-  nonTrouves: number;
+  notFoundCount: number;
   prospects: ScrapedRecord[];
 }
 
@@ -18,5 +18,5 @@ export async function runPipeline(
   _etablissements: Etablissement[],
   _onProgress?: ProgressCallback
 ): Promise<PipelineResult> {
-  return { nouveaux: 0, alreadyKnown: 0, nonTrouves: 0, prospects: [] };
+  return { newCount: 0, alreadyKnown: 0, notFoundCount: 0, prospects: [] };
 }

@@ -9,7 +9,7 @@ export interface ScrapedRecord {
   source: string;
 }
 
-export interface Stats {
+export interface ScrapedStats {
   total: number;
   found: number;
   notFound: number;
@@ -17,25 +17,32 @@ export interface Stats {
 
 let db: Database.Database | undefined;
 
+function requireDb(): Database.Database {
+  if (!db) throw new Error("DB not initialized — appeler initDb() d'abord");
+  return db;
+}
+
 export function initDb(): void {
   // TODO: ouvrir data/scraper.db et créer la table scraped
 }
 
 export function isKnown(siret: string): boolean {
+  void requireDb();
   void siret;
   return false;
 }
 
 export function insert(record: ScrapedRecord): void {
+  void requireDb();
   void record;
 }
 
-export function getStats(): Stats {
+export function getStats(): ScrapedStats {
+  void requireDb();
   return { total: 0, found: 0, notFound: 0 };
 }
 
 export function getAll(): ScrapedRecord[] {
+  void requireDb();
   return [];
 }
-
-void db;
