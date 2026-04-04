@@ -11,6 +11,7 @@ export interface ScrapedRecord {
   telephone: string | null;
   effectifTranche: string;
   formeJuridique: string;
+  dirigeants: string | null;
   source: string;
   scraped_at: string;
 }
@@ -112,6 +113,11 @@ export function initDb(): void {
   } catch {
     // Colonne déjà présente
   }
+  try {
+    db.exec("ALTER TABLE scraped ADD COLUMN dirigeants TEXT");
+  } catch {
+    // Colonne déjà présente
+  }
 }
 
 export function isKnown(siret: string): boolean {
@@ -123,8 +129,8 @@ export function insert(record: ScrapedRecord): void {
   requireDb()
     .prepare(
       `INSERT OR IGNORE INTO scraped
-        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, forme_juridique, source, scraped_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, forme_juridique, dirigeants, source, scraped_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       record.siret,
@@ -135,6 +141,7 @@ export function insert(record: ScrapedRecord): void {
       record.telephone,
       record.effectifTranche,
       record.formeJuridique,
+      record.dirigeants,
       record.source,
       record.scraped_at,
     );
@@ -160,6 +167,7 @@ const SELECT_FIELDS = `
   code_postal as codePostal, telephone,
   effectif_tranche as effectifTranche,
   forme_juridique as formeJuridique,
+  dirigeants,
   source, scraped_at
 `;
 
