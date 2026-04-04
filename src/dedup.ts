@@ -4,7 +4,7 @@ import path from "path";
 export interface ScrapedRecord {
   siret: string;
   nom: string;
-  telephone: string;
+  telephone: string | null;
   ville: string;
   scraped_at: string;
   source: string;
@@ -16,7 +16,7 @@ export interface ScrapedStats {
   notFound: number;
 }
 
-const DB_PATH = path.join("data", "scraper.db");
+const DB_PATH = path.join(__dirname, "..", "data", "scraper.db");
 
 let db: Database.Database | undefined;
 
@@ -26,6 +26,7 @@ function requireDb(): Database.Database {
 }
 
 export function initDb(): void {
+  if (db) return;
   db = new Database(DB_PATH);
   db.pragma("journal_mode = WAL");
   db.exec(`
