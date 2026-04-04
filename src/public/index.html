@@ -523,6 +523,72 @@
     .b-pagesjaunes { background: var(--warn-dim);    color: var(--warn);    border-color: rgba(245,158,11,0.18); }
     .b-non         { background: var(--bg-elevated); color: var(--muted);   border-color: var(--border); }
 
+    /* Retry PJ banner */
+    .retry-banner {
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.65rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      flex-shrink: 0;
+    }
+
+    .retry-banner.visible { display: flex; }
+
+    .btn-retry-pj {
+      background: var(--warn-dim);
+      color: var(--warn);
+      border: 1px solid rgba(245,158,11,0.25);
+      padding: 0.38rem 0.85rem;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn-retry-pj:hover:not(:disabled) {
+      background: rgba(245,158,11,0.18);
+      border-color: rgba(245,158,11,0.4);
+    }
+
+    .btn-retry-pj:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .retry-progress {
+      display: none;
+      flex: 1;
+      align-items: center;
+      gap: 0.7rem;
+    }
+
+    .retry-progress.visible { display: flex; }
+
+    .retry-track {
+      flex: 1;
+      height: 3px;
+      background: var(--bg-elevated);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .retry-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--warn) 0%, #fbbf24 100%);
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+
+    .retry-label {
+      font-size: 0.62rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
     /* Pagination */
     .pagination {
       flex-shrink: 0;
@@ -657,6 +723,16 @@
       </div>
     </div>
 
+    <div class="retry-banner" id="retryBanner">
+      <button class="btn-retry-pj" id="btnRetryPj" onclick="startRetryPj()">
+        ↻ &nbsp;Relancer Pages Jaunes
+      </button>
+      <div class="retry-progress" id="retryProgress">
+        <div class="retry-track"><div class="retry-fill" id="retryFill"></div></div>
+        <span class="retry-label" id="retryLabel">0 / 0</span>
+      </div>
+    </div>
+
     <div class="table-area">
       <div class="table-topbar">
         <span class="table-heading">Prospects</span>
@@ -685,11 +761,12 @@
   </main>
 
   <script>
-    let currentPage  = 1;
-    let totalPages   = 1;
-    let lastDupes    = 0;
-    let pollInterval = null;
-    let activeFilter = "all";
+    let currentPage      = 1;
+    let totalPages       = 1;
+    let lastDupes        = 0;
+    let pollInterval     = null;
+    let retryPollInterval = null;
+    let activeFilter     = "all";
 
     /* ── Animated counter ── */
     function counter(el, target) {
@@ -729,7 +806,37 @@
       ["all","found","notfound","dupes"].forEach(function(id) {
         document.getElementById("tab-" + id).classList.toggle("active", id === f);
       });
+      document.getElementById("retryBanner").classList.toggle("visible", f === "notfound");
       fetchResults(1);
+    }
+
+    async function startRetryPj() {
+      const btn = document.getElementById("btnRetryPj");
+      btn.disabled = true;
+      const res = await fetch("/api/retry-pj", { method: "POST" });
+      if (!res.ok) { btn.disabled = false; return; }
+      document.getElementById("retryProgress").classList.add("visible");
+      if (!retryPollInterval) retryPollInterval = setInterval(pollRetryPj, 1200);
+    }
+
+    async function pollRetryPj() {
+      let state;
+      try { state = await fetch("/api/retry-pj/status").then(r => r.json()); }
+      catch { return; }
+
+      const pct = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
+      document.getElementById("retryFill").style.width = pct + "%";
+      document.getElementById("retryLabel").textContent =
+        state.status === "done"
+          ? state.found + " trouvé(s) sur " + state.total
+          : state.progress + " / " + state.total;
+
+      if (state.status === "done") {
+        clearInterval(retryPollInterval); retryPollInterval = null;
+        document.getElementById("btnRetryPj").disabled = false;
+        fetchStats();
+        fetchResults(1);
+      }
     }
 
     async function fetchResults(page) {

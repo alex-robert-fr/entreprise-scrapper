@@ -1,9 +1,10 @@
 import "dotenv/config";
 import path from "path";
 import express from "express";
-import { initDb, getStats, getAll, getPaginated } from "./dedup";
+import { initDb, getStats, getAll, getPaginated, getNotFound, updateRecord } from "./dedup";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
+import { findPhonePJ, closeBrowser } from "./pagesJaunes";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -16,11 +17,27 @@ interface ScrapeState {
   result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
 }
 
+interface RetryPjState {
+  status: "idle" | "running" | "done";
+  progress: number;
+  total: number;
+  current: string;
+  found: number;
+}
+
 let scrapeState: ScrapeState = {
   status: "idle",
   progress: 0,
   total: 0,
   current: "",
+};
+
+let retryPjState: RetryPjState = {
+  status: "idle",
+  progress: 0,
+  total: 0,
+  current: "",
+  found: 0,
 };
 
 app.use(express.json());
@@ -96,6 +113,47 @@ app.post("/api/scrape", (req, res) => {
 
 app.get("/api/status", (_req, res) => {
   res.json(scrapeState);
+});
+
+app.get("/api/retry-pj/status", (_req, res) => {
+  res.json(retryPjState);
+});
+
+app.post("/api/retry-pj", (req, res) => {
+  if (retryPjState.status === "running" || scrapeState.status === "running") {
+    res.status(409).json({ error: "Un scrape est déjà en cours" });
+    return;
+  }
+
+  const records = getNotFound();
+  if (records.length === 0) {
+    res.status(200).json({ message: "Aucun enregistrement non trouvé" });
+    return;
+  }
+
+  retryPjState = { status: "running", progress: 0, total: records.length, current: "", found: 0 };
+
+  (async () => {
+    try {
+      for (const record of records) {
+        retryPjState.current = record.nom;
+        const phone = await findPhonePJ(record.nom, record.ville);
+        if (phone) {
+          updateRecord(record.siret, phone, "pagesjaunes");
+          retryPjState.found++;
+        }
+        retryPjState.progress++;
+      }
+    } finally {
+      await closeBrowser();
+      retryPjState.status = "done";
+    }
+  })().catch((err) => {
+    retryPjState.status = "done";
+    retryPjState.current = `Erreur : ${err instanceof Error ? err.message : String(err)}`;
+  });
+
+  res.json({ message: "Retry Pages Jaunes lancé", total: records.length });
 });
 
 app.get("/api/export", (_req, res) => {

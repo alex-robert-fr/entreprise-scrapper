@@ -98,6 +98,18 @@ const SELECT_FIELDS = `
   effectif_tranche as effectifTranche, source, scraped_at
 `;
 
+export function getNotFound(): ScrapedRecord[] {
+  return requireDb()
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped WHERE source = 'non_trouvé' ORDER BY scraped_at DESC`)
+    .all() as ScrapedRecord[];
+}
+
+export function updateRecord(siret: string, telephone: string, source: string): void {
+  requireDb()
+    .prepare("UPDATE scraped SET telephone = ?, source = ?, scraped_at = ? WHERE siret = ?")
+    .run(telephone, source, new Date().toISOString(), siret);
+}
+
 export function getAll(): ScrapedRecord[] {
   return requireDb()
     .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC`)
