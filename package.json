@@ -1,0 +1,28 @@
+{
+  "name": "entreprise-scrapper",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node src/main.ts",
+    "server": "ts-node src/server.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11",
+    "csv-writer": "^1",
+    "dotenv": "^16",
+    "express": "^4",
+    "minimist": "^1",
+    "ora": "^5",
+    "playwright": "^1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7",
+    "@types/express": "^4",
+    "@types/minimist": "^1",
+    "@types/node": "^22",
+    "ts-node": "^10",
+    "typescript": "^5"
+  }
+}
