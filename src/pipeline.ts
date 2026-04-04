@@ -1,6 +1,7 @@
 import { Etablissement } from "./sirene";
 import { initDb, isKnown, insert, ScrapedRecord } from "./dedup";
 import { findPhoneGoogle } from "./googleMaps";
+import { fetchDirigeants } from "./annuaireEntreprises";
 
 export interface PipelineResult {
   newCount: number;
@@ -35,6 +36,9 @@ export async function runPipeline(
       onProgress?.(++i, etab.nom);
 
       const phone = await findPhoneGoogle(etab.nom, etab.ville);
+      const siren = etab.siret.substring(0, 9);
+      const dirigeants = await fetchDirigeants(siren);
+      await new Promise((r) => setTimeout(r, 200));
       const scrapeSource = phone !== null ? "google" : "non_trouvé";
 
       if (phone === null) {
@@ -52,6 +56,7 @@ export async function runPipeline(
         telephone: phone,
         effectifTranche: etab.effectifTranche,
         formeJuridique: etab.formeJuridique,
+        dirigeants,
         source: scrapeSource,
         scraped_at: new Date().toISOString(),
       };
