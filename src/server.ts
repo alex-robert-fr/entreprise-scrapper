@@ -86,7 +86,7 @@ app.get("/api/status", (_req, res) => {
 app.get("/api/export", (_req, res) => {
   const records = getAll();
 
-  const header = "siret,nom,telephone,ville,scraped_at,source";
+  const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,source,scraped_at";
   const rows = records.map((r) => {
     const escape = (v: string | null) => {
       if (!v) return "";
@@ -95,7 +95,7 @@ app.get("/api/export", (_req, res) => {
       }
       return v;
     };
-    return [r.siret, r.nom, r.telephone, r.ville, r.scraped_at, r.source]
+    return [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.source, r.scraped_at]
       .map(escape)
       .join(",");
   });
