@@ -2,5 +2,6 @@ node_modules/
 dist/
 .env
 data/scraper.db
-exports/
+exports/*
+!exports/.gitkeep
 .claude/plans/
