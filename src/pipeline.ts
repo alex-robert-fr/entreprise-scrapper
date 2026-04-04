@@ -30,13 +30,14 @@ export async function runPipeline(
 
   let i = 0;
   for (const etab of etablissements) {
-    if (limit !== undefined && newCount + notFoundCount >= limit) break;
     onProgress?.(++i, etablissements.length, etab.nom);
 
     if (isKnown(etab.siret)) {
       alreadyKnown++;
       continue;
     }
+
+    if (limit !== undefined && newCount + notFoundCount >= limit) break;
 
     let phone = await findPhoneGoogle(etab.nom, etab.ville);
     let source: string;

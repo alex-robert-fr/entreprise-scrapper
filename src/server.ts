@@ -46,12 +46,15 @@ app.post("/api/scrape", (req, res) => {
     return;
   }
 
-  const { region, departement, all, limit } = req.body as {
+  const { region, departement, all, limit: rawLimit } = req.body as {
     region?: string;
     departement?: string;
     all?: boolean;
     limit?: number;
   };
+  const limit = typeof rawLimit === "number" && Number.isFinite(rawLimit)
+    ? Math.max(1, Math.min(rawLimit, 10000))
+    : undefined;
 
   scrapeState = { status: "running", progress: 0, total: 0, current: "" };
 
