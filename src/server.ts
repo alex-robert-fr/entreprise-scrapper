@@ -37,7 +37,11 @@ app.get("/api/stats", (_req, res) => {
 app.get("/api/results", (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
-  res.json(getPaginated(page, limit));
+  const rawSource = req.query.source as string | undefined;
+  const sourceFilter =
+    rawSource === "found"      ? "found"      :
+    rawSource === "non_trouvé" ? "non_trouvé" : undefined;
+  res.json(getPaginated(page, limit, sourceFilter));
 });
 
 app.post("/api/scrape", (req, res) => {

@@ -389,10 +389,14 @@
       position: relative;
       border-right: 1px solid var(--border);
       transition: background 0.15s;
+      cursor: pointer;
+      user-select: none;
     }
 
     .stat:last-child { border-right: none; }
     .stat:hover { background: var(--bg-card); }
+
+    .stat.active { background: var(--bg-card); }
 
     .stat::after {
       content: '';
@@ -403,7 +407,8 @@
       transition: background 0.2s;
     }
 
-    .stat:first-child::after {
+    .stat:first-child::after,
+    .stat.active::after {
       background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
     }
 
@@ -634,19 +639,19 @@
   <main class="main">
 
     <div class="stats-bar">
-      <div class="stat">
+      <div class="stat active" id="tab-all" onclick="setFilter('all')">
         <div class="stat-label">Total scrapés</div>
         <div class="stat-value" id="statTotal">0</div>
       </div>
-      <div class="stat">
+      <div class="stat" id="tab-found" onclick="setFilter('found')">
         <div class="stat-label">Avec téléphone</div>
         <div class="stat-value" id="statFound">0</div>
       </div>
-      <div class="stat">
+      <div class="stat" id="tab-notfound" onclick="setFilter('notfound')">
         <div class="stat-label">Non trouvés</div>
         <div class="stat-value" id="statNotFound">0</div>
       </div>
-      <div class="stat">
+      <div class="stat" id="tab-dupes" onclick="setFilter('dupes')">
         <div class="stat-label">Doublons évités</div>
         <div class="stat-value" id="statDuplicates">0</div>
       </div>
@@ -680,10 +685,11 @@
   </main>
 
   <script>
-    let currentPage = 1;
-    let totalPages  = 1;
-    let lastDupes   = 0;
+    let currentPage  = 1;
+    let totalPages   = 1;
+    let lastDupes    = 0;
     let pollInterval = null;
+    let activeFilter = "all";
 
     /* ── Animated counter ── */
     function counter(el, target) {
@@ -718,8 +724,20 @@
       });
     }
 
+    function setFilter(f) {
+      activeFilter = f;
+      ["all","found","notfound","dupes"].forEach(function(id) {
+        document.getElementById("tab-" + id).classList.toggle("active", id === f);
+      });
+      fetchResults(1);
+    }
+
     async function fetchResults(page) {
-      const data = await fetch("/api/results?page=" + page + "&limit=20").then(r => r.json());
+      let url = "/api/results?page=" + page + "&limit=20";
+      if (activeFilter === "found")    url += "&source=found";
+      if (activeFilter === "notfound") url += "&source=non_trouv%C3%A9";
+      // "all" et "dupes" → pas de filtre (tous les enregistrements en base)
+      const data = await fetch(url).then(r => r.json());
       currentPage = data.page;
       totalPages  = data.totalPages;
 

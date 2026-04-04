@@ -104,15 +104,26 @@ export function getAll(): ScrapedRecord[] {
     .all() as ScrapedRecord[];
 }
 
-export function getPaginated(page: number, limit: number): PaginatedResult<ScrapedRecord> {
+export function getPaginated(
+  page: number,
+  limit: number,
+  sourceFilter?: "found" | "non_trouvé"
+): PaginatedResult<ScrapedRecord> {
   if (limit < 1) throw new Error("limit doit être >= 1");
   const conn = requireDb();
-  const { count } = conn.prepare("SELECT COUNT(*) as count FROM scraped").get() as { count: number };
+
+  const where =
+    sourceFilter === "found"      ? "WHERE source != 'non_trouvé'" :
+    sourceFilter === "non_trouvé" ? "WHERE source = 'non_trouvé'"  : "";
+
+  const { count } = conn
+    .prepare(`SELECT COUNT(*) as count FROM scraped ${where}`)
+    .get() as { count: number };
   const totalPages = Math.max(1, Math.ceil(count / limit));
   const safePage = Math.max(1, Math.min(page, totalPages));
   const offset = (safePage - 1) * limit;
   const data = conn
-    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC LIMIT ? OFFSET ?`)
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ${where} ORDER BY scraped_at DESC LIMIT ? OFFSET ?`)
     .all(limit, offset) as ScrapedRecord[];
   return { data, total: count, page: safePage, totalPages };
 }
