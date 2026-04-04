@@ -16,6 +16,13 @@ export interface ScrapedStats {
   notFound: number;
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 const DB_PATH = path.join(__dirname, "..", "data", "scraper.db");
 
 let db: Database.Database | undefined;
@@ -71,4 +78,16 @@ export function getAll(): ScrapedRecord[] {
   return requireDb()
     .prepare("SELECT * FROM scraped ORDER BY scraped_at DESC")
     .all() as ScrapedRecord[];
+}
+
+export function getPaginated(page: number, limit: number): PaginatedResult<ScrapedRecord> {
+  const db = requireDb();
+  const { count } = db.prepare("SELECT COUNT(*) as count FROM scraped").get() as { count: number };
+  const totalPages = Math.max(1, Math.ceil(count / limit));
+  const safePage = Math.max(1, Math.min(page, totalPages));
+  const offset = (safePage - 1) * limit;
+  const data = db
+    .prepare("SELECT * FROM scraped ORDER BY scraped_at DESC LIMIT ? OFFSET ?")
+    .all(limit, offset) as ScrapedRecord[];
+  return { data, total: count, page: safePage, totalPages };
 }
