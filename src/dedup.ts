@@ -28,6 +28,53 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+export interface ResultFilters {
+  sourceFilter?: "found" | "non_trouvé";
+  sourceExact?:  "google" | "pagesjaunes" | "non_trouvé";
+  nom?:          string;
+  ville?:        string;
+  phoneType?:    "mobile" | "fixe";
+  effectif?:     string;
+  departement?:  string;
+}
+
+export interface FilterOptions {
+  villes:       string[];
+  sources:      string[];
+  effectifs:    Array<{ value: string; label: string }>;
+  departements: string[];
+}
+
+const EFFECTIF_LABELS: Record<string, string> = {
+  "11": "10-19 sal.",
+  "12": "10-19 sal.",
+  "21": "20-49 sal.",
+  "22": "50-99 sal.",
+  "31": "100+ sal.",
+};
+
+function buildWhereClause(filters: ResultFilters): { where: string; params: unknown[] } {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters.sourceExact) {
+    conditions.push("source = ?");
+    params.push(filters.sourceExact);
+  } else if (filters.sourceFilter === "found") {
+    conditions.push("source != 'non_trouvé'");
+  } else if (filters.sourceFilter === "non_trouvé") {
+    conditions.push("source = 'non_trouvé'");
+  }
+
+  if (filters.phoneType) conditions.push(phoneTypeCondition(filters.phoneType));
+  if (filters.nom?.trim())         { conditions.push("nom LIKE ?");             params.push("%" + filters.nom.trim() + "%"); }
+  if (filters.ville?.trim())       { conditions.push("ville LIKE ?");           params.push("%" + filters.ville.trim() + "%"); }
+  if (filters.effectif?.trim())    { conditions.push("effectif_tranche = ?");   params.push(filters.effectif.trim()); }
+  if (filters.departement?.trim()) { conditions.push("code_postal LIKE ?");     params.push(filters.departement.trim() + "%"); }
+
+  return { where: conditions.length ? "WHERE " + conditions.join(" AND ") : "", params };
+}
+
 const DB_PATH = path.join(__dirname, "..", "data", "scraper.db");
 
 let db: Database.Database | undefined;
@@ -114,12 +161,8 @@ export function updateRecord(siret: string, telephone: string, source: string): 
     .run(telephone, source, new Date().toISOString(), siret);
 }
 
-export function getAll(phoneType?: "mobile" | "fixe", ville?: string): ScrapedRecord[] {
-  const conditions: string[] = [];
-  const params: unknown[] = [];
-  if (phoneType) conditions.push(phoneTypeCondition(phoneType));
-  if (ville && ville.trim()) { conditions.push("ville LIKE ?"); params.push("%" + ville.trim() + "%"); }
-  const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+export function getAll(filters: ResultFilters = {}): ScrapedRecord[] {
+  const { where, params } = buildWhereClause(filters);
   return requireDb()
     .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ${where} ORDER BY scraped_at DESC`)
     .all(params) as ScrapedRecord[];
@@ -128,33 +171,11 @@ export function getAll(phoneType?: "mobile" | "fixe", ville?: string): ScrapedRe
 export function getPaginated(
   page: number,
   limit: number,
-  sourceFilter?: "found" | "non_trouvé",
-  nom?: string,
-  phoneType?: "mobile" | "fixe",
-  ville?: string
+  filters: ResultFilters = {}
 ): PaginatedResult<ScrapedRecord> {
   if (limit < 1) throw new Error("limit doit être >= 1");
   const conn = requireDb();
-
-  const conditions: string[] = [];
-  const params: unknown[] = [];
-
-  if (sourceFilter === "found")      conditions.push("source != 'non_trouvé'");
-  if (sourceFilter === "non_trouvé") conditions.push("source = 'non_trouvé'");
-
-  if (phoneType) conditions.push(phoneTypeCondition(phoneType));
-
-  if (nom && nom.trim()) {
-    conditions.push("nom LIKE ?");
-    params.push("%" + nom.trim() + "%");
-  }
-
-  if (ville && ville.trim()) {
-    conditions.push("ville LIKE ?");
-    params.push("%" + ville.trim() + "%");
-  }
-
-  const where = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+  const { where, params } = buildWhereClause(filters);
 
   const { count } = conn
     .prepare(`SELECT COUNT(*) as count FROM scraped ${where}`)
@@ -166,4 +187,27 @@ export function getPaginated(
     .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ${where} ORDER BY scraped_at DESC LIMIT ? OFFSET ?`)
     .all([...params, limit, offset]) as ScrapedRecord[];
   return { data, total: count, page: safePage, totalPages };
+}
+
+export function getFilterOptions(): FilterOptions {
+  const conn = requireDb();
+
+  const villes = (conn
+    .prepare("SELECT DISTINCT ville FROM scraped WHERE ville IS NOT NULL AND ville != '' ORDER BY ville")
+    .all() as { ville: string }[]).map(r => r.ville);
+
+  const sources = (conn
+    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL ORDER BY source")
+    .all() as { source: string }[]).map(r => r.source);
+
+  const effectifs = (conn
+    .prepare("SELECT DISTINCT effectif_tranche FROM scraped WHERE effectif_tranche IS NOT NULL ORDER BY effectif_tranche")
+    .all() as { effectif_tranche: string }[])
+    .map(r => ({ value: r.effectif_tranche, label: EFFECTIF_LABELS[r.effectif_tranche] ?? r.effectif_tranche }));
+
+  const departements = (conn
+    .prepare("SELECT DISTINCT SUBSTR(code_postal, 1, 2) as dep FROM scraped WHERE code_postal IS NOT NULL AND code_postal != '' ORDER BY dep")
+    .all() as { dep: string }[]).map(r => r.dep);
+
+  return { villes, sources, effectifs, departements };
 }
