@@ -826,6 +826,13 @@
         </div>
 
         <div class="filter-field">
+          <label>Forme jur.</label>
+          <select id="fFormeJuridique" onchange="onAdvFilter()">
+            <option value="">Toutes</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
           <label>Téléphone</label>
           <select id="fPhoneType" onchange="onAdvFilter()">
             <option value="">Tous</option>
@@ -854,6 +861,7 @@
             <th>Ville</th>
             <th>CP</th>
             <th>Effectif</th>
+            <th>Forme jur.</th>
             <th title="Cliquer pour copier">Téléphone</th>
             <th>Source</th>
           </tr>
@@ -936,13 +944,15 @@
       var dep    = document.getElementById("fDep").value;
       var src    = document.getElementById("fSource").value;
       var eff    = document.getElementById("fEffectif").value;
+      var fj     = document.getElementById("fFormeJuridique").value;
       var phone  = document.getElementById("fPhoneType").value;
-      if (nom)   params.push("nom="         + encodeURIComponent(nom));
-      if (ville) params.push("ville="       + encodeURIComponent(ville));
-      if (dep)   params.push("departement=" + encodeURIComponent(dep));
-      if (src)   params.push("sourceExact=" + encodeURIComponent(src));
-      if (eff)   params.push("effectif="    + encodeURIComponent(eff));
-      if (phone) params.push("phoneType="   + encodeURIComponent(phone));
+      if (nom)   params.push("nom="            + encodeURIComponent(nom));
+      if (ville) params.push("ville="          + encodeURIComponent(ville));
+      if (dep)   params.push("departement="    + encodeURIComponent(dep));
+      if (src)   params.push("sourceExact="    + encodeURIComponent(src));
+      if (eff)   params.push("effectif="       + encodeURIComponent(eff));
+      if (fj)    params.push("formeJuridique=" + encodeURIComponent(fj));
+      if (phone) params.push("phoneType="      + encodeURIComponent(phone));
       return params;
     }
 
@@ -959,7 +969,7 @@
       tbody.innerHTML = "";
 
       if (!data.data.length) {
-        tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
         return;
       }
 
@@ -971,6 +981,7 @@
         var tdVille = document.createElement("td"); tdVille.className = "col-ville"; tdVille.textContent = r.ville || "—";
         var tdCp   = document.createElement("td"); tdCp.className   = "col-ville"; tdCp.textContent   = r.codePostal || "—";
         var tdEff  = document.createElement("td"); tdEff.className  = "col-ville"; tdEff.textContent  = EFFECTIF_LABELS[r.effectifTranche] || r.effectifTranche || "—";
+        var tdFj   = document.createElement("td"); tdFj.className   = "col-ville"; tdFj.textContent   = r.formeJuridique || "—";
 
         var phone = r.telephone || "—";
         var tdTel = document.createElement("td"); tdTel.className = "col-tel";
@@ -989,7 +1000,7 @@
         var tdSrc = document.createElement("td"); tdSrc.appendChild(badge);
 
         var tr = document.createElement("tr");
-        tr.append(tdNom, tdVille, tdCp, tdEff, tdTel, tdSrc);
+        tr.append(tdNom, tdVille, tdCp, tdEff, tdFj, tdTel, tdSrc);
         tbody.appendChild(tr);
       });
     }
@@ -1000,7 +1011,7 @@
     }
 
     function resetAdvFilters() {
-      ["fNom","fVille","fDep","fSource","fEffectif","fPhoneType"].forEach(function(id) {
+      ["fNom","fVille","fDep","fSource","fEffectif","fFormeJuridique","fPhoneType"].forEach(function(id) {
         document.getElementById(id).value = "";
       });
       fetchAdvResults();
@@ -1029,6 +1040,11 @@
       var selEff = document.getElementById("fEffectif");
       opts.effectifs.forEach(function(e) {
         var o = document.createElement("option"); o.value = e.value; o.textContent = e.label; selEff.appendChild(o);
+      });
+
+      var selFj = document.getElementById("fFormeJuridique");
+      opts.formesJuridiques.forEach(function(f) {
+        var o = document.createElement("option"); o.value = f; o.textContent = f; selFj.appendChild(o);
       });
     }
 
