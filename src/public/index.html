@@ -725,15 +725,19 @@
         tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><strong>Aucun résultat</strong>Lancez un scrape pour commencer la prospection.</div></td></tr>';
       } else {
         data.data.forEach(function(r) {
-          const tr = document.createElement("tr");
           const bc = r.source === "google" ? "b-google"
                    : r.source === "pagesjaunes" ? "b-pagesjaunes" : "b-non";
           const sl = r.source === "non_trouvé" ? "non trouvé" : r.source;
-          tr.innerHTML =
-            '<td class="col-nom">'  + esc(r.nom)                   + '</td>' +
-            '<td class="col-ville">'+ esc(r.ville)                  + '</td>' +
-            '<td class="col-tel">'  + esc(r.telephone || '—')       + '</td>' +
-            '<td><span class="badge ' + bc + '">' + esc(sl) + '</span></td>';
+
+          const tdNom   = Object.assign(document.createElement("td"), { className: "col-nom",   textContent: r.nom });
+          const tdVille = Object.assign(document.createElement("td"), { className: "col-ville", textContent: r.ville });
+          const tdTel   = Object.assign(document.createElement("td"), { className: "col-tel",   textContent: r.telephone || "—" });
+          const badge   = Object.assign(document.createElement("span"), { className: "badge " + bc, textContent: sl });
+          const tdSrc   = document.createElement("td");
+          tdSrc.appendChild(badge);
+
+          const tr = document.createElement("tr");
+          tr.append(tdNom, tdVille, tdTel, tdSrc);
           tbody.appendChild(tr);
         });
       }
@@ -783,7 +787,12 @@
 
     /* ── Status polling ── */
     async function pollStatus() {
-      const state = await fetch("/api/status").then(r => r.json());
+      let state;
+      try {
+        state = await fetch("/api/status").then(r => r.json());
+      } catch {
+        return;
+      }
 
       const dot  = document.getElementById("statusDot");
       const text = document.getElementById("statusText");
