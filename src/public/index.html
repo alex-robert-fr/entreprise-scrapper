@@ -552,6 +552,107 @@
     .toast.warn    { border-color: rgba(245,158,11,0.3); color: var(--warn); }
     .toast.error   { border-color: rgba(239,68,68,0.3); color: #f87171; }
 
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-hover);
+      border-radius: 8px;
+      width: min(860px, 92vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(12px);
+      transition: transform 0.18s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+    .modal-subtitle {
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--bg-elevated); }
+
+    .modal-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-body table { width: 100%; border-collapse: collapse; }
+    .modal-body thead th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-card);
+      padding: 0.55rem 0.9rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-body tbody td {
+      padding: 0.55rem 0.9rem;
+      font-size: 0.72rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .modal-body tbody tr:last-child td { border-bottom: none; }
+
+    .dup-badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .dup-badge.kept     { background: var(--success-dim); color: var(--success); }
+    .dup-badge.archived { background: var(--bg-elevated);  color: var(--muted); }
+
+    tr.dup-row { cursor: pointer; }
+    tr.dup-row:hover td { background: var(--bg-elevated); }
+
     /* ── NAVIGATION VUES ── */
     .nav-tabs {
       display: flex;
@@ -665,8 +766,9 @@
     <!-- Navigation vues -->
     <div class="s-section">
       <div class="nav-tabs">
-        <button class="nav-tab active" id="navResults" onclick="setView('results')">Résultats</button>
-        <button class="nav-tab"        id="navFilters" onclick="setView('filters')">Filtres</button>
+        <button class="nav-tab active" id="navResults"  onclick="setView('results')">Résultats</button>
+        <button class="nav-tab"        id="navFilters"  onclick="setView('filters')">Filtres</button>
+        <button class="nav-tab"        id="navDuplicates" onclick="setView('duplicates')">Doublons</button>
       </div>
     </div>
 
@@ -862,6 +964,7 @@
             <th>CP</th>
             <th>Effectif</th>
             <th>Forme jur.</th>
+            <th>Dirigeants</th>
             <th title="Cliquer pour copier">Téléphone</th>
             <th>Source</th>
           </tr>
@@ -872,7 +975,97 @@
 
   </div><!-- /view-filters -->
 
+  <!-- Vue Doublons -->
+  <div class="view" id="view-duplicates">
+
+    <!-- Bandeau archivés -->
+    <div style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 1.2rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-size:0.67rem;color:var(--muted)">
+      <span>SIRET archivés (ne seront pas re-scrapés) :</span>
+      <strong id="excludedCount" style="color:var(--text)">—</strong>
+    </div>
+
+    <!-- Section : doublons par numéro -->
+    <div class="filter-bar" style="align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border);margin-bottom:0">
+      <div style="flex:1">
+        <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Même numéro de téléphone</div>
+        <div class="filter-count" id="dupPhoneSummary">Cliquez sur Analyser.</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-shrink:0">
+        <button class="btn-export" onclick="fetchPhoneDuplicates()">⟳ &nbsp;Analyser</button>
+        <button class="btn-export" id="btnCleanPhone" style="background:var(--accent);color:#fff;display:none" onclick="cleanPhoneDups()">✕ &nbsp;Archiver les doublons</button>
+      </div>
+    </div>
+
+    <div class="table-area" style="max-height:35vh">
+      <table>
+        <thead>
+          <tr>
+            <th>Numéro</th>
+            <th>×</th>
+            <th>Établissements — <span style="color:var(--success)">conservé</span> / <span style="color:var(--muted)">archivé</span></th>
+          </tr>
+        </thead>
+        <tbody id="dupPhoneBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Section : doublons par nom -->
+    <div class="filter-bar" style="align-items:flex-start;gap:1rem;border-top:1px solid var(--border);margin-top:0">
+      <div style="flex:1">
+        <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Même nom d'entreprise (sans téléphone, avec doublon qui en a un)</div>
+        <div class="filter-count" id="dupNameSummary">Cliquez sur Analyser.</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-shrink:0">
+        <button class="btn-export" onclick="fetchNameDuplicates()">⟳ &nbsp;Analyser</button>
+        <button class="btn-export" id="btnCleanName" style="background:var(--accent);color:#fff;display:none" onclick="cleanNameDups()">✕ &nbsp;Archiver les sans tél.</button>
+      </div>
+    </div>
+
+    <div class="table-area" style="max-height:35vh">
+      <table>
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>×</th>
+            <th>Entrées — <span style="color:var(--success)">avec tél. = conservé</span> / <span style="color:var(--muted)">sans tél. = archivé</span></th>
+          </tr>
+        </thead>
+        <tbody id="dupNameBody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /view-duplicates -->
+
   </main>
+
+  <!-- Modal doublons -->
+  <div class="modal-overlay" id="dupModal" onclick="closeDupModal(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTitle">Détail du groupe</div>
+          <div class="modal-subtitle" id="modalSubtitle"></div>
+        </div>
+        <button class="modal-close" onclick="closeDupModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Statut</th>
+              <th>Nom</th>
+              <th>Ville</th>
+              <th>SIRET</th>
+              <th>Téléphone</th>
+              <th>Source</th>
+              <th>Scrappé le</th>
+            </tr>
+          </thead>
+          <tbody id="modalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
@@ -931,9 +1124,172 @@
       activeView = view;
       document.getElementById("view-results").classList.toggle("active", view === "results");
       document.getElementById("view-filters").classList.toggle("active", view === "filters");
+      document.getElementById("view-duplicates").classList.toggle("active", view === "duplicates");
       document.getElementById("navResults").classList.toggle("active", view === "results");
       document.getElementById("navFilters").classList.toggle("active", view === "filters");
+      document.getElementById("navDuplicates").classList.toggle("active", view === "duplicates");
       if (view === "filters") fetchAdvResults();
+      if (view === "duplicates") { fetchExcludedCount(); fetchPhoneDuplicates(); fetchNameDuplicates(); }
+    }
+
+    /* ── Doublons helpers ── */
+    function fetchExcludedCount() {
+      fetch("/api/duplicates/excluded-count")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          document.getElementById("excludedCount").textContent = data.count;
+        });
+    }
+
+    function renderDupGroups(groups, tbody, keyField, isKeptFn) {
+      tbody.innerHTML = "";
+      groups.forEach(function(g) {
+        var tr = document.createElement("tr");
+        tr.className = "dup-row";
+
+        var tdKey = document.createElement("td");
+        tdKey.className = "col-tel";
+        tdKey.textContent = g[keyField];
+        tdKey.title = g[keyField];
+
+        var tdCount = document.createElement("td");
+        tdCount.textContent = "×" + g.count;
+
+        var tdEntries = document.createElement("td");
+        tdEntries.className = "col-nom";
+        g.records.forEach(function(r, idx) {
+          var kept = isKeptFn(r, idx);
+          var span = document.createElement("span");
+          var tel = r.telephone ? " [" + r.telephone + "]" : " [sans tél.]";
+          span.textContent = r.nom + " (" + (r.ville || "?") + ")" + tel;
+          span.style.color = kept ? "var(--success)" : "var(--muted)";
+          if (idx > 0) { var sep = document.createTextNode("  |  "); tdEntries.appendChild(sep); }
+          tdEntries.appendChild(span);
+        });
+
+        var hint = document.createElement("span");
+        hint.style.cssText = "margin-left:0.6rem;font-size:0.6rem;color:var(--dim)";
+        hint.textContent = "↗ détail";
+        tdEntries.appendChild(hint);
+
+        tr.append(tdKey, tdCount, tdEntries);
+        tr.addEventListener("click", function() { openDupModal(g, keyField, isKeptFn); });
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ── Modal ── */
+    function openDupModal(group, keyField, isKeptFn) {
+      var keyVal = group[keyField];
+      document.getElementById("modalTitle").textContent = keyField === "telephone"
+        ? "Numéro : " + keyVal
+        : keyVal;
+      document.getElementById("modalSubtitle").textContent =
+        group.count + " enregistrement(s) — cliquer en dehors pour fermer";
+
+      var tbody = document.getElementById("modalBody");
+      tbody.innerHTML = "";
+
+      group.records.forEach(function(r, idx) {
+        var kept = isKeptFn(r, idx);
+        var tr = document.createElement("tr");
+
+        var tdStatus = document.createElement("td");
+        var badge = document.createElement("span");
+        badge.className = "dup-badge " + (kept ? "kept" : "archived");
+        badge.textContent = kept ? "conservé" : "archivé";
+        tdStatus.appendChild(badge);
+
+        var tdNom    = document.createElement("td"); tdNom.textContent = r.nom;
+        var tdVille  = document.createElement("td"); tdVille.textContent = r.ville || "—";
+        var tdSiret  = document.createElement("td"); tdSiret.style.fontFamily = "var(--mono)"; tdSiret.textContent = r.siret;
+        var tdTel    = document.createElement("td"); tdTel.textContent = r.telephone || "—";
+        var tdSource = document.createElement("td"); tdSource.textContent = r.source;
+        var tdDate   = document.createElement("td"); tdDate.textContent = r.scraped_at ? r.scraped_at.slice(0, 10) : "—";
+
+        tr.style.opacity = kept ? "1" : "0.5";
+        tr.append(tdStatus, tdNom, tdVille, tdSiret, tdTel, tdSource, tdDate);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("dupModal").classList.add("open");
+    }
+
+    function closeDupModal(e) {
+      if (e && e.target !== document.getElementById("dupModal")) return;
+      document.getElementById("dupModal").classList.remove("open");
+    }
+
+    /* ── Doublons par numéro ── */
+    function fetchPhoneDuplicates() {
+      fetch("/api/duplicates/phone")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var summary = document.getElementById("dupPhoneSummary");
+          var btnClean = document.getElementById("btnCleanPhone");
+          var tbody = document.getElementById("dupPhoneBody");
+
+          if (data.totalDuplicateGroups === 0) {
+            summary.textContent = "Aucun doublon de numéro détecté.";
+            btnClean.style.display = "none";
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong></div></td></tr>';
+            return;
+          }
+          summary.textContent = data.totalDuplicateGroups + " numéro(s) en double — " + data.totalToDelete + " à archiver (SIRET mémorisé, non re-scrapé)";
+          btnClean.style.display = "";
+          // conservé = index 0 (source confirmée > plus récent)
+          renderDupGroups(data.groups, tbody, "telephone", function(_r, idx) { return idx === 0; });
+        })
+        .catch(function() { toast("Erreur lors de l'analyse des doublons de numéros"); });
+    }
+
+    function cleanPhoneDups() {
+      if (!confirm("Archiver les doublons de numéros ?\n\nL'entrée avec téléphone confirmé (Google) est conservée, sinon la plus récente.\nLes autres sont retirées de la base mais leurs SIRET sont mémorisés : ils ne seront pas re-scrapés.")) return;
+      fetch("/api/duplicates/phone/clean", { method: "POST" })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          toast(data.deleted + " enregistrement(s) archivé(s)");
+          fetchExcludedCount();
+          fetchPhoneDuplicates();
+          fetchStats();
+        })
+        .catch(function() { toast("Erreur lors de l'archivage"); });
+    }
+
+    /* ── Doublons par nom ── */
+    function fetchNameDuplicates() {
+      fetch("/api/duplicates/name")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var summary = document.getElementById("dupNameSummary");
+          var btnClean = document.getElementById("btnCleanName");
+          var tbody = document.getElementById("dupNameBody");
+
+          if (data.totalDuplicateGroups === 0) {
+            summary.textContent = "Aucun doublon de nom détecté (avec et sans tél.).";
+            btnClean.style.display = "none";
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong></div></td></tr>';
+            return;
+          }
+          summary.textContent = data.totalDuplicateGroups + " nom(s) concerné(s) — " + data.totalToDelete + " entrée(s) sans tél. à archiver (celles avec tél. différents sont conservées)";
+          btnClean.style.display = "";
+          // conservé = a un téléphone (index 0 dans l'ordre trié)
+          renderDupGroups(data.groups, tbody, "nom", function(r) { return !!(r.telephone); });
+        })
+        .catch(function() { toast("Erreur lors de l'analyse des doublons de noms"); });
+    }
+
+    function cleanNameDups() {
+      if (!confirm("Archiver les entrées sans téléphone ?\n\nSeules les entrées SANS numéro sont archivées, uniquement si le même nom existe avec un téléphone.\nLes entrées avec des numéros différents ne sont pas touchées.\nLes SIRET archivés ne seront pas re-scrapés.")) return;
+      fetch("/api/duplicates/name/clean", { method: "POST" })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          toast(data.deleted + " enregistrement(s) archivé(s)");
+          fetchExcludedCount();
+          fetchNameDuplicates();
+          fetchStats();
+        })
+        .catch(function() { toast("Erreur lors du nettoyage"); });
     }
 
     /* ── Filtres avancés ── */
@@ -969,7 +1325,7 @@
       tbody.innerHTML = "";
 
       if (!data.data.length) {
-        tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
         return;
       }
 
@@ -982,6 +1338,7 @@
         var tdCp   = document.createElement("td"); tdCp.className   = "col-ville"; tdCp.textContent   = r.codePostal || "—";
         var tdEff  = document.createElement("td"); tdEff.className  = "col-ville"; tdEff.textContent  = EFFECTIF_LABELS[r.effectifTranche] || r.effectifTranche || "—";
         var tdFj   = document.createElement("td"); tdFj.className   = "col-ville"; tdFj.textContent   = r.formeJuridique || "—";
+        var tdDir  = document.createElement("td"); tdDir.className  = "col-nom";   tdDir.textContent  = r.dirigeants || "—"; tdDir.title = r.dirigeants || "";
 
         var phone = r.telephone || "—";
         var tdTel = document.createElement("td"); tdTel.className = "col-tel";
@@ -1000,7 +1357,7 @@
         var tdSrc = document.createElement("td"); tdSrc.appendChild(badge);
 
         var tr = document.createElement("tr");
-        tr.append(tdNom, tdVille, tdCp, tdEff, tdFj, tdTel, tdSrc);
+        tr.append(tdNom, tdVille, tdCp, tdEff, tdFj, tdDir, tdTel, tdSrc);
         tbody.appendChild(tr);
       });
     }

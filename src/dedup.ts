@@ -11,6 +11,7 @@ export interface ScrapedRecord {
   telephone: string | null;
   effectifTranche: string;
   formeJuridique: string;
+  dirigeants: string | null;
   source: string;
   scraped_at: string;
 }
@@ -112,19 +113,33 @@ export function initDb(): void {
   } catch {
     // Colonne déjà présente
   }
+  try {
+    db.exec("ALTER TABLE scraped ADD COLUMN dirigeants TEXT");
+  } catch {
+    // Colonne déjà présente
+  }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS excluded (
+      siret       TEXT PRIMARY KEY,
+      excluded_at TEXT
+    )
+  `);
 }
 
 export function isKnown(siret: string): boolean {
-  const row = requireDb().prepare("SELECT 1 FROM scraped WHERE siret = ?").get(siret);
-  return row !== undefined;
+  const conn = requireDb();
+  return (
+    conn.prepare("SELECT 1 FROM scraped WHERE siret = ?").get(siret) !== undefined ||
+    conn.prepare("SELECT 1 FROM excluded WHERE siret = ?").get(siret) !== undefined
+  );
 }
 
 export function insert(record: ScrapedRecord): void {
   requireDb()
     .prepare(
       `INSERT OR IGNORE INTO scraped
-        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, forme_juridique, source, scraped_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, forme_juridique, dirigeants, source, scraped_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       record.siret,
@@ -135,6 +150,7 @@ export function insert(record: ScrapedRecord): void {
       record.telephone,
       record.effectifTranche,
       record.formeJuridique,
+      record.dirigeants,
       record.source,
       record.scraped_at,
     );
@@ -160,6 +176,7 @@ const SELECT_FIELDS = `
   code_postal as codePostal, telephone,
   effectif_tranche as effectifTranche,
   forme_juridique as formeJuridique,
+  dirigeants,
   source, scraped_at
 `;
 
@@ -228,4 +245,166 @@ export function getFilterOptions(): FilterOptions {
     .all() as { forme_juridique: string }[]).map(r => r.forme_juridique);
 
   return { villes, sources, effectifs, departements, formesJuridiques };
+}
+
+export interface PhoneDuplicateGroup {
+  telephone: string;
+  count: number;
+  records: ScrapedRecord[];
+}
+
+export interface PhoneDuplicatesReport {
+  groups: PhoneDuplicateGroup[];
+  totalDuplicateGroups: number;
+  totalToDelete: number;
+}
+
+export function getPhoneDuplicates(): PhoneDuplicatesReport {
+  const conn = requireDb();
+
+  const phones = (conn
+    .prepare(
+      `SELECT telephone, COUNT(*) as cnt FROM scraped
+       WHERE telephone IS NOT NULL AND telephone != ''
+       GROUP BY telephone
+       HAVING cnt > 1
+       ORDER BY cnt DESC`
+    )
+    .all() as { telephone: string; cnt: number }[]);
+
+  const groups: PhoneDuplicateGroup[] = phones.map(({ telephone, cnt }) => {
+    const records = conn
+      .prepare(
+        `SELECT ${SELECT_FIELDS} FROM scraped WHERE telephone = ?
+         ORDER BY CASE WHEN source != 'non_trouvé' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+      )
+      .all(telephone) as ScrapedRecord[];
+    return { telephone, count: cnt, records };
+  });
+
+  const totalToDelete = groups.reduce((sum, g) => sum + g.count - 1, 0);
+
+  return { groups, totalDuplicateGroups: groups.length, totalToDelete };
+}
+
+export function cleanPhoneDuplicates(): number {
+  const conn = requireDb();
+
+  const phones = (conn
+    .prepare(
+      `SELECT telephone FROM scraped
+       WHERE telephone IS NOT NULL AND telephone != ''
+       GROUP BY telephone
+       HAVING COUNT(*) > 1`
+    )
+    .all() as { telephone: string }[]);
+
+  let deleted = 0;
+
+  const now = new Date().toISOString();
+  const archiveStmt = conn.prepare("INSERT OR IGNORE INTO excluded (siret, excluded_at) VALUES (?, ?)");
+  const deleteStmt  = conn.prepare("DELETE FROM scraped WHERE siret = ?");
+
+  const cleanAll = conn.transaction(() => {
+    for (const { telephone } of phones) {
+      const rows = conn
+        .prepare(
+          `SELECT siret FROM scraped WHERE telephone = ?
+           ORDER BY CASE WHEN source != 'non_trouvé' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+        )
+        .all(telephone) as { siret: string }[];
+      // garder le premier (source confirmée > plus récent), archiver + supprimer le reste
+      for (let i = 1; i < rows.length; i++) {
+        archiveStmt.run(rows[i].siret, now);
+        deleteStmt.run(rows[i].siret);
+        deleted++;
+      }
+    }
+  });
+
+  cleanAll();
+  return deleted;
+}
+
+export interface NameDuplicateGroup {
+  nom: string;
+  count: number;
+  records: ScrapedRecord[];
+}
+
+export interface NameDuplicatesReport {
+  groups: NameDuplicateGroup[];
+  totalDuplicateGroups: number;
+  totalToDelete: number;
+}
+
+export function getNameDuplicates(): NameDuplicatesReport {
+  const conn = requireDb();
+
+  // Uniquement les noms où au moins une entrée a un téléphone ET au moins une n'en a pas
+  const names = (conn
+    .prepare(
+      `SELECT nom,
+              COUNT(*) as cnt,
+              COUNT(CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 1 END) as withPhone,
+              COUNT(CASE WHEN telephone IS NULL OR telephone = '' THEN 1 END) as withoutPhone
+       FROM scraped
+       GROUP BY nom
+       HAVING withPhone > 0 AND withoutPhone > 0
+       ORDER BY cnt DESC`
+    )
+    .all() as { nom: string; cnt: number; withPhone: number; withoutPhone: number }[]);
+
+  const groups: NameDuplicateGroup[] = names.map(({ nom, withoutPhone }) => {
+    const records = conn
+      .prepare(
+        `SELECT ${SELECT_FIELDS} FROM scraped WHERE nom = ?
+         ORDER BY CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+      )
+      .all(nom) as ScrapedRecord[];
+    return { nom, count: records.length, records };
+  });
+
+  // Seules les entrées sans téléphone sont candidates à la suppression
+  const totalToDelete = groups.reduce((sum, g) => sum + g.records.filter(r => !r.telephone).length, 0);
+
+  return { groups, totalDuplicateGroups: groups.length, totalToDelete };
+}
+
+export function cleanNameDuplicates(): number {
+  const conn = requireDb();
+
+  // Entrées sans téléphone dont le nom existe aussi avec un téléphone
+  const toExclude = conn
+    .prepare(
+      `SELECT siret FROM scraped
+       WHERE (telephone IS NULL OR telephone = '')
+         AND nom IN (
+           SELECT nom FROM scraped
+           WHERE telephone IS NOT NULL AND telephone != ''
+         )`
+    )
+    .all() as { siret: string }[];
+
+  if (toExclude.length === 0) return 0;
+
+  const now = new Date().toISOString();
+  const archiveStmt = conn.prepare("INSERT OR IGNORE INTO excluded (siret, excluded_at) VALUES (?, ?)");
+  const deleteStmt  = conn.prepare("DELETE FROM scraped WHERE siret = ?");
+
+  conn.transaction(() => {
+    for (const { siret } of toExclude) {
+      archiveStmt.run(siret, now);
+      deleteStmt.run(siret);
+    }
+  })();
+
+  return toExclude.length;
+}
+
+export function getExcludedCount(): number {
+  const row = requireDb()
+    .prepare("SELECT COUNT(*) as cnt FROM excluded")
+    .get() as { cnt: number };
+  return row.cnt;
 }

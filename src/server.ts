@@ -1,7 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import express from "express";
-import { initDb, getStats, getAll, getPaginated, getFilterOptions, ResultFilters } from "./dedup";
+import { initDb, getStats, getAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./dedup";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 
@@ -119,11 +119,33 @@ app.get("/api/status", (_req, res) => {
   res.json(scrapeState);
 });
 
+app.get("/api/duplicates/phone", (_req, res) => {
+  res.json(getPhoneDuplicates());
+});
+
+app.post("/api/duplicates/phone/clean", (_req, res) => {
+  const deleted = cleanPhoneDuplicates();
+  res.json({ deleted });
+});
+
+app.get("/api/duplicates/name", (_req, res) => {
+  res.json(getNameDuplicates());
+});
+
+app.post("/api/duplicates/name/clean", (_req, res) => {
+  const deleted = cleanNameDuplicates();
+  res.json({ deleted });
+});
+
+app.get("/api/duplicates/excluded-count", (_req, res) => {
+  res.json({ count: getExcludedCount() });
+});
+
 
 app.get("/api/export", (req, res) => {
   const records = getAll(parseFilters(req.query as Record<string, unknown>));
 
-  const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,source,scraped_at";
+  const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,dirigeants,source,scraped_at";
   const rows = records.map((r) => {
     const escape = (v: string | null) => {
       if (!v) return "";
@@ -132,7 +154,7 @@ app.get("/api/export", (req, res) => {
       }
       return v;
     };
-    return [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.source, r.scraped_at]
+    return [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.dirigeants, r.source, r.scraped_at]
       .map(escape)
       .join(",");
   });
