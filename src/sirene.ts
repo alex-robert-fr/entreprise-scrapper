@@ -5,6 +5,14 @@ import "dotenv/config";
 const SIRENE_BASE_URL = "https://api.insee.fr/api-sirene/3.11/siret";
 
 const NAF_CODES = ["10.71C", "10.71D"];
+
+const FORMES_JURIDIQUES: Record<string, string> = {
+  "1000": "EI",
+  "5410": "SARL",
+  "5499": "SARL unipersonnelle",
+  "5710": "SAS",
+  "5720": "SASU",
+};
 // Tranches d'effectif : [11 TO 53] couvre 10+ salariés (11=10-19, 12=20-49, ...)
 const TRANCHE_MIN = "11";
 const TRANCHE_MAX = "53";
@@ -49,6 +57,7 @@ export interface Etablissement {
   codePostal: string;
   effectifTranche: string;
   codeNaf: string;
+  formeJuridique: string;
 }
 
 export interface FetchOptions {
@@ -158,6 +167,7 @@ interface SireneUniteLegale {
   denominationUniteLegale: string | null;
   nomUniteLegale: string | null;
   prenom1UniteLegale: string | null;
+  categorieJuridiqueUniteLegale: string | null;
 }
 
 interface SirenePeriode {
@@ -198,6 +208,9 @@ function mapEtablissement(raw: SireneEtablissement): Etablissement {
     .filter(Boolean)
     .join(" ");
 
+  const codeJuridique = ul.categorieJuridiqueUniteLegale || "";
+  const formeJuridique = FORMES_JURIDIQUES[codeJuridique] ?? codeJuridique;
+
   return {
     siret: raw.siret,
     nom: nom || "Inconnu",
@@ -206,6 +219,7 @@ function mapEtablissement(raw: SireneEtablissement): Etablissement {
     codePostal: adr.codePostalEtablissement || "",
     effectifTranche: raw.trancheEffectifsEtablissement,
     codeNaf: periode?.activitePrincipaleEtablissement || "",
+    formeJuridique,
   };
 }
 
