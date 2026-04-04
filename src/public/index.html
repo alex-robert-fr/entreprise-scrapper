@@ -595,6 +595,102 @@
     .toast.success { border-color: rgba(34,197,94,0.3); color: var(--success); }
     .toast.warn    { border-color: rgba(245,158,11,0.3); color: var(--warn); }
     .toast.error   { border-color: rgba(239,68,68,0.3); color: #f87171; }
+
+    /* ── NAVIGATION VUES ── */
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border-hover);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .nav-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border-hover);
+      color: var(--muted);
+      padding: 0.45rem 0;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+
+    .nav-tab:last-child { border-right: none; }
+    .nav-tab.active { background: var(--accent); color: #fff; }
+    .nav-tab:hover:not(.active) { background: var(--bg-elevated); color: var(--text); }
+
+    /* ── VUES ── */
+    .view { display: none; flex: 1; flex-direction: column; overflow: hidden; height: 100%; }
+    .view.active { display: flex; }
+
+    /* ── FILTRES AVANCÉS ── */
+    .filter-bar {
+      flex-shrink: 0;
+      padding: 0.75rem 1.5rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: flex-end;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.28rem;
+      min-width: 110px;
+    }
+
+    .filter-field--wide { min-width: 180px; flex: 1; }
+    .filter-field--btn  { justify-content: flex-end; }
+
+    .filter-field > label {
+      font-size: 0.56rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .filter-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      padding-top: 0.45rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .filter-count {
+      font-size: 0.64rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .filter-count strong { color: var(--text); }
+
+    .btn-reset {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border-hover);
+      padding: 0.38rem 0.75rem;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-reset:hover { color: var(--text); border-color: var(--muted); }
   </style>
 </head>
 <body>
@@ -607,6 +703,14 @@
       <div class="status-chip">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">En attente</span>
+      </div>
+    </div>
+
+    <!-- Navigation vues -->
+    <div class="s-section">
+      <div class="nav-tabs">
+        <button class="nav-tab active" id="navResults" onclick="setView('results')">Résultats</button>
+        <button class="nav-tab"        id="navFilters" onclick="setView('filters')">Filtres</button>
       </div>
     </div>
 
@@ -693,6 +797,9 @@
   <!-- ── MAIN ── -->
   <main class="main">
 
+  <!-- Vue Résultats -->
+  <div class="view active" id="view-results">
+
     <div class="stats-bar">
       <div class="stat active" id="tab-all" onclick="setFilter('all')">
         <div class="stat-label">Total</div>
@@ -754,6 +861,91 @@
       </table>
     </div>
 
+  </div><!-- /view-results -->
+
+  <!-- Vue Filtres avancés -->
+  <div class="view" id="view-filters">
+
+    <div class="filter-bar">
+      <div class="filter-row">
+
+        <div class="filter-field filter-field--wide">
+          <label>Nom</label>
+          <div class="search-wrap" style="flex:none;width:100%">
+            <span class="search-icon">⌕</span>
+            <input type="text" class="search-input" id="fNom" placeholder="Nom de l'établissement…" oninput="onAdvFilter()">
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label>Ville</label>
+          <select id="fVille" onchange="onAdvFilter()">
+            <option value="">Toutes</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label>Département</label>
+          <select id="fDep" onchange="onAdvFilter()">
+            <option value="">Tous</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label>Source</label>
+          <select id="fSource" onchange="onAdvFilter()">
+            <option value="">Toutes</option>
+            <option value="google">Google</option>
+            <option value="pagesjaunes">Pages Jaunes</option>
+            <option value="non_trouvé">Non trouvé</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label>Effectif</label>
+          <select id="fEffectif" onchange="onAdvFilter()">
+            <option value="">Tous</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label>Téléphone</label>
+          <select id="fPhoneType" onchange="onAdvFilter()">
+            <option value="">Tous</option>
+            <option value="mobile">Mobile (06/07)</option>
+            <option value="fixe">Fixe</option>
+          </select>
+        </div>
+
+        <div class="filter-field filter-field--btn">
+          <button class="btn-reset" onclick="resetAdvFilters()">✕ Réinitialiser</button>
+        </div>
+
+      </div>
+
+      <div class="filter-footer">
+        <span class="filter-count" id="advFilterCount">—</span>
+        <button class="btn-export" onclick="exportAdvCsv()">↓ &nbsp;Exporter CSV</button>
+      </div>
+    </div>
+
+    <div class="table-area">
+      <table>
+        <thead>
+          <tr>
+            <th>Établissement</th>
+            <th>Ville</th>
+            <th>CP</th>
+            <th>Effectif</th>
+            <th title="Cliquer pour copier">Téléphone</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody id="advResultsBody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /view-filters -->
 
   </main>
 
@@ -767,6 +959,10 @@
     let retryPollInterval = null;
     let activeFilter      = "all";
     let exportScope       = "all";
+    let activeView        = "results";
+    let advFilterTimeout  = null;
+
+    const EFFECTIF_LABELS = { "11":"10-19 sal.","12":"10-19 sal.","21":"20-49 sal.","22":"50-99 sal.","31":"100+ sal." };
     let activeScope       = "region";
     let filterTimeout     = null;
     let nomQuery          = "";
@@ -808,6 +1004,120 @@
       });
       document.getElementById("field-region").style.display = s === "region" ? "" : "none";
       document.getElementById("field-dep").style.display    = s === "dep"    ? "" : "none";
+    }
+
+    /* ── Navigation vues ── */
+    function setView(view) {
+      activeView = view;
+      document.getElementById("view-results").classList.toggle("active", view === "results");
+      document.getElementById("view-filters").classList.toggle("active", view === "filters");
+      document.getElementById("navResults").classList.toggle("active", view === "results");
+      document.getElementById("navFilters").classList.toggle("active", view === "filters");
+      if (view === "filters") fetchAdvResults();
+    }
+
+    /* ── Filtres avancés ── */
+    function buildAdvParams() {
+      var params = [];
+      var nom    = document.getElementById("fNom").value.trim();
+      var ville  = document.getElementById("fVille").value;
+      var dep    = document.getElementById("fDep").value;
+      var src    = document.getElementById("fSource").value;
+      var eff    = document.getElementById("fEffectif").value;
+      var phone  = document.getElementById("fPhoneType").value;
+      if (nom)   params.push("nom="         + encodeURIComponent(nom));
+      if (ville) params.push("ville="       + encodeURIComponent(ville));
+      if (dep)   params.push("departement=" + encodeURIComponent(dep));
+      if (src)   params.push("sourceExact=" + encodeURIComponent(src));
+      if (eff)   params.push("effectif="    + encodeURIComponent(eff));
+      if (phone) params.push("phoneType="   + encodeURIComponent(phone));
+      return params;
+    }
+
+    async function fetchAdvResults() {
+      var params = buildAdvParams();
+      var url = "/api/results?page=1&limit=5000" + (params.length ? "&" + params.join("&") : "");
+      var data = await fetch(url).then(function(r) { return r.json(); });
+
+      var count = data.total;
+      document.getElementById("advFilterCount").innerHTML =
+        "<strong>" + count.toLocaleString("fr-FR") + "</strong> résultat" + (count !== 1 ? "s" : "");
+
+      var tbody = document.getElementById("advResultsBody");
+      tbody.innerHTML = "";
+
+      if (!data.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
+        return;
+      }
+
+      data.data.forEach(function(r) {
+        var bc = r.source === "google" ? "b-google" : r.source === "pagesjaunes" ? "b-pagesjaunes" : "b-non";
+        var sl = r.source === "non_trouvé" ? "non trouvé" : r.source;
+
+        var tdNom  = document.createElement("td"); tdNom.className  = "col-nom";   tdNom.textContent  = r.nom;   tdNom.title = r.nom;
+        var tdVille = document.createElement("td"); tdVille.className = "col-ville"; tdVille.textContent = r.ville || "—";
+        var tdCp   = document.createElement("td"); tdCp.className   = "col-ville"; tdCp.textContent   = r.codePostal || "—";
+        var tdEff  = document.createElement("td"); tdEff.className  = "col-ville"; tdEff.textContent  = EFFECTIF_LABELS[r.effectifTranche] || r.effectifTranche || "—";
+
+        var phone = r.telephone || "—";
+        var tdTel = document.createElement("td"); tdTel.className = "col-tel";
+        if (r.telephone) {
+          var sp = document.createElement("span"); sp.textContent = phone; tdTel.appendChild(sp);
+          var tag = document.createElement("span");
+          var mob = isMobile(r.telephone);
+          tag.className = "phone-tag " + (mob ? "mobile" : "fixe");
+          tag.textContent = mob ? "mobile" : "fixe";
+          tdTel.appendChild(tag);
+          tdTel.title = "Cliquer pour copier";
+          (function(t, p) { t.addEventListener("click", function() { copyPhone(t, p); }); })(tdTel, phone);
+        } else { tdTel.textContent = "—"; }
+
+        var badge = document.createElement("span"); badge.className = "badge " + bc; badge.textContent = sl;
+        var tdSrc = document.createElement("td"); tdSrc.appendChild(badge);
+
+        var tr = document.createElement("tr");
+        tr.append(tdNom, tdVille, tdCp, tdEff, tdTel, tdSrc);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function onAdvFilter() {
+      clearTimeout(advFilterTimeout);
+      advFilterTimeout = setTimeout(fetchAdvResults, 280);
+    }
+
+    function resetAdvFilters() {
+      ["fNom","fVille","fDep","fSource","fEffectif","fPhoneType"].forEach(function(id) {
+        document.getElementById(id).value = "";
+      });
+      fetchAdvResults();
+    }
+
+    function exportAdvCsv() {
+      var params = buildAdvParams();
+      var url = "/api/export" + (params.length ? "?" + params.join("&") : "");
+      window.location = url;
+      toast("Téléchargement du CSV…");
+    }
+
+    async function fetchFilterOptions() {
+      var opts = await fetch("/api/filters").then(function(r) { return r.json(); });
+
+      var selVille = document.getElementById("fVille");
+      opts.villes.forEach(function(v) {
+        var o = document.createElement("option"); o.value = v; o.textContent = v; selVille.appendChild(o);
+      });
+
+      var selDep = document.getElementById("fDep");
+      opts.departements.forEach(function(d) {
+        var o = document.createElement("option"); o.value = d; o.textContent = "Dép. " + d; selDep.appendChild(o);
+      });
+
+      var selEff = document.getElementById("fEffectif");
+      opts.effectifs.forEach(function(e) {
+        var o = document.createElement("option"); o.value = e.value; o.textContent = e.label; selEff.appendChild(o);
+      });
     }
 
     /* ── Filter ── */
@@ -1084,6 +1394,7 @@
     fetchStats();
     fetchResults();
     fetchRegions();
+    fetchFilterOptions();
     pollStatus();
 
     /* Auto-refresh résultats toutes les 10s si idle */
