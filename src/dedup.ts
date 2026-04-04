@@ -30,7 +30,7 @@ export interface PaginatedResult<T> {
 
 export interface ResultFilters {
   sourceFilter?: "found" | "non_trouvé";
-  sourceExact?:  "google" | "pagesjaunes" | "non_trouvé";
+  sourceExact?:  "google" | "non_trouvé";
   nom?:          string;
   ville?:        string;
   phoneType?:    "mobile" | "fixe";
@@ -47,10 +47,11 @@ export interface FilterOptions {
 
 const EFFECTIF_LABELS: Record<string, string> = {
   "11": "10-19 sal.",
-  "12": "10-19 sal.",
-  "21": "20-49 sal.",
-  "22": "50-99 sal.",
-  "31": "100+ sal.",
+  "12": "20-49 sal.",
+  "21": "50-99 sal.",
+  "22": "100-199 sal.",
+  "31": "200-249 sal.",
+  "32": "250-499 sal.",
 };
 
 function buildWhereClause(filters: ResultFilters): { where: string; params: unknown[] } {
@@ -197,7 +198,7 @@ export function getFilterOptions(): FilterOptions {
     .all() as { ville: string }[]).map(r => r.ville);
 
   const sources = (conn
-    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL ORDER BY source")
+    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL AND source NOT IN ('pagesjaunes') ORDER BY source")
     .all() as { source: string }[]).map(r => r.source);
 
   const effectifs = (conn

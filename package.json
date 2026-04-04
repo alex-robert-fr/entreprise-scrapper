@@ -14,8 +14,7 @@
     "dotenv": "^16",
     "express": "^4",
     "minimist": "^1",
-    "ora": "^5",
-    "playwright": "^1"
+    "ora": "^5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7",

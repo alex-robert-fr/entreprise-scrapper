@@ -2,6 +2,9 @@ node_modules/
 dist/
 .env
 data/scraper.db
+data/scraper.db-shm
+data/scraper.db-wal
+src/test-*.ts
 exports/*
 !exports/.gitkeep
 .claude/plans/
