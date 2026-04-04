@@ -2,7 +2,7 @@ import "dotenv/config";
 import path from "path";
 import express from "express";
 import { initDb, getStats, getAll, getPaginated } from "./dedup";
-import { fetchEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
+import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 
 const app = express();
@@ -60,12 +60,19 @@ app.post("/api/scrape", (req, res) => {
 
   (async () => {
     const options = all ? {} : { region, departement };
-    const etablissements = await fetchEtablissements(options);
-    scrapeState.total = limit ?? etablissements.length;
 
-    const result = await runPipeline(etablissements, (current, total, nom) => {
+    let source: Iterable<import("./sirene").Etablissement> | AsyncIterable<import("./sirene").Etablissement>;
+    if (limit !== undefined) {
+      scrapeState.total = limit;
+      source = streamEtablissements(options);
+    } else {
+      const etablissements = await fetchEtablissements(options);
+      scrapeState.total = etablissements.length;
+      source = etablissements;
+    }
+
+    const result = await runPipeline(source, (current, nom) => {
       scrapeState.progress = current;
-      scrapeState.total = total;
       scrapeState.current = nom;
     }, limit);
 

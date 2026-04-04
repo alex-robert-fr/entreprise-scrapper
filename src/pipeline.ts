@@ -10,14 +10,10 @@ export interface PipelineResult {
   prospects: ScrapedRecord[];
 }
 
-export type ProgressCallback = (
-  current: number,
-  total: number,
-  nom: string
-) => void;
+export type ProgressCallback = (current: number, nom: string) => void;
 
 export async function runPipeline(
-  etablissements: Etablissement[],
+  source: Iterable<Etablissement> | AsyncIterable<Etablissement>,
   onProgress?: ProgressCallback,
   limit?: number
 ): Promise<PipelineResult> {
@@ -27,17 +23,17 @@ export async function runPipeline(
   let alreadyKnown = 0;
   let notFoundCount = 0;
   const prospects: ScrapedRecord[] = [];
-
   let i = 0;
-  for (const etab of etablissements) {
-    onProgress?.(++i, etablissements.length, etab.nom);
 
+  for await (const etab of source) {
     if (isKnown(etab.siret)) {
       alreadyKnown++;
       continue;
     }
 
     if (limit !== undefined && newCount + notFoundCount >= limit) break;
+
+    onProgress?.(++i, etab.nom);
 
     let phone = await findPhoneGoogle(etab.nom, etab.ville);
     let source: string;

@@ -211,13 +211,12 @@ function mapEtablissement(raw: SireneEtablissement): Etablissement {
 
 // --- Fonction principale ---
 
-async function fetchForNaf(
+async function* streamForNaf(
   nafCode: string,
   departements: string[] | null,
   headers: Record<string, string>
-): Promise<Etablissement[]> {
+): AsyncGenerator<Etablissement> {
   const query = buildQuery(nafCode, departements);
-  const etablissements: Etablissement[] = [];
   let curseur = "*";
 
   while (true) {
@@ -235,20 +234,18 @@ async function fetchForNaf(
     if (!data.etablissements?.length) break;
 
     for (const raw of data.etablissements) {
-      etablissements.push(mapEtablissement(raw));
+      yield mapEtablissement(raw);
     }
 
     const next = data.header.curseurSuivant;
     if (!next || next === curseur) break;
     curseur = next;
   }
-
-  return etablissements;
 }
 
-export async function fetchEtablissements(
+export async function* streamEtablissements(
   options: FetchOptions
-): Promise<Etablissement[]> {
+): AsyncGenerator<Etablissement> {
   const token = process.env.SIRENE_TOKEN;
   if (!token) {
     throw new Error("SIRENE_TOKEN manquant dans les variables d'environnement");
@@ -260,23 +257,24 @@ export async function fetchEtablissements(
   };
 
   const departements = getDepartements(options);
-
-  // Un appel par code NAF (OR interdit dans periode())
-  const results = await Promise.all(
-    NAF_CODES.map((naf) => fetchForNaf(naf, departements, headers))
-  );
-
-  // Dédoublonnage par SIRET (un établissement peut matcher les deux NAF)
   const seen = new Set<string>();
-  const all: Etablissement[] = [];
-  for (const batch of results) {
-    for (const e of batch) {
-      if (!seen.has(e.siret)) {
-        seen.add(e.siret);
-        all.push(e);
+
+  for (const nafCode of NAF_CODES) {
+    for await (const etab of streamForNaf(nafCode, departements, headers)) {
+      if (!seen.has(etab.siret)) {
+        seen.add(etab.siret);
+        yield etab;
       }
     }
   }
+}
 
+export async function fetchEtablissements(
+  options: FetchOptions
+): Promise<Etablissement[]> {
+  const all: Etablissement[] = [];
+  for await (const etab of streamEtablissements(options)) {
+    all.push(etab);
+  }
   return all;
 }
