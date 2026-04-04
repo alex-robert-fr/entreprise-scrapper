@@ -1,14 +1,18 @@
-const PLACES_BASE_URL = "https://maps.googleapis.com/maps/api/place";
+// Places API (New) — https://developers.google.com/maps/documentation/places/web-service/text-search
+const PLACES_NEW_BASE_URL = "https://places.googleapis.com/v1/places";
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY = 1000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 // --- Retry HTTP ---
 
-async function fetchWithRetry(url: string): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  init?: RequestInit
+): Promise<Response> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, init);
       if (response.ok || !RETRYABLE_STATUS.has(response.status)) {
         return response;
       }
@@ -31,73 +35,69 @@ async function fetchWithRetry(url: string): Promise<Response> {
       }
     }
   }
-  return fetch(url);
+  return fetch(url, init);
 }
 
-// --- Types API Google Places ---
+// --- Types Places API (New) ---
 
 interface TextSearchResponse {
-  status: string;
-  results: Array<{ place_id: string }>;
+  places?: Array<{ id: string }>;
 }
 
 interface PlaceDetailsResponse {
-  status: string;
-  result?: { formatted_phone_number?: string };
+  nationalPhoneNumber?: string;
+  internationalPhoneNumber?: string;
 }
 
-// --- Text Search ---
+// --- Text Search (New) ---
 
 async function searchPlace(
   nom: string,
   ville: string,
   apiKey: string
 ): Promise<string | null> {
-  const query = encodeURIComponent(`${nom} ${ville}`);
-  const url = `${PLACES_BASE_URL}/textsearch/json?query=${query}&key=${apiKey}`;
+  const response = await fetchWithRetry(`${PLACES_NEW_BASE_URL}:searchText`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask": "places.id",
+    },
+    body: JSON.stringify({ textQuery: `${nom} ${ville}` }),
+  });
 
-  const response = await fetchWithRetry(url);
   if (!response.ok) {
     console.warn(`Google Maps Text Search — HTTP ${response.status}`);
     return null;
   }
 
   const data = (await response.json()) as TextSearchResponse;
-
-  if (data.status !== "OK") {
-    if (data.status !== "ZERO_RESULTS") {
-      console.warn(`Google Maps Text Search — statut API : ${data.status}`);
-    }
-    return null;
-  }
-
-  return data.results[0]?.place_id ?? null;
+  return data.places?.[0]?.id ?? null;
 }
 
-// --- Place Details ---
+// --- Place Details (New) ---
 
 async function getPhoneNumber(
   placeId: string,
   apiKey: string
 ): Promise<string | null> {
-  const url = `${PLACES_BASE_URL}/details/json?place_id=${encodeURIComponent(placeId)}&fields=formatted_phone_number&key=${apiKey}`;
+  const response = await fetchWithRetry(
+    `${PLACES_NEW_BASE_URL}/${encodeURIComponent(placeId)}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "nationalPhoneNumber,internationalPhoneNumber",
+      },
+    }
+  );
 
-  const response = await fetchWithRetry(url);
   if (!response.ok) {
     console.warn(`Google Maps Place Details — HTTP ${response.status}`);
     return null;
   }
 
   const data = (await response.json()) as PlaceDetailsResponse;
-
-  if (data.status !== "OK") {
-    if (data.status !== "ZERO_RESULTS") {
-      console.warn(`Google Maps Place Details — statut API : ${data.status}`);
-    }
-    return null;
-  }
-
-  return data.result?.formatted_phone_number ?? null;
+  return data.nationalPhoneNumber ?? data.internationalPhoneNumber ?? null;
 }
 
 // --- Fonction publique ---
