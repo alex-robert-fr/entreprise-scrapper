@@ -4,10 +4,13 @@ import path from "path";
 export interface ScrapedRecord {
   siret: string;
   nom: string;
-  telephone: string | null;
+  adresse: string;
   ville: string;
-  scraped_at: string;
+  codePostal: string;
+  telephone: string | null;
+  effectifTranche: string;
   source: string;
+  scraped_at: string;
 }
 
 export interface ScrapedStats {
@@ -38,12 +41,15 @@ export function initDb(): void {
   db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS scraped (
-      siret       TEXT PRIMARY KEY,
-      nom         TEXT,
-      telephone   TEXT,
-      ville       TEXT,
-      scraped_at  TEXT,
-      source      TEXT
+      siret             TEXT PRIMARY KEY,
+      nom               TEXT,
+      adresse           TEXT,
+      ville             TEXT,
+      code_postal       TEXT,
+      telephone         TEXT,
+      effectif_tranche  TEXT,
+      source            TEXT,
+      scraped_at        TEXT
     )
   `);
 }
@@ -56,9 +62,21 @@ export function isKnown(siret: string): boolean {
 export function insert(record: ScrapedRecord): void {
   requireDb()
     .prepare(
-      "INSERT OR IGNORE INTO scraped (siret, nom, telephone, ville, scraped_at, source) VALUES (?, ?, ?, ?, ?, ?)"
+      `INSERT OR IGNORE INTO scraped
+        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, source, scraped_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(record.siret, record.nom, record.telephone, record.ville, record.scraped_at, record.source);
+    .run(
+      record.siret,
+      record.nom,
+      record.adresse,
+      record.ville,
+      record.codePostal,
+      record.telephone,
+      record.effectifTranche,
+      record.source,
+      record.scraped_at,
+    );
 }
 
 export function getStats(): ScrapedStats {
@@ -74,20 +92,27 @@ export function getStats(): ScrapedStats {
   return { total: row.total, found: row.found, notFound: row.notFound };
 }
 
+const SELECT_FIELDS = `
+  siret, nom, adresse, ville,
+  code_postal as codePostal, telephone,
+  effectif_tranche as effectifTranche, source, scraped_at
+`;
+
 export function getAll(): ScrapedRecord[] {
   return requireDb()
-    .prepare("SELECT * FROM scraped ORDER BY scraped_at DESC")
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC`)
     .all() as ScrapedRecord[];
 }
 
 export function getPaginated(page: number, limit: number): PaginatedResult<ScrapedRecord> {
-  const db = requireDb();
-  const { count } = db.prepare("SELECT COUNT(*) as count FROM scraped").get() as { count: number };
+  if (limit < 1) throw new Error("limit doit être >= 1");
+  const conn = requireDb();
+  const { count } = conn.prepare("SELECT COUNT(*) as count FROM scraped").get() as { count: number };
   const totalPages = Math.max(1, Math.ceil(count / limit));
   const safePage = Math.max(1, Math.min(page, totalPages));
   const offset = (safePage - 1) * limit;
-  const data = db
-    .prepare("SELECT * FROM scraped ORDER BY scraped_at DESC LIMIT ? OFFSET ?")
+  const data = conn
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC LIMIT ? OFFSET ?`)
     .all(limit, offset) as ScrapedRecord[];
   return { data, total: count, page: safePage, totalPages };
 }

@@ -1,5 +1,7 @@
 import { Etablissement } from "./sirene";
-import { ScrapedRecord } from "./dedup";
+import { initDb, isKnown, insert, ScrapedRecord } from "./dedup";
+import { findPhoneGoogle } from "./googleMaps";
+import { findPhonePJ } from "./pagesJaunes";
 
 export interface PipelineResult {
   newCount: number;
@@ -8,15 +10,65 @@ export interface PipelineResult {
   prospects: ScrapedRecord[];
 }
 
-export type ProgressCallback = (
-  current: number,
-  total: number,
-  nom: string
-) => void;
+export type ProgressCallback = (current: number, nom: string) => void;
 
 export async function runPipeline(
-  _etablissements: Etablissement[],
-  _onProgress?: ProgressCallback
+  source: Iterable<Etablissement> | AsyncIterable<Etablissement>,
+  onProgress?: ProgressCallback,
+  limit?: number
 ): Promise<PipelineResult> {
-  return { newCount: 0, alreadyKnown: 0, notFoundCount: 0, prospects: [] };
+  initDb();
+
+  let newCount = 0;
+  let alreadyKnown = 0;
+  let notFoundCount = 0;
+  const prospects: ScrapedRecord[] = [];
+  let i = 0;
+
+  for await (const etab of source) {
+    if (isKnown(etab.siret)) {
+      alreadyKnown++;
+      continue;
+    }
+
+    if (limit !== undefined && newCount + notFoundCount >= limit) break;
+
+    onProgress?.(++i, etab.nom);
+
+    let phone = await findPhoneGoogle(etab.nom, etab.ville);
+    let source: string;
+
+    if (phone !== null) {
+      source = "google";
+    } else {
+      phone = await findPhonePJ(etab.nom, etab.ville);
+      source = phone !== null ? "pagesjaunes" : "non_trouvé";
+    }
+
+    if (phone === null) {
+      notFoundCount++;
+    } else {
+      newCount++;
+    }
+
+    const record: ScrapedRecord = {
+      siret: etab.siret,
+      nom: etab.nom,
+      adresse: etab.adresse,
+      ville: etab.ville,
+      codePostal: etab.codePostal,
+      telephone: phone,
+      effectifTranche: etab.effectifTranche,
+      source,
+      scraped_at: new Date().toISOString(),
+    };
+
+    insert(record);
+
+    if (source !== "non_trouvé") {
+      prospects.push(record);
+    }
+  }
+
+  return { newCount, alreadyKnown, notFoundCount, prospects };
 }

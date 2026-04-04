@@ -2,7 +2,7 @@ import "dotenv/config";
 import path from "path";
 import express from "express";
 import { initDb, getStats, getAll, getPaginated } from "./dedup";
-import { fetchEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
+import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 
 const app = express();
@@ -46,24 +46,35 @@ app.post("/api/scrape", (req, res) => {
     return;
   }
 
-  const { region, departement, all } = req.body as {
+  const { region, departement, all, limit: rawLimit } = req.body as {
     region?: string;
     departement?: string;
     all?: boolean;
+    limit?: number;
   };
+  const limit = typeof rawLimit === "number" && Number.isFinite(rawLimit)
+    ? Math.max(1, Math.min(rawLimit, 10000))
+    : undefined;
 
   scrapeState = { status: "running", progress: 0, total: 0, current: "" };
 
   (async () => {
     const options = all ? {} : { region, departement };
-    const etablissements = await fetchEtablissements(options);
-    scrapeState.total = etablissements.length;
 
-    const result = await runPipeline(etablissements, (current, total, nom) => {
+    let source: Iterable<import("./sirene").Etablissement> | AsyncIterable<import("./sirene").Etablissement>;
+    if (limit !== undefined) {
+      scrapeState.total = limit;
+      source = streamEtablissements(options);
+    } else {
+      const etablissements = await fetchEtablissements(options);
+      scrapeState.total = etablissements.length;
+      source = etablissements;
+    }
+
+    const result = await runPipeline(source, (current, nom) => {
       scrapeState.progress = current;
-      scrapeState.total = total;
       scrapeState.current = nom;
-    });
+    }, limit);
 
     scrapeState.status = "done";
     scrapeState.result = {
@@ -86,7 +97,7 @@ app.get("/api/status", (_req, res) => {
 app.get("/api/export", (_req, res) => {
   const records = getAll();
 
-  const header = "siret,nom,telephone,ville,scraped_at,source";
+  const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,source,scraped_at";
   const rows = records.map((r) => {
     const escape = (v: string | null) => {
       if (!v) return "";
@@ -95,7 +106,7 @@ app.get("/api/export", (_req, res) => {
       }
       return v;
     };
-    return [r.siret, r.nom, r.telephone, r.ville, r.scraped_at, r.source]
+    return [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.source, r.scraped_at]
       .map(escape)
       .join(",");
   });

@@ -595,6 +595,11 @@
         <span>Toute la France</span>
       </label>
 
+      <div class="field">
+        <label>Limite</label>
+        <input type="number" id="limit" placeholder="ex : 50  (vide = tout scraper)" min="1">
+      </div>
+
       <button class="btn-run" id="btnScrape" onclick="startScrape()">
         → Lancer le scrape
       </button>
@@ -751,12 +756,6 @@
 
     function changePage(d) { fetchResults(currentPage + d); }
 
-    function esc(s) {
-      const d = document.createElement("div");
-      d.textContent = s != null ? s : "";
-      return d.innerHTML;
-    }
-
     /* ── Scrape ── */
     async function startScrape() {
       const btn = document.getElementById("btnScrape");
@@ -772,6 +771,8 @@
         if (region) body.region = region;
         if (dep)    body.departement = dep;
       }
+      const limitVal = parseInt(document.getElementById("limit").value);
+      if (!isNaN(limitVal) && limitVal > 0) body.limit = limitVal;
 
       const res = await fetch("/api/scrape", {
         method: "POST",
@@ -819,10 +820,20 @@
           lastDupes += state.result.alreadyKnown;
           counter(document.getElementById("statDuplicates"), lastDupes);
 
-          document.getElementById("resultRows").innerHTML =
-            '<div class="result-row"><span class="result-key">Nouveaux</span><span class="result-val new">+' + state.result.newCount + '</span></div>' +
-            '<div class="result-row"><span class="result-key">Déjà connus</span><span class="result-val dupe">' + state.result.alreadyKnown + '</span></div>' +
-            '<div class="result-row"><span class="result-key">Non trouvés</span><span class="result-val nf">' + state.result.notFoundCount + '</span></div>';
+          const rows = [
+            { label: "Nouveaux",     val: "+" + state.result.newCount,      cls: "new"  },
+            { label: "Déjà connus",  val: state.result.alreadyKnown,        cls: "dupe" },
+            { label: "Non trouvés",  val: state.result.notFoundCount,        cls: "nf"   },
+          ];
+          const resultRows = document.getElementById("resultRows");
+          resultRows.innerHTML = "";
+          rows.forEach(function(r) {
+            const div  = document.createElement("div");  div.className = "result-row";
+            const key  = document.createElement("span"); key.className = "result-key";  key.textContent = r.label;
+            const val  = document.createElement("span"); val.className = "result-val " + r.cls; val.textContent = r.val;
+            div.append(key, val);
+            resultRows.appendChild(div);
+          });
 
           document.getElementById("resultBlock").classList.add("visible");
         }
