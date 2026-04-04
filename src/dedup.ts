@@ -10,6 +10,7 @@ export interface ScrapedRecord {
   codePostal: string;
   telephone: string | null;
   effectifTranche: string;
+  formeJuridique: string;
   source: string;
   scraped_at: string;
 }
@@ -29,20 +30,22 @@ export interface PaginatedResult<T> {
 }
 
 export interface ResultFilters {
-  sourceFilter?: "found" | "non_trouvé";
-  sourceExact?:  "google" | "non_trouvé";
-  nom?:          string;
-  ville?:        string;
-  phoneType?:    "mobile" | "fixe";
-  effectif?:     string;
-  departement?:  string;
+  sourceFilter?:   "found" | "non_trouvé";
+  sourceExact?:    "google" | "non_trouvé";
+  nom?:            string;
+  ville?:          string;
+  phoneType?:      "mobile" | "fixe";
+  effectif?:       string;
+  departement?:    string;
+  formeJuridique?: string;
 }
 
 export interface FilterOptions {
-  villes:       string[];
-  sources:      string[];
-  effectifs:    Array<{ value: string; label: string }>;
-  departements: string[];
+  villes:           string[];
+  sources:          string[];
+  effectifs:        Array<{ value: string; label: string }>;
+  departements:     string[];
+  formesJuridiques: string[];
 }
 
 const EFFECTIF_LABELS: Record<string, string> = {
@@ -71,7 +74,8 @@ function buildWhereClause(filters: ResultFilters): { where: string; params: unkn
   if (filters.nom?.trim())         { conditions.push("nom LIKE ?");             params.push("%" + filters.nom.trim() + "%"); }
   if (filters.ville?.trim())       { conditions.push("ville LIKE ?");           params.push("%" + filters.ville.trim() + "%"); }
   if (filters.effectif?.trim())    { conditions.push("effectif_tranche = ?");   params.push(filters.effectif.trim()); }
-  if (filters.departement?.trim()) { conditions.push("code_postal LIKE ?");     params.push(filters.departement.trim() + "%"); }
+  if (filters.departement?.trim())    { conditions.push("code_postal LIKE ?");      params.push(filters.departement.trim() + "%"); }
+  if (filters.formeJuridique?.trim()) { conditions.push("forme_juridique = ?");    params.push(filters.formeJuridique.trim()); }
 
   return { where: conditions.length ? "WHERE " + conditions.join(" AND ") : "", params };
 }
@@ -98,10 +102,16 @@ export function initDb(): void {
       code_postal       TEXT,
       telephone         TEXT,
       effectif_tranche  TEXT,
+      forme_juridique   TEXT,
       source            TEXT,
       scraped_at        TEXT
     )
   `);
+  try {
+    db.exec("ALTER TABLE scraped ADD COLUMN forme_juridique TEXT");
+  } catch {
+    // Colonne déjà présente
+  }
 }
 
 export function isKnown(siret: string): boolean {
@@ -113,8 +123,8 @@ export function insert(record: ScrapedRecord): void {
   requireDb()
     .prepare(
       `INSERT OR IGNORE INTO scraped
-        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, source, scraped_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, forme_juridique, source, scraped_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       record.siret,
@@ -124,6 +134,7 @@ export function insert(record: ScrapedRecord): void {
       record.codePostal,
       record.telephone,
       record.effectifTranche,
+      record.formeJuridique,
       record.source,
       record.scraped_at,
     );
@@ -147,7 +158,9 @@ export function getStats(): ScrapedStats {
 const SELECT_FIELDS = `
   siret, nom, adresse, ville,
   code_postal as codePostal, telephone,
-  effectif_tranche as effectifTranche, source, scraped_at
+  effectif_tranche as effectifTranche,
+  forme_juridique as formeJuridique,
+  source, scraped_at
 `;
 
 export function getNotFound(): ScrapedRecord[] {
@@ -210,5 +223,9 @@ export function getFilterOptions(): FilterOptions {
     .prepare("SELECT DISTINCT SUBSTR(code_postal, 1, 2) as dep FROM scraped WHERE code_postal IS NOT NULL AND code_postal != '' ORDER BY dep")
     .all() as { dep: string }[]).map(r => r.dep);
 
-  return { villes, sources, effectifs, departements };
+  const formesJuridiques = (conn
+    .prepare("SELECT DISTINCT forme_juridique FROM scraped WHERE forme_juridique IS NOT NULL AND forme_juridique != '' ORDER BY forme_juridique")
+    .all() as { forme_juridique: string }[]).map(r => r.forme_juridique);
+
+  return { villes, sources, effectifs, departements, formesJuridiques };
 }

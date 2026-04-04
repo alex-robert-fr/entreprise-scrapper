@@ -41,8 +41,9 @@ function parseFilters(query: Record<string, unknown>): ResultFilters {
     nom:         raw("nom"),
     ville:       raw("ville"),
     phoneType:   rawPhoneType === "mobile" ? "mobile" : rawPhoneType === "fixe" ? "fixe" : undefined,
-    effectif:    raw("effectif"),
-    departement: raw("departement"),
+    effectif:       raw("effectif"),
+    departement:    raw("departement"),
+    formeJuridique: raw("formeJuridique"),
   };
 }
 
@@ -122,7 +123,7 @@ app.get("/api/status", (_req, res) => {
 app.get("/api/export", (req, res) => {
   const records = getAll(parseFilters(req.query as Record<string, unknown>));
 
-  const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,source,scraped_at";
+  const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,source,scraped_at";
   const rows = records.map((r) => {
     const escape = (v: string | null) => {
       if (!v) return "";
@@ -131,7 +132,7 @@ app.get("/api/export", (req, res) => {
       }
       return v;
     };
-    return [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.source, r.scraped_at]
+    return [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.source, r.scraped_at]
       .map(escape)
       .join(",");
   });
