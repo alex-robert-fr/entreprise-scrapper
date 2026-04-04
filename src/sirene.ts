@@ -13,6 +13,7 @@ const FORMES_JURIDIQUES: Record<string, string> = {
   "5710": "SAS",
   "5720": "SASU",
 };
+
 // Tranches d'effectif : [11 TO 53] couvre 10+ salariés (11=10-19, 12=20-49, ...)
 const TRANCHE_MIN = "11";
 const TRANCHE_MAX = "53";

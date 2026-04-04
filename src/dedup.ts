@@ -107,6 +107,11 @@ export function initDb(): void {
       scraped_at        TEXT
     )
   `);
+  try {
+    db.exec("ALTER TABLE scraped ADD COLUMN forme_juridique TEXT");
+  } catch {
+    // Colonne déjà présente
+  }
 }
 
 export function isKnown(siret: string): boolean {

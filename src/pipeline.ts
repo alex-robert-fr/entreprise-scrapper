@@ -35,7 +35,7 @@ export async function runPipeline(
       onProgress?.(++i, etab.nom);
 
       const phone = await findPhoneGoogle(etab.nom, etab.ville);
-      const source = phone !== null ? "google" : "non_trouvé";
+      const scrapeSource = phone !== null ? "google" : "non_trouvé";
 
       if (phone === null) {
         notFoundCount++;
@@ -52,13 +52,13 @@ export async function runPipeline(
         telephone: phone,
         effectifTranche: etab.effectifTranche,
         formeJuridique: etab.formeJuridique,
-        source,
+        source: scrapeSource,
         scraped_at: new Date().toISOString(),
       };
 
       insert(record);
 
-      if (source !== "non_trouvé") {
+      if (scrapeSource !== "non_trouvé") {
         prospects.push(record);
       }
   }
