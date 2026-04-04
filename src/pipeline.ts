@@ -51,6 +51,7 @@ export async function runPipeline(
         codePostal: etab.codePostal,
         telephone: phone,
         effectifTranche: etab.effectifTranche,
+        formeJuridique: etab.formeJuridique,
         source,
         scraped_at: new Date().toISOString(),
       };
