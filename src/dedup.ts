@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import path from "path";
+import { phoneTypeCondition } from "./phoneUtils";
 
 export interface ScrapedRecord {
   siret: string;
@@ -17,6 +18,7 @@ export interface ScrapedStats {
   total: number;
   found: number;
   notFound: number;
+  mobile: number;
 }
 
 export interface PaginatedResult<T> {
@@ -80,16 +82,18 @@ export function insert(record: ScrapedRecord): void {
 }
 
 export function getStats(): ScrapedStats {
+  const mobileCond = phoneTypeCondition("mobile");
   const row = requireDb()
     .prepare(
       `SELECT
         COUNT(*) as total,
         COUNT(CASE WHEN source != 'non_trouvé' THEN 1 END) as found,
-        COUNT(CASE WHEN source = 'non_trouvé' THEN 1 END) as notFound
+        COUNT(CASE WHEN source = 'non_trouvé' THEN 1 END) as notFound,
+        COUNT(CASE WHEN ${mobileCond} THEN 1 END) as mobile
       FROM scraped`
     )
-    .get() as { total: number; found: number; notFound: number };
-  return { total: row.total, found: row.found, notFound: row.notFound };
+    .get() as { total: number; found: number; notFound: number; mobile: number };
+  return { total: row.total, found: row.found, notFound: row.notFound, mobile: row.mobile };
 }
 
 const SELECT_FIELDS = `
@@ -110,9 +114,10 @@ export function updateRecord(siret: string, telephone: string, source: string): 
     .run(telephone, source, new Date().toISOString(), siret);
 }
 
-export function getAll(): ScrapedRecord[] {
+export function getAll(phoneType?: "mobile" | "fixe"): ScrapedRecord[] {
+  const where = phoneType ? `WHERE ${phoneTypeCondition(phoneType)}` : "";
   return requireDb()
-    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ORDER BY scraped_at DESC`)
+    .prepare(`SELECT ${SELECT_FIELDS} FROM scraped ${where} ORDER BY scraped_at DESC`)
     .all() as ScrapedRecord[];
 }
 
@@ -120,7 +125,8 @@ export function getPaginated(
   page: number,
   limit: number,
   sourceFilter?: "found" | "non_trouvé",
-  search?: string
+  search?: string,
+  phoneType?: "mobile" | "fixe"
 ): PaginatedResult<ScrapedRecord> {
   if (limit < 1) throw new Error("limit doit être >= 1");
   const conn = requireDb();
@@ -130,6 +136,8 @@ export function getPaginated(
 
   if (sourceFilter === "found")      conditions.push("source != 'non_trouvé'");
   if (sourceFilter === "non_trouvé") conditions.push("source = 'non_trouvé'");
+
+  if (phoneType) conditions.push(phoneTypeCondition(phoneType));
 
   if (search && search.trim()) {
     const like = "%" + search.trim() + "%";
