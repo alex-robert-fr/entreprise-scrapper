@@ -4,8 +4,463 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scraper — Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      background: #636e72;
+    }
+    .status-dot.running { background: #fdcb6e; }
+    .status-dot.done { background: #00b894; }
+
+    .cards {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      flex: 1 1 160px;
+      min-width: 160px;
+    }
+
+    .card .label {
+      font-size: 0.8rem;
+      color: #b2bec3;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+
+    .card .value {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .section {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section h2 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: #dfe6e9;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      color: #b2bec3;
+    }
+
+    select, input[type="text"] {
+      background: #0f3460;
+      border: 1px solid #2d3436;
+      color: #e0e0e0;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #00b894;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding-bottom: 0.5rem;
+    }
+
+    button {
+      background: #0f3460;
+      color: #e0e0e0;
+      border: none;
+      padding: 0.5rem 1.25rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #1a4a8a; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .progress-bar {
+      display: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-bar.visible { display: block; }
+
+    .progress-track {
+      background: #0f3460;
+      border-radius: 4px;
+      height: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      background: #00b894;
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+      border-radius: 4px;
+    }
+
+    .progress-text {
+      font-size: 0.8rem;
+      color: #b2bec3;
+      margin-top: 0.4rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.8rem;
+      color: #b2bec3;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #2d3436;
+    }
+
+    td {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #1a1a2e;
+    }
+
+    tr:nth-child(even) td { background: #1a2340; }
+
+    .pagination {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-summary {
+      display: none;
+      padding: 0.75rem 1rem;
+      background: #16213e;
+      border-left: 3px solid #00b894;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    .result-summary.visible { display: block; }
+
+    .source-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .source-badge.google { background: #00b894; color: #1a1a2e; }
+    .source-badge.pagesjaunes { background: #fdcb6e; color: #1a1a2e; }
+    .source-badge.non_trouve { background: #636e72; color: #e0e0e0; }
+  </style>
 </head>
 <body>
-  <h1>Scraper Dashboard</h1>
+  <h1>
+    <span class="status-dot" id="statusDot"></span>
+    Scraper Dashboard
+  </h1>
+
+  <div class="cards">
+    <div class="card">
+      <div class="label">Total</div>
+      <div class="value" id="statTotal">0</div>
+    </div>
+    <div class="card">
+      <div class="label">Trouvés</div>
+      <div class="value" id="statFound">0</div>
+    </div>
+    <div class="card">
+      <div class="label">Non trouvés</div>
+      <div class="value" id="statNotFound">0</div>
+    </div>
+    <div class="card">
+      <div class="label">Doublons évités</div>
+      <div class="value" id="statDuplicates">0</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Lancer un scrape</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="region">Région</label>
+        <select id="region">
+          <option value="">— Choisir —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="departement">Département</label>
+        <input type="text" id="departement" placeholder="ex: 29">
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="allFrance">
+        <label for="allFrance">Toute la France</label>
+      </div>
+      <button id="btnScrape" onclick="startScrape()">Lancer le scrape</button>
+    </div>
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text" id="progressText"></div>
+  </div>
+
+  <div class="result-summary" id="resultSummary"></div>
+
+  <div class="actions">
+    <button onclick="exportCsv()">Exporter CSV</button>
+  </div>
+
+  <div class="section">
+    <h2>Résultats</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Ville</th>
+          <th>Téléphone</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+    <div class="pagination">
+      <button id="btnPrev" onclick="changePage(-1)" disabled>Précédent</button>
+      <span id="pageInfo">Page 1 / 1</span>
+      <button id="btnNext" onclick="changePage(1)" disabled>Suivant</button>
+    </div>
+  </div>
+
+  <script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let lastDuplicates = 0;
+    let pollInterval = null;
+
+    async function fetchStats() {
+      const res = await fetch("/api/stats");
+      const stats = await res.json();
+      document.getElementById("statTotal").textContent = stats.total;
+      document.getElementById("statFound").textContent = stats.found;
+      document.getElementById("statNotFound").textContent = stats.notFound;
+    }
+
+    async function fetchRegions() {
+      const res = await fetch("/api/regions");
+      const regions = await res.json();
+      const select = document.getElementById("region");
+      regions.forEach(function(r) {
+        const opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r.charAt(0).toUpperCase() + r.slice(1);
+        select.appendChild(opt);
+      });
+    }
+
+    async function fetchResults(page) {
+      const res = await fetch("/api/results?page=" + page + "&limit=20");
+      const data = await res.json();
+      currentPage = data.page;
+      totalPages = data.totalPages;
+
+      var tbody = document.getElementById("resultsBody");
+      tbody.innerHTML = "";
+
+      data.data.forEach(function(r) {
+        var tr = document.createElement("tr");
+        var badgeClass = r.source === "google" ? "google"
+          : r.source === "pagesjaunes" ? "pagesjaunes" : "non_trouve";
+        tr.innerHTML =
+          "<td>" + escapeHtml(r.nom) + "</td>" +
+          "<td>" + escapeHtml(r.ville) + "</td>" +
+          "<td>" + escapeHtml(r.telephone || "—") + "</td>" +
+          '<td><span class="source-badge ' + badgeClass + '">' + escapeHtml(r.source) + "</span></td>";
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("pageInfo").textContent = "Page " + currentPage + " / " + totalPages;
+      document.getElementById("btnPrev").disabled = currentPage <= 1;
+      document.getElementById("btnNext").disabled = currentPage >= totalPages;
+    }
+
+    function changePage(delta) {
+      fetchResults(currentPage + delta);
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function startScrape() {
+      var btn = document.getElementById("btnScrape");
+      btn.disabled = true;
+
+      var body = {};
+      var allFrance = document.getElementById("allFrance").checked;
+      if (allFrance) {
+        body.all = true;
+      } else {
+        var region = document.getElementById("region").value;
+        var dep = document.getElementById("departement").value.trim();
+        if (region) body.region = region;
+        if (dep) body.departement = dep;
+      }
+
+      var res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.status === 409) {
+        btn.disabled = false;
+        return;
+      }
+
+      document.getElementById("resultSummary").classList.remove("visible");
+      document.getElementById("progressBar").classList.add("visible");
+      startPolling();
+    }
+
+    function startPolling() {
+      if (pollInterval) return;
+      pollInterval = setInterval(pollStatus, 1000);
+    }
+
+    function stopPolling() {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    }
+
+    async function pollStatus() {
+      var res = await fetch("/api/status");
+      var state = await res.json();
+
+      var dot = document.getElementById("statusDot");
+      dot.className = "status-dot " + state.status;
+
+      if (state.status === "running") {
+        var pct = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
+        document.getElementById("progressFill").style.width = pct + "%";
+        document.getElementById("progressText").textContent =
+          pct + "% — " + state.current + " (" + state.progress + "/" + state.total + ")";
+      }
+
+      if (state.status === "done") {
+        stopPolling();
+        document.getElementById("progressFill").style.width = "100%";
+        document.getElementById("progressText").textContent = "Terminé";
+        document.getElementById("btnScrape").disabled = false;
+
+        if (state.result) {
+          lastDuplicates += state.result.alreadyKnown;
+          document.getElementById("statDuplicates").textContent = lastDuplicates;
+          var summary = document.getElementById("resultSummary");
+          summary.textContent = state.result.newCount + " nouveaux | " +
+            state.result.alreadyKnown + " déjà connus | " +
+            state.result.notFoundCount + " non trouvés";
+          summary.classList.add("visible");
+        }
+
+        fetchStats();
+        fetchResults(1);
+
+        setTimeout(function() {
+          document.getElementById("progressBar").classList.remove("visible");
+        }, 3000);
+      }
+
+      if (state.status === "idle") {
+        stopPolling();
+      }
+    }
+
+    function exportCsv() {
+      window.location = "/api/export";
+    }
+
+    // Désactive les champs mutuellement exclusifs
+    document.getElementById("allFrance").addEventListener("change", function() {
+      var disabled = this.checked;
+      document.getElementById("region").disabled = disabled;
+      document.getElementById("departement").disabled = disabled;
+    });
+
+    // Init
+    fetchStats();
+    fetchResults(1);
+    fetchRegions();
+    pollStatus();
+  </script>
 </body>
 </html>
