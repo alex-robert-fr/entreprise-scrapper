@@ -1,7 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import express from "express";
-import { initDb, getStats, getAll, getPaginated, getNotFound, updateRecord } from "./dedup";
+import { initDb, getStats, getAll, getPaginated, getNotFound, updateRecord, getFilterOptions, ResultFilters } from "./dedup";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 import { findPhonePJ, closeBrowser } from "./pagesJaunes";
@@ -43,6 +43,27 @@ let retryPjState: RetryPjState = {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+function parseFilters(query: Record<string, unknown>): ResultFilters {
+  const raw = (k: string) => (query[k] as string | undefined) || undefined;
+  const rawSource    = raw("source");
+  const rawPhoneType = raw("phoneType");
+  const rawSourceEx  = raw("sourceExact");
+  return {
+    sourceFilter:
+      rawSource === "found"      ? "found"      :
+      rawSource === "non_trouvé" ? "non_trouvé" : undefined,
+    sourceExact:
+      rawSourceEx === "google"      ? "google"      :
+      rawSourceEx === "pagesjaunes" ? "pagesjaunes"  :
+      rawSourceEx === "non_trouvé"  ? "non_trouvé"  : undefined,
+    nom:         raw("nom"),
+    ville:       raw("ville"),
+    phoneType:   rawPhoneType === "mobile" ? "mobile" : rawPhoneType === "fixe" ? "fixe" : undefined,
+    effectif:    raw("effectif"),
+    departement: raw("departement"),
+  };
+}
+
 app.get("/api/regions", (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
@@ -51,15 +72,14 @@ app.get("/api/stats", (_req, res) => {
   res.json(getStats());
 });
 
+app.get("/api/filters", (_req, res) => {
+  res.json(getFilterOptions());
+});
+
 app.get("/api/results", (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
+  const page  = Math.max(1, Number(req.query.page)  || 1);
   const limit = Math.min(5000, Math.max(1, Number(req.query.limit) || 5000));
-  const rawSource = req.query.source as string | undefined;
-  const sourceFilter =
-    rawSource === "found"      ? "found"      :
-    rawSource === "non_trouvé" ? "non_trouvé" : undefined;
-  const search = (req.query.q as string | undefined) || undefined;
-  res.json(getPaginated(page, limit, sourceFilter, search));
+  res.json(getPaginated(page, limit, parseFilters(req.query as Record<string, unknown>)));
 });
 
 app.post("/api/scrape", (req, res) => {
@@ -157,8 +177,8 @@ app.post("/api/retry-pj", (req, res) => {
   res.json({ message: "Retry Pages Jaunes lancé", total: records.length });
 });
 
-app.get("/api/export", (_req, res) => {
-  const records = getAll();
+app.get("/api/export", (req, res) => {
+  const records = getAll(parseFilters(req.query as Record<string, unknown>));
 
   const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,source,scraped_at";
   const rows = records.map((r) => {
