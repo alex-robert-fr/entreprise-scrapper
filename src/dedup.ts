@@ -265,7 +265,10 @@ export function getPhoneDuplicates(): PhoneDuplicatesReport {
 
   const groups: PhoneDuplicateGroup[] = phones.map(({ telephone, cnt }) => {
     const records = conn
-      .prepare(`SELECT ${SELECT_FIELDS} FROM scraped WHERE telephone = ? ORDER BY scraped_at DESC`)
+      .prepare(
+        `SELECT ${SELECT_FIELDS} FROM scraped WHERE telephone = ?
+         ORDER BY CASE WHEN source != 'non_trouvé' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+      )
       .all(telephone) as ScrapedRecord[];
     return { telephone, count: cnt, records };
   });
@@ -294,9 +297,86 @@ export function cleanPhoneDuplicates(): number {
   const cleanAll = conn.transaction(() => {
     for (const { telephone } of phones) {
       const rows = conn
-        .prepare("SELECT siret FROM scraped WHERE telephone = ? ORDER BY scraped_at DESC")
+        .prepare(
+          `SELECT siret FROM scraped WHERE telephone = ?
+           ORDER BY CASE WHEN source != 'non_trouvé' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+        )
         .all(telephone) as { siret: string }[];
-      // garder le plus récent (rows[0]), supprimer le reste
+      // garder le premier (source confirmée > plus récent), supprimer le reste
+      for (let i = 1; i < rows.length; i++) {
+        deleteStmt.run(rows[i].siret);
+        deleted++;
+      }
+    }
+  });
+
+  cleanAll();
+  return deleted;
+}
+
+export interface NameDuplicateGroup {
+  nom: string;
+  count: number;
+  records: ScrapedRecord[];
+}
+
+export interface NameDuplicatesReport {
+  groups: NameDuplicateGroup[];
+  totalDuplicateGroups: number;
+  totalToDelete: number;
+}
+
+export function getNameDuplicates(): NameDuplicatesReport {
+  const conn = requireDb();
+
+  const names = (conn
+    .prepare(
+      `SELECT nom, COUNT(*) as cnt FROM scraped
+       GROUP BY nom
+       HAVING cnt > 1
+       ORDER BY cnt DESC`
+    )
+    .all() as { nom: string; cnt: number }[]);
+
+  const groups: NameDuplicateGroup[] = names.map(({ nom, cnt }) => {
+    const records = conn
+      .prepare(
+        `SELECT ${SELECT_FIELDS} FROM scraped WHERE nom = ?
+         ORDER BY CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+      )
+      .all(nom) as ScrapedRecord[];
+    return { nom, count: cnt, records };
+  });
+
+  const totalToDelete = groups.reduce((sum, g) => sum + g.count - 1, 0);
+
+  return { groups, totalDuplicateGroups: groups.length, totalToDelete };
+}
+
+export function cleanNameDuplicates(): number {
+  const conn = requireDb();
+
+  const names = (conn
+    .prepare(
+      `SELECT nom FROM scraped
+       GROUP BY nom
+       HAVING COUNT(*) > 1`
+    )
+    .all() as { nom: string }[]);
+
+  let deleted = 0;
+
+  const deleteStmt = conn.prepare("DELETE FROM scraped WHERE siret = ?");
+
+  const cleanAll = conn.transaction(() => {
+    for (const { nom } of names) {
+      const rows = conn
+        .prepare(
+          `SELECT siret FROM scraped WHERE nom = ?
+           ORDER BY CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 0 ELSE 1 END ASC, scraped_at DESC`
+        )
+        .all(nom) as { siret: string }[];
+      // garder le premier (a un téléphone > plus récent), supprimer le reste
       for (let i = 1; i < rows.length; i++) {
         deleteStmt.run(rows[i].siret);
         deleted++;
