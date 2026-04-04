@@ -824,26 +824,6 @@
     </div>
 
     <div class="toolbar">
-      <div class="search-wrap">
-        <span class="search-icon">⌕</span>
-        <input
-          type="text"
-          class="search-input"
-          id="searchNom"
-          placeholder="Nom de l'établissement…"
-          oninput="onFilter()"
-        >
-      </div>
-      <div class="search-wrap ville">
-        <span class="search-icon">⌕</span>
-        <input
-          type="text"
-          class="search-input"
-          id="searchVille"
-          placeholder="Ville…"
-          oninput="onFilter()"
-        >
-      </div>
       <span class="filter-label" id="filterLabel"></span>
     </div>
 
@@ -964,9 +944,6 @@
 
     const EFFECTIF_LABELS = { "11":"10-19 sal.","12":"10-19 sal.","21":"20-49 sal.","22":"50-99 sal.","31":"100+ sal." };
     let activeScope       = "region";
-    let filterTimeout     = null;
-    let nomQuery          = "";
-    let villeQuery        = "";
 
     /* ── Toast ── */
     function toast(msg, type = "") {
@@ -1140,15 +1117,6 @@
       return /^0[67]/.test(norm);
     }
 
-    /* ── Filtres texte ── */
-    function onFilter() {
-      clearTimeout(filterTimeout);
-      filterTimeout = setTimeout(function() {
-        nomQuery   = document.getElementById("searchNom").value.trim();
-        villeQuery = document.getElementById("searchVille").value.trim();
-        fetchResults();
-      }, 280);
-    }
 
     /* ── Copy phone ── */
     function copyPhone(td, phone) {
@@ -1187,8 +1155,6 @@
       if (activeFilter === "found")    url += "&source=found";
       if (activeFilter === "notfound") url += "&source=non_trouv%C3%A9";
       if (activeFilter === "mobile")   url += "&phoneType=mobile";
-      if (nomQuery)   url += "&nom="   + encodeURIComponent(nomQuery);
-      if (villeQuery) url += "&ville=" + encodeURIComponent(villeQuery);
 
       const data = await fetch(url).then(r => r.json());
 
@@ -1196,9 +1162,7 @@
       tbody.innerHTML = "";
 
       if (!data.data.length) {
-        var hasFilter = nomQuery || villeQuery;
-        var filterDesc = [nomQuery ? "nom\u00a0«\u00a0" + nomQuery + "\u00a0»" : "", villeQuery ? "ville\u00a0«\u00a0" + villeQuery + "\u00a0»" : ""].filter(Boolean).join(", ");
-        const msg = hasFilter ? "Aucun résultat pour " + filterDesc + "." : "Lancez un scrape pour commencer la prospection.";
+        const msg = "Lancez un scrape pour commencer la prospection.";
         tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><strong>Aucun résultat</strong>' + msg + '</div></td></tr>';
       } else {
         data.data.forEach(function(r) {
@@ -1383,7 +1347,6 @@
     function exportCsv() {
       var params = [];
       if (exportScope !== "all") params.push("phoneType=" + exportScope);
-      if (villeQuery) params.push("ville=" + encodeURIComponent(villeQuery));
       var url = "/api/export" + (params.length ? "?" + params.join("&") : "");
       window.location = url;
       var labels = { all: "Téléchargement du CSV…", mobile: "Export mobiles…", fixe: "Export fixes…" };
