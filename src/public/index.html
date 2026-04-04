@@ -520,6 +520,23 @@
     .b-pagesjaunes { background: var(--warn-dim);    color: var(--warn);    border-color: rgba(245,158,11,0.18); }
     .b-non         { background: var(--bg-elevated); color: var(--muted);   border-color: var(--border); }
 
+    .phone-tag {
+      display: inline-block;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      font-size: 0.52rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .phone-tag.mobile { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+    .phone-tag.fixe   { background: var(--bg-elevated); color: var(--dim); border: 1px solid var(--border); }
+
+    .stat#tab-mobile .stat-value { color: #818cf8; }
+    .stat#tab-mobile.active::after { background: linear-gradient(90deg, #818cf8 0%, transparent 100%); }
+
     /* ── TOAST ── */
     .toast-container {
       position: fixed;
@@ -647,8 +664,12 @@
         <div class="stat-value" id="statTotal">0</div>
       </div>
       <div class="stat" id="tab-found" onclick="setFilter('found')">
-        <div class="stat-label">Avec téléphone</div>
+        <div class="stat-label">Avec t��léphone</div>
         <div class="stat-value" id="statFound">0</div>
+      </div>
+      <div class="stat" id="tab-mobile" onclick="toggleMobile()">
+        <div class="stat-label">Mobile</div>
+        <div class="stat-value" id="statMobile">0</div>
       </div>
       <div class="stat" id="tab-notfound" onclick="setFilter('notfound')">
         <div class="stat-label">Non trouvés</div>
@@ -700,6 +721,7 @@
     let pollInterval      = null;
     let retryPollInterval = null;
     let activeFilter      = "all";
+    let phoneTypeFilter   = null;
     let activeScope       = "region";
     let searchTimeout     = null;
     let searchQuery       = "";
@@ -754,6 +776,20 @@
       fetchResults();
     }
 
+    /* ── Phone type ── */
+    function isMobile(phone) {
+      if (!phone) return false;
+      var cleaned = phone.replace(/[\s.+()-]/g, "");
+      var norm = cleaned.startsWith("33") && cleaned.length === 11 ? "0" + cleaned.slice(2) : cleaned;
+      return /^0[67]/.test(norm);
+    }
+
+    function toggleMobile() {
+      phoneTypeFilter = phoneTypeFilter === "mobile" ? null : "mobile";
+      document.getElementById("tab-mobile").classList.toggle("active", phoneTypeFilter === "mobile");
+      fetchResults();
+    }
+
     /* ── Search ── */
     function onSearch() {
       clearTimeout(searchTimeout);
@@ -780,6 +816,7 @@
       const s = await fetch("/api/stats").then(r => r.json());
       counter(document.getElementById("statTotal"),    s.total);
       counter(document.getElementById("statFound"),    s.found);
+      counter(document.getElementById("statMobile"),   s.mobile || 0);
       counter(document.getElementById("statNotFound"), s.notFound);
     }
 
@@ -798,6 +835,7 @@
       let url = "/api/results?page=1&limit=5000";
       if (activeFilter === "found")    url += "&source=found";
       if (activeFilter === "notfound") url += "&source=non_trouv%C3%A9";
+      if (phoneTypeFilter) url += "&phoneType=" + phoneTypeFilter;
       if (searchQuery) url += "&q=" + encodeURIComponent(searchQuery);
 
       const data = await fetch(url).then(r => r.json());
@@ -823,6 +861,11 @@
             const sp = document.createElement("span");
             sp.textContent = phone;
             tdTel.appendChild(sp);
+            var tag = document.createElement("span");
+            var mob = isMobile(r.telephone);
+            tag.className = "phone-tag " + (mob ? "mobile" : "fixe");
+            tag.textContent = mob ? "mobile" : "fixe";
+            tdTel.appendChild(tag);
             tdTel.title = "Cliquer pour copier";
             tdTel.addEventListener("click", function() { copyPhone(tdTel, phone); });
           } else {
@@ -976,7 +1019,9 @@
     }
 
     function exportCsv() {
-      window.location = "/api/export";
+      var url = "/api/export";
+      if (phoneTypeFilter) url += "?phoneType=" + phoneTypeFilter;
+      window.location = url;
       toast("Téléchargement du CSV…");
     }
 
