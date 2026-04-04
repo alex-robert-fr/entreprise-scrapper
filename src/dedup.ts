@@ -329,26 +329,32 @@ export interface NameDuplicatesReport {
 export function getNameDuplicates(): NameDuplicatesReport {
   const conn = requireDb();
 
+  // Uniquement les noms où au moins une entrée a un téléphone ET au moins une n'en a pas
   const names = (conn
     .prepare(
-      `SELECT nom, COUNT(*) as cnt FROM scraped
+      `SELECT nom,
+              COUNT(*) as cnt,
+              COUNT(CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 1 END) as withPhone,
+              COUNT(CASE WHEN telephone IS NULL OR telephone = '' THEN 1 END) as withoutPhone
+       FROM scraped
        GROUP BY nom
-       HAVING cnt > 1
+       HAVING withPhone > 0 AND withoutPhone > 0
        ORDER BY cnt DESC`
     )
-    .all() as { nom: string; cnt: number }[]);
+    .all() as { nom: string; cnt: number; withPhone: number; withoutPhone: number }[]);
 
-  const groups: NameDuplicateGroup[] = names.map(({ nom, cnt }) => {
+  const groups: NameDuplicateGroup[] = names.map(({ nom, withoutPhone }) => {
     const records = conn
       .prepare(
         `SELECT ${SELECT_FIELDS} FROM scraped WHERE nom = ?
          ORDER BY CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 0 ELSE 1 END ASC, scraped_at DESC`
       )
       .all(nom) as ScrapedRecord[];
-    return { nom, count: cnt, records };
+    return { nom, count: records.length, records };
   });
 
-  const totalToDelete = groups.reduce((sum, g) => sum + g.count - 1, 0);
+  // Seules les entrées sans téléphone sont candidates à la suppression
+  const totalToDelete = groups.reduce((sum, g) => sum + g.records.filter(r => !r.telephone).length, 0);
 
   return { groups, totalDuplicateGroups: groups.length, totalToDelete };
 }
@@ -356,34 +362,17 @@ export function getNameDuplicates(): NameDuplicatesReport {
 export function cleanNameDuplicates(): number {
   const conn = requireDb();
 
-  const names = (conn
+  // Supprimer uniquement les entrées sans téléphone quand une entrée avec le même nom ET un téléphone existe
+  const result = conn
     .prepare(
-      `SELECT nom FROM scraped
-       GROUP BY nom
-       HAVING COUNT(*) > 1`
+      `DELETE FROM scraped
+       WHERE (telephone IS NULL OR telephone = '')
+         AND nom IN (
+           SELECT nom FROM scraped
+           WHERE telephone IS NOT NULL AND telephone != ''
+         )`
     )
-    .all() as { nom: string }[]);
+    .run();
 
-  let deleted = 0;
-
-  const deleteStmt = conn.prepare("DELETE FROM scraped WHERE siret = ?");
-
-  const cleanAll = conn.transaction(() => {
-    for (const { nom } of names) {
-      const rows = conn
-        .prepare(
-          `SELECT siret FROM scraped WHERE nom = ?
-           ORDER BY CASE WHEN telephone IS NOT NULL AND telephone != '' THEN 0 ELSE 1 END ASC, scraped_at DESC`
-        )
-        .all(nom) as { siret: string }[];
-      // garder le premier (a un téléphone > plus récent), supprimer le reste
-      for (let i = 1; i < rows.length; i++) {
-        deleteStmt.run(rows[i].siret);
-        deleted++;
-      }
-    }
-  });
-
-  cleanAll();
-  return deleted;
+  return result.changes;
 }
