@@ -59,7 +59,11 @@ app.get("/api/results", (req, res) => {
     rawSource === "found"      ? "found"      :
     rawSource === "non_trouvé" ? "non_trouvé" : undefined;
   const search = (req.query.q as string | undefined) || undefined;
-  res.json(getPaginated(page, limit, sourceFilter, search));
+  const rawPhoneType = req.query.phoneType as string | undefined;
+  const phoneType =
+    rawPhoneType === "mobile" ? "mobile" :
+    rawPhoneType === "fixe"   ? "fixe"   : undefined;
+  res.json(getPaginated(page, limit, sourceFilter, search, phoneType));
 });
 
 app.post("/api/scrape", (req, res) => {
@@ -157,8 +161,12 @@ app.post("/api/retry-pj", (req, res) => {
   res.json({ message: "Retry Pages Jaunes lancé", total: records.length });
 });
 
-app.get("/api/export", (_req, res) => {
-  const records = getAll();
+app.get("/api/export", (req, res) => {
+  const rawPhoneType = req.query.phoneType as string | undefined;
+  const phoneType =
+    rawPhoneType === "mobile" ? "mobile" :
+    rawPhoneType === "fixe"   ? "fixe"   : undefined;
+  const records = getAll(phoneType);
 
   const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,source,scraped_at";
   const rows = records.map((r) => {
