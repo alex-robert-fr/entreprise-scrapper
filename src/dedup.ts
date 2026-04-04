@@ -198,7 +198,7 @@ export function getFilterOptions(): FilterOptions {
     .all() as { ville: string }[]).map(r => r.ville);
 
   const sources = (conn
-    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL ORDER BY source")
+    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL AND source != 'pagesjaunes' ORDER BY source")
     .all() as { source: string }[]).map(r => r.source);
 
   const effectifs = (conn
