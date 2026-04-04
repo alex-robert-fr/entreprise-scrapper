@@ -30,7 +30,7 @@ export interface PaginatedResult<T> {
 
 export interface ResultFilters {
   sourceFilter?: "found" | "non_trouvé";
-  sourceExact?:  "google" | "pagesjaunes" | "non_trouvé";
+  sourceExact?:  "google" | "non_trouvé";
   nom?:          string;
   ville?:        string;
   phoneType?:    "mobile" | "fixe";
@@ -198,7 +198,7 @@ export function getFilterOptions(): FilterOptions {
     .all() as { ville: string }[]).map(r => r.ville);
 
   const sources = (conn
-    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL AND source != 'pagesjaunes' ORDER BY source")
+    .prepare("SELECT DISTINCT source FROM scraped WHERE source IS NOT NULL AND source NOT IN ('pagesjaunes') ORDER BY source")
     .all() as { source: string }[]).map(r => r.source);
 
   const effectifs = (conn

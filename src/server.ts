@@ -36,9 +36,8 @@ function parseFilters(query: Record<string, unknown>): ResultFilters {
       rawSource === "found"      ? "found"      :
       rawSource === "non_trouvé" ? "non_trouvé" : undefined,
     sourceExact:
-      rawSourceEx === "google"      ? "google"      :
-      rawSourceEx === "pagesjaunes" ? "pagesjaunes"  :
-      rawSourceEx === "non_trouvé"  ? "non_trouvé"  : undefined,
+      rawSourceEx === "google"     ? "google"     :
+      rawSourceEx === "non_trouvé" ? "non_trouvé" : undefined,
     nom:         raw("nom"),
     ville:       raw("ville"),
     phoneType:   rawPhoneType === "mobile" ? "mobile" : rawPhoneType === "fixe" ? "fixe" : undefined,
