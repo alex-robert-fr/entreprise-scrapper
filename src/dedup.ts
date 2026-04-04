@@ -50,7 +50,8 @@ const EFFECTIF_LABELS: Record<string, string> = {
   "12": "20-49 sal.",
   "21": "50-99 sal.",
   "22": "100-199 sal.",
-  "31": "200+ sal.",
+  "31": "200-249 sal.",
+  "32": "250-499 sal.",
 };
 
 function buildWhereClause(filters: ResultFilters): { where: string; params: unknown[] } {
