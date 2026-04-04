@@ -10,6 +10,7 @@ export interface ScrapedRecord {
   codePostal: string;
   telephone: string | null;
   effectifTranche: string;
+  formeJuridique: string;
   source: string;
   scraped_at: string;
 }
@@ -98,6 +99,7 @@ export function initDb(): void {
       code_postal       TEXT,
       telephone         TEXT,
       effectif_tranche  TEXT,
+      forme_juridique   TEXT,
       source            TEXT,
       scraped_at        TEXT
     )
@@ -113,8 +115,8 @@ export function insert(record: ScrapedRecord): void {
   requireDb()
     .prepare(
       `INSERT OR IGNORE INTO scraped
-        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, source, scraped_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        (siret, nom, adresse, ville, code_postal, telephone, effectif_tranche, forme_juridique, source, scraped_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       record.siret,
@@ -124,6 +126,7 @@ export function insert(record: ScrapedRecord): void {
       record.codePostal,
       record.telephone,
       record.effectifTranche,
+      record.formeJuridique,
       record.source,
       record.scraped_at,
     );
@@ -147,7 +150,9 @@ export function getStats(): ScrapedStats {
 const SELECT_FIELDS = `
   siret, nom, adresse, ville,
   code_postal as codePostal, telephone,
-  effectif_tranche as effectifTranche, source, scraped_at
+  effectif_tranche as effectifTranche,
+  forme_juridique as formeJuridique,
+  source, scraped_at
 `;
 
 export function getNotFound(): ScrapedRecord[] {
