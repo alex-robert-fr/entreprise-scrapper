@@ -59,9 +59,9 @@ app.post("/api/scrape", (req, res) => {
   scrapeState = { status: "running", progress: 0, total: 0, current: "" };
 
   (async () => {
-    const options = all ? { limit } : { region, departement, limit };
+    const options = all ? {} : { region, departement };
     const etablissements = await fetchEtablissements(options);
-    scrapeState.total = etablissements.length;
+    scrapeState.total = limit ?? etablissements.length;
 
     const result = await runPipeline(etablissements, (current, total, nom) => {
       scrapeState.progress = current;

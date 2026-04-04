@@ -54,7 +54,6 @@ export interface Etablissement {
 export interface FetchOptions {
   region?: string;
   departement?: string;
-  limit?: number;
 }
 
 // --- Helpers ---
@@ -215,8 +214,7 @@ function mapEtablissement(raw: SireneEtablissement): Etablissement {
 async function fetchForNaf(
   nafCode: string,
   departements: string[] | null,
-  headers: Record<string, string>,
-  limit?: number
+  headers: Record<string, string>
 ): Promise<Etablissement[]> {
   const query = buildQuery(nafCode, departements);
   const etablissements: Etablissement[] = [];
@@ -238,7 +236,6 @@ async function fetchForNaf(
 
     for (const raw of data.etablissements) {
       etablissements.push(mapEtablissement(raw));
-      if (limit !== undefined && etablissements.length >= limit) return etablissements;
     }
 
     const next = data.header.curseurSuivant;
@@ -264,11 +261,9 @@ export async function fetchEtablissements(
 
   const departements = getDepartements(options);
 
-  const { limit } = options;
-
   // Un appel par code NAF (OR interdit dans periode())
   const results = await Promise.all(
-    NAF_CODES.map((naf) => fetchForNaf(naf, departements, headers, limit))
+    NAF_CODES.map((naf) => fetchForNaf(naf, departements, headers))
   );
 
   // Dédoublonnage par SIRET (un établissement peut matcher les deux NAF)
@@ -279,7 +274,6 @@ export async function fetchEtablissements(
       if (!seen.has(e.siret)) {
         seen.add(e.siret);
         all.push(e);
-        if (limit !== undefined && all.length >= limit) return all;
       }
     }
   }
