@@ -41,8 +41,9 @@ function parseFilters(query: Record<string, unknown>): ResultFilters {
     nom:         raw("nom"),
     ville:       raw("ville"),
     phoneType:   rawPhoneType === "mobile" ? "mobile" : rawPhoneType === "fixe" ? "fixe" : undefined,
-    effectif:    raw("effectif"),
-    departement: raw("departement"),
+    effectif:       raw("effectif"),
+    departement:    raw("departement"),
+    formeJuridique: raw("formeJuridique"),
   };
 }
 
