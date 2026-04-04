@@ -21,7 +21,11 @@ let browser: Browser | null = null;
 
 async function ensureBrowser(): Promise<Browser> {
   if (!browser) {
-    browser = await chromium.launch({ headless: true });
+    const opts: Parameters<typeof chromium.launch>[0] = { headless: true };
+    if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH) {
+      opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+    }
+    browser = await chromium.launch(opts);
   }
   return browser;
 }
