@@ -27,41 +27,48 @@ export async function runPipeline(
   let notFoundCount = 0;
   const prospects: ScrapedRecord[] = [];
 
-  for (let i = 0; i < etablissements.length; i++) {
-    const e = etablissements[i];
-    onProgress?.(i + 1, etablissements.length, e.nom);
+  let i = 0;
+  for (const etab of etablissements) {
+    onProgress?.(++i, etablissements.length, etab.nom);
 
-    if (isKnown(e.siret)) {
+    if (isKnown(etab.siret)) {
       alreadyKnown++;
       continue;
     }
 
-    let phone = await findPhoneGoogle(e.nom, e.ville);
-    let source = "google";
+    let phone = await findPhoneGoogle(etab.nom, etab.ville);
+    let source: string;
 
-    if (phone === null) {
-      phone = await findPhonePJ(e.nom, e.ville);
-      source = "pagesjaunes";
+    if (phone !== null) {
+      source = "google";
+    } else {
+      phone = await findPhonePJ(etab.nom, etab.ville);
+      source = phone !== null ? "pagesjaunes" : "non_trouvé";
     }
 
     if (phone === null) {
-      source = "non_trouvé";
       notFoundCount++;
     } else {
       newCount++;
     }
 
     const record: ScrapedRecord = {
-      siret: e.siret,
-      nom: e.nom,
+      siret: etab.siret,
+      nom: etab.nom,
+      adresse: etab.adresse,
+      ville: etab.ville,
+      codePostal: etab.codePostal,
       telephone: phone,
-      ville: e.ville,
-      scraped_at: new Date().toISOString(),
+      effectifTranche: etab.effectifTranche,
       source,
+      scraped_at: new Date().toISOString(),
     };
 
     insert(record);
-    prospects.push(record);
+
+    if (source !== "non_trouvé") {
+      prospects.push(record);
+    }
   }
 
   return { newCount, alreadyKnown, notFoundCount, prospects };
