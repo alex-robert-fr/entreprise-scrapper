@@ -118,11 +118,20 @@ export function initDb(): void {
   } catch {
     // Colonne déjà présente
   }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS excluded (
+      siret       TEXT PRIMARY KEY,
+      excluded_at TEXT
+    )
+  `);
 }
 
 export function isKnown(siret: string): boolean {
-  const row = requireDb().prepare("SELECT 1 FROM scraped WHERE siret = ?").get(siret);
-  return row !== undefined;
+  const conn = requireDb();
+  return (
+    conn.prepare("SELECT 1 FROM scraped WHERE siret = ?").get(siret) !== undefined ||
+    conn.prepare("SELECT 1 FROM excluded WHERE siret = ?").get(siret) !== undefined
+  );
 }
 
 export function insert(record: ScrapedRecord): void {
@@ -292,7 +301,9 @@ export function cleanPhoneDuplicates(): number {
 
   let deleted = 0;
 
-  const deleteStmt = conn.prepare("DELETE FROM scraped WHERE siret = ?");
+  const now = new Date().toISOString();
+  const archiveStmt = conn.prepare("INSERT OR IGNORE INTO excluded (siret, excluded_at) VALUES (?, ?)");
+  const deleteStmt  = conn.prepare("DELETE FROM scraped WHERE siret = ?");
 
   const cleanAll = conn.transaction(() => {
     for (const { telephone } of phones) {
@@ -302,8 +313,9 @@ export function cleanPhoneDuplicates(): number {
            ORDER BY CASE WHEN source != 'non_trouvé' THEN 0 ELSE 1 END ASC, scraped_at DESC`
         )
         .all(telephone) as { siret: string }[];
-      // garder le premier (source confirmée > plus récent), supprimer le reste
+      // garder le premier (source confirmée > plus récent), archiver + supprimer le reste
       for (let i = 1; i < rows.length; i++) {
+        archiveStmt.run(rows[i].siret, now);
         deleteStmt.run(rows[i].siret);
         deleted++;
       }
@@ -362,17 +374,30 @@ export function getNameDuplicates(): NameDuplicatesReport {
 export function cleanNameDuplicates(): number {
   const conn = requireDb();
 
-  // Supprimer uniquement les entrées sans téléphone quand une entrée avec le même nom ET un téléphone existe
-  const result = conn
+  // Entrées sans téléphone dont le nom existe aussi avec un téléphone
+  const toExclude = conn
     .prepare(
-      `DELETE FROM scraped
+      `SELECT siret FROM scraped
        WHERE (telephone IS NULL OR telephone = '')
          AND nom IN (
            SELECT nom FROM scraped
            WHERE telephone IS NOT NULL AND telephone != ''
          )`
     )
-    .run();
+    .all() as { siret: string }[];
 
-  return result.changes;
+  if (toExclude.length === 0) return 0;
+
+  const now = new Date().toISOString();
+  const archiveStmt = conn.prepare("INSERT OR IGNORE INTO excluded (siret, excluded_at) VALUES (?, ?)");
+  const deleteStmt  = conn.prepare("DELETE FROM scraped WHERE siret = ?");
+
+  conn.transaction(() => {
+    for (const { siret } of toExclude) {
+      archiveStmt.run(siret, now);
+      deleteStmt.run(siret);
+    }
+  })();
+
+  return toExclude.length;
 }
