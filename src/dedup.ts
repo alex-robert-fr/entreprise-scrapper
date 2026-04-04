@@ -47,10 +47,10 @@ export interface FilterOptions {
 
 const EFFECTIF_LABELS: Record<string, string> = {
   "11": "10-19 sal.",
-  "12": "10-19 sal.",
-  "21": "20-49 sal.",
-  "22": "50-99 sal.",
-  "31": "100+ sal.",
+  "12": "20-49 sal.",
+  "21": "50-99 sal.",
+  "22": "100-199 sal.",
+  "31": "200+ sal.",
 };
 
 function buildWhereClause(filters: ResultFilters): { where: string; params: unknown[] } {
