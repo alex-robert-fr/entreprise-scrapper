@@ -11,7 +11,7 @@ user-invocable: false
 - **Langage** : TypeScript strict
 - **HTTP** : fetch natif (pas d'axios/node-fetch)
 - **Scraping** : Playwright (Pages Jaunes fallback)
-- **Base de donnees** : SQLite via better-sqlite3
+- **Base de donnees** : Postgres via Drizzle ORM + postgres-js (local : docker compose sur port 5433)
 - **CSV** : csv-writer
 - **CLI** : minimist + ora (spinner)
 - **Config** : dotenv
