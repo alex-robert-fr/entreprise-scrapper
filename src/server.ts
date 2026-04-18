@@ -47,6 +47,10 @@ function parseFilters(query: Record<string, unknown>): ResultFilters {
   };
 }
 
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.get("/api/regions", (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
