@@ -16,6 +16,7 @@ const queryClient = postgres(databaseUrl, {
 });
 
 export const db = drizzle(queryClient, { schema });
+export const pgClient = queryClient;
 export type Db = typeof db;
 
 export async function closeDb(): Promise<void> {

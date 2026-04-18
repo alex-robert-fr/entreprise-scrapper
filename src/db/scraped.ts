@@ -1,5 +1,5 @@
-import { and, desc, eq, ilike, like, sql, type SQL } from "drizzle-orm";
-import { db } from "./client";
+import { and, desc, eq, ilike, inArray, like, sql, type SQL } from "drizzle-orm";
+import { db, pgClient } from "./client";
 import { scrapedRecords, excluded } from "./schema";
 import { phoneTypeCondition } from "../phoneUtils";
 
@@ -167,11 +167,41 @@ export async function updateRecord(siret: string, telephone: string, source: str
     .where(eq(scrapedRecords.siret, siret));
 }
 
-export async function getAll(filters: ResultFilters = {}): Promise<ScrapedRecord[]> {
+function toRecordFromRaw(row: Record<string, unknown>): ScrapedRecord {
+  const scrapedAt = row.scraped_at;
+  const scrapedAtIso =
+    scrapedAt instanceof Date ? scrapedAt.toISOString() : new Date(String(scrapedAt)).toISOString();
+  return {
+    siret:           row.siret as string,
+    nom:             (row.nom             as string | null) ?? "",
+    adresse:         (row.adresse         as string | null) ?? "",
+    ville:           (row.ville           as string | null) ?? "",
+    codePostal:      (row.code_postal     as string | null) ?? "",
+    telephone:       (row.telephone       as string | null) ?? null,
+    effectifTranche: (row.effectif_tranche as string | null) ?? "",
+    formeJuridique:  (row.forme_juridique as string | null) ?? "",
+    dirigeants:      (row.dirigeants      as string | null) ?? null,
+    source:          row.source as string,
+    scraped_at:      scrapedAtIso,
+  };
+}
+
+export async function* streamAll(
+  filters: ResultFilters = {},
+  chunkSize = 500,
+): AsyncIterable<ScrapedRecord> {
   const where = buildWhereClause(filters);
-  const query = db.select().from(scrapedRecords).orderBy(desc(scrapedRecords.scrapedAt));
-  const rows = await (where ? query.where(where) : query);
-  return rows.map(toRecord);
+  const builder = db.select().from(scrapedRecords).orderBy(desc(scrapedRecords.scrapedAt));
+  const query = where ? builder.where(where) : builder;
+  const { sql: sqlText, params } = query.toSQL();
+
+  // Drizzle renvoie `unknown[]`, postgres-js attend son type interne — cast nécessaire pour l'interop.
+  const cursor = pgClient.unsafe(sqlText, params as never[]).cursor(chunkSize);
+  for await (const chunk of cursor) {
+    for (const row of chunk as Array<Record<string, unknown>>) {
+      yield toRecordFromRaw(row);
+    }
+  }
 }
 
 export async function getPaginated(
@@ -261,20 +291,34 @@ export async function getPhoneDuplicates(): Promise<PhoneDuplicatesReport> {
         having count(*) > 1
         order by cnt desc`,
   );
+  if (phones.length === 0) {
+    return { groups: [], totalDuplicateGroups: 0, totalToDelete: 0 };
+  }
 
-  const groups: PhoneDuplicateGroup[] = await Promise.all(
-    phones.map(async ({ telephone, cnt }) => {
-      const rows = await db
-        .select()
-        .from(scrapedRecords)
-        .where(eq(scrapedRecords.telephone, telephone))
-        .orderBy(
-          sql`case when ${scrapedRecords.source} != 'non_trouvé' then 0 else 1 end`,
-          desc(scrapedRecords.scrapedAt),
-        );
-      return { telephone, count: cnt, records: rows.map(toRecord) };
-    }),
-  );
+  const telephones = phones.map((p) => p.telephone);
+  const rows = await db
+    .select()
+    .from(scrapedRecords)
+    .where(inArray(scrapedRecords.telephone, telephones))
+    .orderBy(
+      sql`case when ${scrapedRecords.source} != 'non_trouvé' then 0 else 1 end`,
+      desc(scrapedRecords.scrapedAt),
+    );
+
+  const byPhone = new Map<string, ScrapedRecord[]>();
+  for (const row of rows) {
+    const record = toRecord(row);
+    if (!record.telephone) continue;
+    const bucket = byPhone.get(record.telephone) ?? [];
+    bucket.push(record);
+    byPhone.set(record.telephone, bucket);
+  }
+
+  const groups: PhoneDuplicateGroup[] = phones.map(({ telephone, cnt }) => ({
+    telephone,
+    count: cnt,
+    records: byPhone.get(telephone) ?? [],
+  }));
 
   const totalToDelete = groups.reduce((sum, g) => sum + g.count - 1, 0);
   return { groups, totalDuplicateGroups: groups.length, totalToDelete };
@@ -333,21 +377,32 @@ export async function getNameDuplicates(): Promise<NameDuplicatesReport> {
           and count(*) filter (where telephone is null or telephone = '') > 0
         order by count(*) desc`,
   );
+  if (names.length === 0) {
+    return { groups: [], totalDuplicateGroups: 0, totalToDelete: 0 };
+  }
 
-  const groups: NameDuplicateGroup[] = await Promise.all(
-    names.map(async ({ nom }) => {
-      const rows = await db
-        .select()
-        .from(scrapedRecords)
-        .where(eq(scrapedRecords.nom, nom))
-        .orderBy(
-          sql`case when ${scrapedRecords.telephone} is not null and ${scrapedRecords.telephone} != '' then 0 else 1 end`,
-          desc(scrapedRecords.scrapedAt),
-        );
-      const records = rows.map(toRecord);
-      return { nom, count: records.length, records };
-    }),
-  );
+  const noms = names.map((n) => n.nom);
+  const rows = await db
+    .select()
+    .from(scrapedRecords)
+    .where(inArray(scrapedRecords.nom, noms))
+    .orderBy(
+      sql`case when ${scrapedRecords.telephone} is not null and ${scrapedRecords.telephone} != '' then 0 else 1 end`,
+      desc(scrapedRecords.scrapedAt),
+    );
+
+  const byName = new Map<string, ScrapedRecord[]>();
+  for (const row of rows) {
+    const record = toRecord(row);
+    const bucket = byName.get(record.nom) ?? [];
+    bucket.push(record);
+    byName.set(record.nom, bucket);
+  }
+
+  const groups: NameDuplicateGroup[] = names.map(({ nom }) => {
+    const records = byName.get(nom) ?? [];
+    return { nom, count: records.length, records };
+  });
 
   const totalToDelete = groups.reduce(
     (sum, g) => sum + g.records.filter((r) => !r.telephone).length,
