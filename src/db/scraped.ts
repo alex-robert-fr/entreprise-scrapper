@@ -1,4 +1,4 @@
-import { and, desc, eq, like, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, like, sql, type SQL } from "drizzle-orm";
 import { db } from "./client";
 import { scrapedRecords, excluded } from "./schema";
 import { phoneTypeCondition } from "../phoneUtils";
@@ -71,8 +71,8 @@ function buildWhereClause(filters: ResultFilters): SQL | undefined {
   }
 
   if (filters.phoneType) conditions.push(phoneTypeCondition(filters.phoneType));
-  if (filters.nom?.trim())         conditions.push(like(scrapedRecords.nom, "%" + filters.nom.trim() + "%"));
-  if (filters.ville?.trim())       conditions.push(like(scrapedRecords.ville, "%" + filters.ville.trim() + "%"));
+  if (filters.nom?.trim())         conditions.push(ilike(scrapedRecords.nom, "%" + filters.nom.trim() + "%"));
+  if (filters.ville?.trim())       conditions.push(ilike(scrapedRecords.ville, "%" + filters.ville.trim() + "%"));
   if (filters.effectif?.trim())    conditions.push(eq(scrapedRecords.effectifTranche, filters.effectif.trim()));
   if (filters.departement?.trim()) conditions.push(like(scrapedRecords.codePostal, filters.departement.trim() + "%"));
   if (filters.formeJuridique?.trim()) conditions.push(eq(scrapedRecords.formeJuridique, filters.formeJuridique.trim()));
