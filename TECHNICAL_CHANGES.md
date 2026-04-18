@@ -7,8 +7,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Docs
-
-- Guide de déploiement Railway ajouté (`DEPLOYMENT.md`) : pré-requis, setup, provisioning Postgres, domaine custom, variables d'env, troubleshooting ([`e5cf863`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e5cf863))
-
 [Unreleased]: https://github.com/alex-robert-fr/entreprise-scrapper/commits/main
