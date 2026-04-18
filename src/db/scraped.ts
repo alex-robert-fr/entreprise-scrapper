@@ -232,42 +232,40 @@ export async function getPaginated(
 
 export async function getFilterOptions(): Promise<FilterOptions> {
   const [villesRows, sourcesRows, effectifsRows, departementsRows, formesRows] = await Promise.all([
-    db.execute<{ ville: string }>(
-      sql`select distinct ${scrapedRecords.ville} as ville from ${scrapedRecords}
-          where ${scrapedRecords.ville} is not null and ${scrapedRecords.ville} != ''
-          order by ville`,
-    ),
-    db.execute<{ source: string }>(
-      sql`select distinct ${scrapedRecords.source} as source from ${scrapedRecords}
-          where ${scrapedRecords.source} is not null and ${scrapedRecords.source} not in ('pagesjaunes')
-          order by source`,
-    ),
-    db.execute<{ effectif_tranche: string }>(
-      sql`select distinct ${scrapedRecords.effectifTranche} as effectif_tranche from ${scrapedRecords}
-          where ${scrapedRecords.effectifTranche} is not null
-          order by effectif_tranche`,
-    ),
+    db.selectDistinct({ value: scrapedRecords.ville })
+      .from(scrapedRecords)
+      .where(sql`${scrapedRecords.ville} is not null and ${scrapedRecords.ville} != ''`)
+      .orderBy(scrapedRecords.ville),
+    db.selectDistinct({ value: scrapedRecords.source })
+      .from(scrapedRecords)
+      .where(sql`${scrapedRecords.source} not in ('pagesjaunes')`)
+      .orderBy(scrapedRecords.source),
+    db.selectDistinct({ value: scrapedRecords.effectifTranche })
+      .from(scrapedRecords)
+      .where(sql`${scrapedRecords.effectifTranche} is not null`)
+      .orderBy(scrapedRecords.effectifTranche),
     db.execute<{ dep: string }>(
       sql`select distinct substring(${scrapedRecords.codePostal} from 1 for 2) as dep from ${scrapedRecords}
           where ${scrapedRecords.codePostal} is not null and ${scrapedRecords.codePostal} != ''
           order by dep`,
     ),
-    db.execute<{ forme_juridique: string }>(
-      sql`select distinct ${scrapedRecords.formeJuridique} as forme_juridique from ${scrapedRecords}
-          where ${scrapedRecords.formeJuridique} is not null and ${scrapedRecords.formeJuridique} != ''
-          order by forme_juridique`,
-    ),
+    db.selectDistinct({ value: scrapedRecords.formeJuridique })
+      .from(scrapedRecords)
+      .where(sql`${scrapedRecords.formeJuridique} is not null and ${scrapedRecords.formeJuridique} != ''`)
+      .orderBy(scrapedRecords.formeJuridique),
   ]);
 
+  const keepString = (r: { value: string | null }): r is { value: string } => r.value !== null;
+
   return {
-    villes:       villesRows.map((r) => r.ville),
-    sources:      sourcesRows.map((r) => r.source),
-    effectifs:    effectifsRows.map((r) => ({
-                    value: r.effectif_tranche,
-                    label: EFFECTIF_LABELS[r.effectif_tranche] ?? r.effectif_tranche,
+    villes:       villesRows.filter(keepString).map((r) => r.value),
+    sources:      sourcesRows.filter(keepString).map((r) => r.value),
+    effectifs:    effectifsRows.filter(keepString).map((r) => ({
+                    value: r.value,
+                    label: EFFECTIF_LABELS[r.value] ?? r.value,
                   })),
     departements: departementsRows.map((r) => r.dep),
-    formesJuridiques: formesRows.map((r) => r.forme_juridique),
+    formesJuridiques: formesRows.filter(keepString).map((r) => r.value),
   };
 }
 
