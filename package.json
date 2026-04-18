@@ -7,21 +7,26 @@
     "server": "ts-node src/server.ts",
     "start:prod": "node dist/server.js",
     "build": "tsc && rm -rf dist/public && cp -r src/public dist/public",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "better-sqlite3": "^11",
     "csv-writer": "^1",
     "dotenv": "^16",
+    "drizzle-orm": "^0.36",
     "express": "^4",
     "minimist": "^1",
-    "ora": "^5"
+    "ora": "^5",
+    "postgres": "^3"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7",
     "@types/express": "^4",
     "@types/minimist": "^1",
     "@types/node": "^22",
+    "drizzle-kit": "^0.28",
     "ts-node": "^10",
     "typescript": "^5"
   }
