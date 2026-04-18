@@ -105,15 +105,6 @@ Vérifier :
 - Vérifier que `/api/health` répond localement : `curl http://localhost:3000/api/health`
 - Ajuster `healthcheckTimeout` dans `railway.json` si le démarrage est long
 
-### Playwright en prod
-
-Le fallback Pages Jaunes utilise Playwright qui nécessite un Chromium. Nixpacks ne l'installe pas par défaut. Options :
-
-- **Option A** : accepter que le fallback PJ soit KO en prod (dégradé, acceptable)
-- **Option B** : ajouter un `nixpacks.toml` avec `chromium` dans `apt-packages` et `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`
-
-À trancher dans un ticket ultérieur.
-
 ## Références
 
 - Railway docs : https://docs.railway.app
