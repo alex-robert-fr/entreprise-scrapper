@@ -1,7 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import express from "express";
-import { initDb, getStats, getAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./dedup";
+import { getStats, getAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 
@@ -47,9 +47,9 @@ function parseFilters(query: Record<string, unknown>): ResultFilters {
   };
 }
 
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", async (_req, res) => {
   try {
-    getStats();
+    await getStats();
     res.json({ status: "ok" });
   } catch {
     res.status(503).json({ status: "error", reason: "db_unavailable" });
@@ -60,18 +60,18 @@ app.get("/api/regions", (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
 
-app.get("/api/stats", (_req, res) => {
-  res.json(getStats());
+app.get("/api/stats", async (_req, res) => {
+  res.json(await getStats());
 });
 
-app.get("/api/filters", (_req, res) => {
-  res.json(getFilterOptions());
+app.get("/api/filters", async (_req, res) => {
+  res.json(await getFilterOptions());
 });
 
-app.get("/api/results", (req, res) => {
+app.get("/api/results", async (req, res) => {
   const page  = Math.max(1, Number(req.query.page)  || 1);
   const limit = Math.min(5000, Math.max(1, Number(req.query.limit) || 5000));
-  res.json(getPaginated(page, limit, parseFilters(req.query as Record<string, unknown>)));
+  res.json(await getPaginated(page, limit, parseFilters(req.query as Record<string, unknown>)));
 });
 
 app.post("/api/scrape", (req, res) => {
@@ -128,31 +128,31 @@ app.get("/api/status", (_req, res) => {
   res.json(scrapeState);
 });
 
-app.get("/api/duplicates/phone", (_req, res) => {
-  res.json(getPhoneDuplicates());
+app.get("/api/duplicates/phone", async (_req, res) => {
+  res.json(await getPhoneDuplicates());
 });
 
-app.post("/api/duplicates/phone/clean", (_req, res) => {
-  const deleted = cleanPhoneDuplicates();
+app.post("/api/duplicates/phone/clean", async (_req, res) => {
+  const deleted = await cleanPhoneDuplicates();
   res.json({ deleted });
 });
 
-app.get("/api/duplicates/name", (_req, res) => {
-  res.json(getNameDuplicates());
+app.get("/api/duplicates/name", async (_req, res) => {
+  res.json(await getNameDuplicates());
 });
 
-app.post("/api/duplicates/name/clean", (_req, res) => {
-  const deleted = cleanNameDuplicates();
+app.post("/api/duplicates/name/clean", async (_req, res) => {
+  const deleted = await cleanNameDuplicates();
   res.json({ deleted });
 });
 
-app.get("/api/duplicates/excluded-count", (_req, res) => {
-  res.json({ count: getExcludedCount() });
+app.get("/api/duplicates/excluded-count", async (_req, res) => {
+  res.json({ count: await getExcludedCount() });
 });
 
 
-app.get("/api/export", (req, res) => {
-  const records = getAll(parseFilters(req.query as Record<string, unknown>));
+app.get("/api/export", async (req, res) => {
+  const records = await getAll(parseFilters(req.query as Record<string, unknown>));
 
   const header = "siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,dirigeants,source,scraped_at";
   const rows = records.map((r) => {
@@ -174,8 +174,6 @@ app.get("/api/export", (req, res) => {
   res.setHeader("Content-Disposition", "attachment; filename=export.csv");
   res.send(csv);
 });
-
-initDb();
 
 app.listen(PORT, () => {
   console.log(`Dashboard disponible sur http://localhost:${PORT}`);

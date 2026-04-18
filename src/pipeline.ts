@@ -1,5 +1,5 @@
 import { Etablissement } from "./sirene";
-import { initDb, isKnown, insert, ScrapedRecord } from "./dedup";
+import { isKnown, insert, ScrapedRecord } from "./db/scraped";
 import { findPhoneGoogle } from "./googleMaps";
 import { fetchDirigeants } from "./annuaireEntreprises";
 
@@ -17,8 +17,6 @@ export async function runPipeline(
   onProgress?: ProgressCallback,
   limit?: number
 ): Promise<PipelineResult> {
-  initDb();
-
   let newCount = 0;
   let alreadyKnown = 0;
   let notFoundCount = 0;
@@ -26,7 +24,7 @@ export async function runPipeline(
   let i = 0;
 
   for await (const etab of source) {
-      if (isKnown(etab.siret)) {
+      if (await isKnown(etab.siret)) {
         alreadyKnown++;
         continue;
       }
@@ -61,7 +59,7 @@ export async function runPipeline(
         scraped_at: new Date().toISOString(),
       };
 
-      insert(record);
+      await insert(record);
 
       if (scrapeSource !== "non_trouvé") {
         prospects.push(record);
