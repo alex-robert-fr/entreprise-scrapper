@@ -23,7 +23,7 @@ user-invocable: false
 
 ## Git
 
-- **Branche par defaut** : main
+- **Branche par defaut** : develop
 - **Remote** : github.com/alex-robert-fr/entreprise-scrapper
 
 ## Architecture

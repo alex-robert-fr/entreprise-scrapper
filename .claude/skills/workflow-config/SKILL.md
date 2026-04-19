@@ -8,7 +8,7 @@ user-invocable: false
 
 - **Git hosting** : GitHub
 - **Issue tracker** : GitHub Issues
-- **Branche par defaut** : main
+- **Branche par defaut** : develop
 
 ## Commandes
 
