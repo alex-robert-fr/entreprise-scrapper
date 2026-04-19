@@ -6,7 +6,7 @@
     "start": "ts-node src/main.ts",
     "server": "ts-node src/server.ts",
     "start:prod": "node dist/server.js",
-    "build": "tsc && rm -rf dist/public && cp -r src/public dist/public",
+    "build": "tsc && rm -rf dist/public dist/views && cp -r src/public dist/public && cp -r src/views dist/views",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

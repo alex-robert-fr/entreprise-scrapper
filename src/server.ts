@@ -3,7 +3,7 @@ import path from "path";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
-import { requireAuth, dashboardGuard } from "./middleware/auth";
+import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
@@ -40,11 +40,11 @@ app.use(express.json());
 app.get("/", dashboardGuard);
 app.get("/index.html", dashboardGuard);
 
-app.get("/login", (_req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
+app.get("/login", alreadyAuthGuard, (_req, res) => {
+  res.sendFile(path.join(__dirname, "views", "login.html"));
 });
-app.get("/signup", (_req, res) => {
-  res.sendFile(path.join(__dirname, "public", "signup.html"));
+app.get("/signup", alreadyAuthGuard, (_req, res) => {
+  res.sendFile(path.join(__dirname, "views", "signup.html"));
 });
 
 app.use(express.static(path.join(__dirname, "public")));

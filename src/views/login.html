@@ -255,6 +255,7 @@
           submitBtn.disabled = false;
           return;
         }
+        submitBtn.disabled = false;
         window.location.href = "/";
       } catch (err) {
         showError("Erreur réseau. Réessaye.");
@@ -273,11 +274,12 @@
           body: JSON.stringify({ provider: "google", callbackURL: "/" }),
         });
         const data = await parseResponse(res);
-        if (!res.ok || !data || !data.url) {
+        if (!res.ok || !data?.url || typeof data.url !== "string") {
           showError(extractErrorMessage(data) || "OAuth Google indisponible");
           googleBtn.disabled = false;
           return;
         }
+        googleBtn.disabled = false;
         window.location.href = data.url;
       } catch (err) {
         showError("Erreur réseau. Réessaye.");
