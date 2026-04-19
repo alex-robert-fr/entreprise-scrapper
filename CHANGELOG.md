@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Routes API protégées par authentification : toutes les routes `/api/*` (sauf `/api/auth/*` et `/api/health`) retournent `401 Unauthorized` si la session est absente ; le dashboard `/` redirige vers `/login` (302) si non authentifié ([`874cd46`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/874cd46))
 - `GET /api/me` désormais protégé par le middleware d'authentification, cohérent avec le reste des routes ([`59f9104`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/59f9104))
+- Les routes `POST /api/scrape`, `GET /api/results` et `GET /api/export` valident désormais tous les inputs : une valeur invalide (région inconnue, département mal formé, limite hors plage, filtre non reconnu) retourne `400` avec le champ fautif et un message explicite, au lieu d'un comportement imprévisible ([`6601e52`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/6601e52))
 
 ## [0.1.0](https://github.com/alex-robert-fr/entreprise-scrapper/releases/tag/v0.1.0) - 2026-04-18
 

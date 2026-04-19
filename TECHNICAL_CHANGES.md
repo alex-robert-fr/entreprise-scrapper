@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getFilterOptions` : migration de 4 requêtes raw vers `db.selectDistinct()` typé ([`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
 - `src/middleware/auth.ts` : extraction de `makeAuthGuard(onUnauth)` pour mutualiser `requireAuth` et `dashboardGuard` ; type union `UserRole = "user" | "admin"` + helper `toUserRole` pour normaliser le champ `role` Better Auth ; ajout de `requireAdminAuth` (guard atomique session + rôle) pour les futures routes admin ([`2ec076d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2ec076d))
 - Pages login/signup déplacées de `src/public/` vers `src/views/` (servies exclusivement via routes Express, non exposées par `express.static`) ; ajout de `alreadyAuthGuard` dans `src/middleware/auth.ts` ; script `build` étendu pour copier `src/views/` vers `dist/views/` ([`43cde21`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/43cde21))
+- Ajout de `src/schemas/` (scrape, filters, billing) : schémas Zod centralisés pour tous les inputs HTTP ; middlewares `validateBody`/`validateQuery` qui stockent les données validées dans `res.locals.query` ; `normalizeRegion` exportée depuis `sirene.ts` ([`eba11cb`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/eba11cb))
 
 ### Docs
 
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Retire `better-sqlite3` et `@types/better-sqlite3` ; ajoute `drizzle-orm` + `postgres` (runtime) et `drizzle-kit` (dev) ([`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b))
 - Ajout `better-auth@1.6.5` ; bump `drizzle-orm` 0.36 → 0.45 et `drizzle-kit` 0.28 → 0.31 pour compatibilité ([`8847f64`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8847f64))
+- Ajout de `zod@4.3.6` ([`1c0e0ee`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/1c0e0ee))
 
 ### Chore
 
