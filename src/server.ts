@@ -1,6 +1,8 @@
 import "dotenv/config";
 import path from "path";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { auth } from "./auth";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
@@ -29,8 +31,20 @@ let scrapeState: ScrapeState = {
   current: "",
 };
 
+// Better Auth doit lire le body brut — monté AVANT express.json()
+app.all("/api/auth/*", toNodeHandler(auth));
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/api/me", asyncHandler(async (req, res) => {
+  const result = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!result) {
+    res.status(401).json({ error: "Non authentifié" });
+    return;
+  }
+  res.json(result);
+}));
 
 function parseFilters(query: Record<string, unknown>): ResultFilters {
   const raw = (k: string) => (query[k] as string | undefined) || undefined;
