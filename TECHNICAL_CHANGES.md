@@ -42,5 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tables auth Better Auth ajoutées au schéma Drizzle (`user`, `session`, `account`, `verification`) et migration `0001_auth_better_auth.sql` générée avec FK `credits.user_id` et `credit_transactions.user_id` → `user.id` (cascade delete) ([`57a686f`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/57a686f))
 - Variable `BETTER_AUTH_TRUSTED_ORIGINS` (CSV) pour configurer plusieurs origines autorisées en plus de `BETTER_AUTH_URL` ([`0f20ef4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0f20ef4))
 - Hook `user.create.after` : gestion d'erreur avec relance et log d'avertissement si conflit sur insert crédits ([`0f20ef4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0f20ef4))
+- Branche par défaut basculée sur `develop` dans les skills workflow (`workflow-config`, `tech-stack`) ([`ed4eb21`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ed4eb21))
 
 [Unreleased]: https://github.com/alex-robert-fr/entreprise-scrapper/compare/v0.1.0...HEAD
