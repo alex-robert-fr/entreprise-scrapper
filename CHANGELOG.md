@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-04-18
+### Changed
+
+- **BREAKING** — La base de données passe de SQLite à Postgres. L'application nécessite désormais une `DATABASE_URL` ; en local, lancer `docker compose up -d db` puis `npm run db:migrate` avant de démarrer le serveur. L'ancienne base `data/scraper.db` n'est pas migrée (décision produit : on repart from scratch) ([`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160), [`9b0b101`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9b0b101), [`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b))
+
+### Fixed
+
+- Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))
+- `GET /api/export` streame désormais le CSV ligne par ligne via un curseur Postgres : plus de timeout HTTP ni de saturation mémoire sur de grands volumes ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
+
+## [0.1.0](https://github.com/alex-robert-fr/entreprise-scrapper/releases/tag/v0.1.0) - 2026-04-18
 
 ### Added
 

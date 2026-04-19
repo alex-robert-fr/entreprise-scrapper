@@ -19,7 +19,8 @@ Crée une application Node.js + TypeScript avec une interface web simple (dashbo
 - `dotenv` pour les clés API
 - `ora` pour le spinner / progress bar CLI
 - `express` pour le serveur du dashboard web
-- `better-sqlite3` pour la base de données locale de déduplication
+- `drizzle-orm` + `postgres` (postgres-js) pour la DB, `drizzle-kit` pour les migrations
+- `docker compose` pour Postgres 16 local (port 5433)
 
 ## Codes NAF ciblés
 
@@ -28,10 +29,14 @@ Crée une application Node.js + TypeScript avec une interface web simple (dashbo
 
 ## Tranches d'effectif SIRENE (15+ salariés)
 
-- `12` → 10 à 19 salariés
-- `21` → 20 à 49 salariés
-- `22` → 50 à 99 salariés
-- `31` → 100 à 199 salariés (et au-delà)
+Codes INSEE officiels (voir `src/db/scraped.ts:EFFECTIF_LABELS`) :
+
+- `11` → 10 à 19 salariés
+- `12` → 20 à 49 salariés
+- `21` → 50 à 99 salariés
+- `22` → 100 à 199 salariés
+- `31` → 200 à 249 salariés
+- `32` → 250 à 499 salariés
 
 ## Structure du projet
 
@@ -39,45 +44,38 @@ Crée une application Node.js + TypeScript avec une interface web simple (dashbo
 scraper/
 ├── .env
 ├── .env.example
-├── data/
-│   └── scraper.db          # SQLite — base de déduplication persistante
+├── docker-compose.yml      # Postgres local (port 5433)
+├── drizzle.config.ts       # Config drizzle-kit
+├── drizzle/                # Migrations SQL versionnées
 ├── exports/                # CSVs générés
 ├── src/
 │   ├── main.ts             # CLI entrypoint avec minimist
 │   ├── server.ts           # Serveur Express pour le dashboard
 │   ├── sirene.ts           # Appels API INSEE SIRENE
 │   ├── googleMaps.ts       # Google Maps Places API
-│   ├── pagesJaunes.ts      # Scraping PJ avec Playwright (fallback)
 │   ├── pipeline.ts         # Orchestration des 3 sources
-│   ├── dedup.ts            # Gestion SQLite — vérification/ajout des SIRET
 │   ├── exporter.ts         # Export CSV
+│   ├── db/
+│   │   ├── schema.ts       # Tables Drizzle (scraped_records, phone_cache, credits...)
+│   │   ├── client.ts       # Connexion Postgres singleton
+│   │   ├── scraped.ts      # Queries scraped_records/excluded (ex-dedup.ts)
+│   │   ├── phoneCache.ts   # Cache mutualisé TTL 90j
+│   │   └── index.ts        # Barrel
 │   └── public/
 │       └── index.html      # Dashboard web (HTML/CSS/JS vanilla, pas de framework)
 ├── tsconfig.json
 └── package.json
 ```
 
-## Système de déduplication (dedup.ts)
+## Système de déduplication (src/db/scraped.ts)
 
-Utiliser **SQLite via `better-sqlite3`** comme base persistante locale.
+Utiliser **Postgres via Drizzle ORM** (table `scraped_records`, définie dans `src/db/schema.ts`).
 
-Table `scraped` :
-
-```sql
-CREATE TABLE IF NOT EXISTS scraped (
-  siret       TEXT PRIMARY KEY,
-  nom         TEXT,
-  telephone   TEXT,
-  ville       TEXT,
-  scraped_at  TEXT,
-  source      TEXT
-);
-```
-
-- Avant chaque scrape → vérifier si le `siret` existe déjà dans la table
+- Avant chaque scrape → `isKnown(siret)` vérifie dans `scraped_records` **et** `excluded`
 - Si oui → skip silencieux, incrémenter un compteur `already_known`
-- Si non → scraper, puis insérer le résultat dans la table
+- Si non → scraper, puis `insert(record)` avec `onConflictDoNothing`
 - La DB persiste entre les runs → relancer le script ne re-scrape jamais un établissement déjà traité
+- Les SIRET nettoyés lors des passes de doublons sont archivés dans `excluded` (ils ne seront plus jamais scrapés)
 
 ## Dashboard web (src/public/index.html)
 
@@ -125,7 +123,7 @@ PORT=3000
 
 Commence par créer la structure du projet et le `package.json`, puis implémente dans cet ordre :
 
-1. `dedup.ts` — la base SQLite en premier, tout le reste en dépend
+1. `src/db/schema.ts` + `src/db/client.ts` — la couche DB en premier, tout le reste en dépend
 2. `sirene.ts`
 3. `googleMaps.ts`
 4. `pagesJaunes.ts`

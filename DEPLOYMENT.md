@@ -2,7 +2,7 @@
 
 Guide pas-à-pas pour déployer le scrapper sur Railway avec Postgres managé, domaine custom et HTTPS.
 
-> **Note importante :** à ce stade, le code utilise encore SQLite (`better-sqlite3`). Le Postgres Railway sera provisionné mais **non utilisé** tant que la migration (#36) n'est pas mergée. Le filesystem Railway étant éphémère, la DB SQLite ne persistera pas entre les redémarrages — c'est accepté dans le cadre du ticket #35.
+Depuis #36, le projet utilise **Postgres + Drizzle ORM**. L'ancienne DB SQLite (`data/scraper.db`) n'est plus utilisée et ne sera pas migrée (décision produit : on repart from scratch).
 
 ## Pré-requis
 
@@ -98,15 +98,54 @@ Vérifier :
 ### Build échoue
 
 - Vérifier les logs Railway → onglet **Deployments** → cliquer sur le deploy échoué
-- Souvent lié à une dépendance native (`better-sqlite3` nécessite `node-gyp`) : Nixpacks la gère par défaut
 
 ### Health check KO
 
 - Vérifier que `/api/health` répond localement : `curl http://localhost:3000/api/health`
 - Ajuster `healthcheckTimeout` dans `railway.json` si le démarrage est long
+- Le healthcheck interroge la DB via `getStats()` — si Postgres n'est pas joignable, le check renvoie 503
+
+### Appliquer les migrations en prod
+
+Railway ne joue pas automatiquement `drizzle-kit migrate`. Deux options :
+
+- Ajouter `npm run db:migrate && npm run start:prod` dans la `startCommand` de `railway.json`
+- Ou exécuter manuellement via `railway run npm run db:migrate` après chaque nouvelle migration
+
+---
+
+# Setup Postgres local
+
+Le projet fournit un `docker-compose.yml` avec Postgres 16 pour le développement.
+
+## Lancer la DB locale
+
+```bash
+docker compose up -d db
+```
+
+La DB écoute sur **localhost:5433** (port décalé pour éviter un conflit avec un éventuel Postgres système).
+
+## Commandes Drizzle
+
+| Commande | Usage |
+|----------|-------|
+| `npm run db:generate` | Générer un nouveau fichier SQL après modification de `src/db/schema.ts` |
+| `npm run db:migrate` | Appliquer les migrations en attente (prod et dev) |
+| `npm run db:push` | Pousser directement le schéma sans migration (dev only, rapide) |
+| `npm run db:studio` | Ouvrir Drizzle Studio pour inspecter/éditer la DB |
+
+## Workflow type
+
+1. Modifier `src/db/schema.ts`
+2. `npm run db:generate` → produit un nouveau `drizzle/000X_*.sql`
+3. Relire le SQL généré avant commit
+4. `npm run db:migrate` pour l'appliquer en local
+5. Commit des fichiers `drizzle/` + `schema.ts`
 
 ## Références
 
 - Railway docs : https://docs.railway.app
 - Nixpacks : https://nixpacks.com
-- Issue associée : #35
+- Drizzle ORM : https://orm.drizzle.team
+- Issues associées : #35 (Railway infra), #36 (migration Postgres)

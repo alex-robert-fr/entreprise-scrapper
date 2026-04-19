@@ -1,4 +1,4 @@
-import { ScrapedRecord } from "./dedup";
+import { ScrapedRecord } from "./db/scraped";
 
 export async function exportProspects(
   _prospects: ScrapedRecord[]
