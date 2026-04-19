@@ -17,12 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/middleware/auth.ts` : extraction de `makeAuthGuard(onUnauth)` pour mutualiser `requireAuth` et `dashboardGuard` ; type union `UserRole = "user" | "admin"` + helper `toUserRole` pour normaliser le champ `role` Better Auth ; ajout de `requireAdminAuth` (guard atomique session + rôle) pour les futures routes admin ([`2ec076d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2ec076d))
 - Pages login/signup déplacées de `src/public/` vers `src/views/` (servies exclusivement via routes Express, non exposées par `express.static`) ; ajout de `alreadyAuthGuard` dans `src/middleware/auth.ts` ; script `build` étendu pour copier `src/views/` vers `dist/views/` ([`43cde21`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/43cde21))
 - Ajout de `src/schemas/` (scrape, filters, billing) : schémas Zod centralisés pour tous les inputs HTTP ; middlewares `validateBody`/`validateQuery` qui stockent les données validées dans `res.locals.query` ; `normalizeRegion` exportée depuis `sirene.ts` ([`eba11cb`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/eba11cb))
+- `src/db/scraped.ts` : toutes les fonctions publiques reçoivent `userId: string` en premier argument ; `buildWhereClause` filtre systématiquement par `user_id` ; les `DELETE` dans `cleanPhoneDuplicates`/`cleanNameDuplicates` incluent le scope `userId` en défense en profondeur ([`3d004ce`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/3d004ce), [`063fd61`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/063fd61))
+- `src/server.ts` : `scrapeState` devient `Map<userId, ScrapeState>` pour isoler le statut de scrape par utilisateur ; `/api/health` bascule sur `SELECT 1` indépendant du scope user ([`8c19bf6`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8c19bf6), [`063fd61`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/063fd61))
+- `src/pipeline.ts` : signature `runPipeline(source, userId, onProgress?, limit?)` — `userId` propagé à chaque `ScrapedRecord` inséré ([`3442b43`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/3442b43))
 
 ### Docs
 
 - `DEPLOYMENT.md` : section setup Postgres local (docker compose) + commandes `db:generate`, `db:migrate`, `db:push`, `db:studio` + note migrations en prod ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e))
 - `CLAUDE.md` : structure projet et système de déduplication mis à jour ; codes INSEE effectif corrigés (11, 12, 21, 22, 31, 32) ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e), [`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
 - `.claude/skills/tech-stack/SKILL.md` : stack DB mise à jour (Postgres + Drizzle) ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e))
+- `.env.example` : `SCRAPE_USER_ID` documenté pour la CLI (usage futur quand `src/main.ts` sera implémenté) ([`1701c1a`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/1701c1a))
 
 ### Dependencies
 

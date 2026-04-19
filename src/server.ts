@@ -6,6 +6,8 @@ import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
 import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
+import { sql } from "drizzle-orm";
+import { db } from "./db/client";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 import {
@@ -34,12 +36,12 @@ interface ScrapeState {
   result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
 }
 
-let scrapeState: ScrapeState = {
-  status: "idle",
-  progress: 0,
-  total: 0,
-  current: "",
-};
+const IDLE_STATE: ScrapeState = { status: "idle", progress: 0, total: 0, current: "" };
+const scrapeStates = new Map<string, ScrapeState>();
+
+function getScrapeState(userId: string): ScrapeState {
+  return scrapeStates.get(userId) ?? IDLE_STATE;
+}
 
 // Better Auth doit lire le body brut — monté AVANT express.json()
 app.all("/api/auth/*", toNodeHandler(auth));
@@ -78,7 +80,7 @@ function pickFilters(query: ResultsQuery | ExportQuery): ResultFilters {
 
 app.get("/api/health", async (_req, res) => {
   try {
-    await getStats();
+    await db.execute(sql`select 1`);
     res.json({ status: "ok" });
   } catch (err) {
     console.error("[health] db unavailable", err);
@@ -90,85 +92,88 @@ app.get("/api/regions", requireAuth, (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
 
-app.get("/api/stats", requireAuth, asyncHandler(async (_req, res) => {
-  res.json(await getStats());
+app.get("/api/stats", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await getStats(req.user!.id));
 }));
 
-app.get("/api/filters", requireAuth, asyncHandler(async (_req, res) => {
-  res.json(await getFilterOptions());
+app.get("/api/filters", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await getFilterOptions(req.user!.id));
 }));
 
-app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHandler(async (_req, res) => {
+app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHandler(async (req, res) => {
   const query = getValidatedQuery<ResultsQuery>(res);
-  res.json(await getPaginated(query.page, query.limit, pickFilters(query)));
+  res.json(await getPaginated(req.user!.id, query.page, query.limit, pickFilters(query)));
 }));
 
 app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) => {
-  if (scrapeState.status === "running") {
+  const userId = req.user!.id;
+
+  if (scrapeStates.get(userId)?.status === "running") {
     res.status(409).json({ error: "Scrape déjà en cours" });
     return;
   }
 
   const { region, departement, all, limit } = req.body as ScrapeBody;
 
-  scrapeState = { status: "running", progress: 0, total: 0, current: "" };
+  const state: ScrapeState = { status: "running", progress: 0, total: 0, current: "" };
+  scrapeStates.set(userId, state);
 
   (async () => {
     const options = all ? {} : { region, departement };
 
     let source: Iterable<import("./sirene").Etablissement> | AsyncIterable<import("./sirene").Etablissement>;
     if (limit !== undefined) {
-      scrapeState.total = limit;
+      state.total = limit;
       source = streamEtablissements(options);
     } else {
       const etablissements = await fetchEtablissements(options);
-      scrapeState.total = etablissements.length;
+      state.total = etablissements.length;
       source = etablissements;
     }
 
-    const result = await runPipeline(source, (current, nom) => {
-      scrapeState.progress = current;
-      scrapeState.current = nom;
+    const result = await runPipeline(source, userId, (current, nom) => {
+      state.progress = current;
+      state.current = nom;
     }, limit);
 
-    scrapeState.status = "done";
-    scrapeState.result = {
+    state.status = "done";
+    state.result = {
       newCount: result.newCount,
       alreadyKnown: result.alreadyKnown,
       notFoundCount: result.notFoundCount,
     };
   })().catch((err) => {
-    scrapeState.status = "done";
-    scrapeState.current = `Erreur : ${err instanceof Error ? err.message : String(err)}`;
+    state.status = "done";
+    state.current = `Erreur : ${err instanceof Error ? err.message : String(err)}`;
   });
 
   res.json({ message: "Scrape lancé" });
 });
 
-app.get("/api/status", requireAuth, (_req, res) => {
-  res.json(scrapeState);
+app.get("/api/status", requireAuth, (req, res) => {
+  res.json(getScrapeState(req.user!.id));
 });
 
-app.get("/api/duplicates/phone", requireAuth, asyncHandler(async (_req, res) => {
-  res.json(await getPhoneDuplicates());
+app.get("/api/duplicates/phone", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await getPhoneDuplicates(req.user!.id));
 }));
 
-app.post("/api/duplicates/phone/clean", requireAuth, asyncHandler(async (_req, res) => {
-  const deleted = await cleanPhoneDuplicates();
+app.post("/api/duplicates/phone/clean", requireAuth, asyncHandler(async (req, res) => {
+  const deleted = await cleanPhoneDuplicates(req.user!.id);
   res.json({ deleted });
 }));
 
-app.get("/api/duplicates/name", requireAuth, asyncHandler(async (_req, res) => {
-  res.json(await getNameDuplicates());
+app.get("/api/duplicates/name", requireAuth, asyncHandler(async (req, res) => {
+  res.json(await getNameDuplicates(req.user!.id));
 }));
 
-app.post("/api/duplicates/name/clean", requireAuth, asyncHandler(async (_req, res) => {
-  const deleted = await cleanNameDuplicates();
+app.post("/api/duplicates/name/clean", requireAuth, asyncHandler(async (req, res) => {
+  const deleted = await cleanNameDuplicates(req.user!.id);
   res.json({ deleted });
 }));
 
-app.get("/api/duplicates/excluded-count", requireAuth, asyncHandler(async (_req, res) => {
-  res.json({ count: await getExcludedCount() });
+app.get("/api/duplicates/excluded-count", requireAuth, asyncHandler(async (req, res) => {
+  res.json({ count: await getExcludedCount(req.user!.id) });
 }));
 
 
@@ -186,7 +191,7 @@ app.get("/api/export", requireAuth, validateQuery(exportQuerySchema), asyncHandl
 
   res.write("siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,dirigeants,source,scraped_at\n");
 
-  for await (const r of streamAll(pickFilters(getValidatedQuery<ExportQuery>(res)))) {
+  for await (const r of streamAll(req.user!.id, pickFilters(getValidatedQuery<ExportQuery>(res)))) {
     const row = [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.dirigeants, r.source, r.scraped_at]
       .map(escape)
       .join(",");
