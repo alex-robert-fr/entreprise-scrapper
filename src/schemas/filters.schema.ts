@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const resultFiltersSchema = z
   .object({
-    sourceFilter: z.enum(["found", "non_trouvé"]).optional(),
+    source: z.enum(["found", "non_trouvé"]).optional(),
     sourceExact: z.enum(["google", "non_trouvé"]).optional(),
     nom: z.string().trim().min(1).optional(),
     ville: z.string().trim().min(1).optional(),

@@ -2,6 +2,19 @@ import { and, desc, eq, ilike, inArray, like, sql, type SQL } from "drizzle-orm"
 import { db, pgClient } from "./client";
 import { scrapedRecords, excluded } from "./schema";
 import { phoneTypeCondition } from "../phoneUtils";
+// Les filtres consommes par la couche DB — formes miroir du schema Zod
+// cote HTTP, mais avec "sourceFilter" comme nom interne (le param HTTP
+// s'appelle "source").
+export interface ResultFilters {
+  sourceFilter?:   "found" | "non_trouvé";
+  sourceExact?:    "google" | "non_trouvé";
+  nom?:            string;
+  ville?:          string;
+  phoneType?:      "mobile" | "fixe";
+  effectif?:       string;
+  departement?:    string;
+  formeJuridique?: string;
+}
 
 export interface ScrapedRecord {
   siret: string;
@@ -31,16 +44,6 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-export interface ResultFilters {
-  sourceFilter?:   "found" | "non_trouvé";
-  sourceExact?:    "google" | "non_trouvé";
-  nom?:            string;
-  ville?:          string;
-  phoneType?:      "mobile" | "fixe";
-  effectif?:       string;
-  departement?:    string;
-  formeJuridique?: string;
-}
 
 export interface FilterOptions {
   villes:           string[];

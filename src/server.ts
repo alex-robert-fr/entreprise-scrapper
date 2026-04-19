@@ -4,9 +4,18 @@ import express, { type Request, type Response, type NextFunction, type RequestHa
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
+import { validateBody, validateQuery } from "./middleware/validate";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
+import {
+  scrapeBodySchema,
+  resultsQuerySchema,
+  exportQuerySchema,
+  type ScrapeBody,
+  type ResultsQuery,
+  type ExportQuery,
+} from "./schemas";
 
 const asyncHandler =
   (fn: (req: Request, res: Response) => Promise<unknown>): RequestHandler =>
@@ -54,24 +63,16 @@ app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-function parseFilters(query: Record<string, unknown>): ResultFilters {
-  const raw = (k: string) => (query[k] as string | undefined) || undefined;
-  const rawSource    = raw("source");
-  const rawPhoneType = raw("phoneType");
-  const rawSourceEx  = raw("sourceExact");
+function pickFilters(query: ResultsQuery | ExportQuery): ResultFilters {
   return {
-    sourceFilter:
-      rawSource === "found"      ? "found"      :
-      rawSource === "non_trouvé" ? "non_trouvé" : undefined,
-    sourceExact:
-      rawSourceEx === "google"     ? "google"     :
-      rawSourceEx === "non_trouvé" ? "non_trouvé" : undefined,
-    nom:         raw("nom"),
-    ville:       raw("ville"),
-    phoneType:   rawPhoneType === "mobile" ? "mobile" : rawPhoneType === "fixe" ? "fixe" : undefined,
-    effectif:       raw("effectif"),
-    departement:    raw("departement"),
-    formeJuridique: raw("formeJuridique"),
+    sourceFilter:   query.source,
+    sourceExact:    query.sourceExact,
+    nom:            query.nom,
+    ville:          query.ville,
+    phoneType:      query.phoneType,
+    effectif:       query.effectif,
+    departement:    query.departement,
+    formeJuridique: query.formeJuridique,
   };
 }
 
@@ -97,27 +98,18 @@ app.get("/api/filters", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await getFilterOptions());
 }));
 
-app.get("/api/results", requireAuth, asyncHandler(async (req, res) => {
-  const page  = Math.max(1, Number(req.query.page)  || 1);
-  const limit = Math.min(5000, Math.max(1, Number(req.query.limit) || 5000));
-  res.json(await getPaginated(page, limit, parseFilters(req.query as Record<string, unknown>)));
+app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHandler(async (req, res) => {
+  const query = req.query as unknown as ResultsQuery;
+  res.json(await getPaginated(query.page, query.limit, pickFilters(query)));
 }));
 
-app.post("/api/scrape", requireAuth, (req, res) => {
+app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) => {
   if (scrapeState.status === "running") {
     res.status(409).json({ error: "Scrape déjà en cours" });
     return;
   }
 
-  const { region, departement, all, limit: rawLimit } = req.body as {
-    region?: string;
-    departement?: string;
-    all?: boolean;
-    limit?: number;
-  };
-  const limit = typeof rawLimit === "number" && Number.isFinite(rawLimit)
-    ? Math.max(1, Math.min(rawLimit, 10000))
-    : undefined;
+  const { region, departement, all, limit } = req.body as ScrapeBody;
 
   scrapeState = { status: "running", progress: 0, total: 0, current: "" };
 
@@ -180,7 +172,7 @@ app.get("/api/duplicates/excluded-count", requireAuth, asyncHandler(async (_req,
 }));
 
 
-app.get("/api/export", requireAuth, asyncHandler(async (req, res) => {
+app.get("/api/export", requireAuth, validateQuery(exportQuerySchema), asyncHandler(async (req, res) => {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=export.csv");
 
@@ -194,7 +186,7 @@ app.get("/api/export", requireAuth, asyncHandler(async (req, res) => {
 
   res.write("siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,dirigeants,source,scraped_at\n");
 
-  for await (const r of streamAll(parseFilters(req.query as Record<string, unknown>))) {
+  for await (const r of streamAll(pickFilters(req.query as unknown as ExportQuery))) {
     const row = [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.dirigeants, r.source, r.scraped_at]
       .map(escape)
       .join(",");
