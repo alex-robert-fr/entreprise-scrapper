@@ -135,7 +135,7 @@ export const creditTransactions = pgTable(
   "credit_transactions",
   {
     id:             serial("id").primaryKey(),
-    userId:         text("user_id").notNull(),
+    userId:         text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     type:           text("type").notNull(),
     amount:         integer("amount").notNull(),
     polarOrderId:   text("polar_order_id"),

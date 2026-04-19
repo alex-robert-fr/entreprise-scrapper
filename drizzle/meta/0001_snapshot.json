@@ -1,5 +1,5 @@
 {
-  "id": "bc1057a3-087e-4eb6-82f1-186e6bd02e42",
+  "id": "6dec7d7e-39e1-4170-a59f-a0cc6f729f80",
   "prevId": "7a3917cb-3e8d-4214-8d19-a3c2a527467b",
   "version": "7",
   "dialect": "postgresql",
@@ -192,7 +192,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "credit_transactions_user_id_user_id_fk": {
+          "name": "credit_transactions_user_id_user_id_fk",
+          "tableFrom": "credit_transactions",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

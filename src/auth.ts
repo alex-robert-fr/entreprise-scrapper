@@ -10,6 +10,11 @@ if (!secret) {
 }
 
 const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const extraOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+const trustedOrigins = [baseURL, ...extraOrigins];
 const googleClientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 const isProd = process.env.NODE_ENV === "production";
@@ -19,7 +24,7 @@ const SIGNUP_CREDITS = 50;
 export const auth = betterAuth({
   secret,
   baseURL,
-  trustedOrigins: [baseURL],
+  trustedOrigins,
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: { user, session, account, verification },
@@ -49,10 +54,21 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (createdUser) => {
-          await db
-            .insert(credits)
-            .values({ userId: createdUser.id, balance: SIGNUP_CREDITS })
-            .onConflictDoNothing();
+          try {
+            const inserted = await db
+              .insert(credits)
+              .values({ userId: createdUser.id, balance: SIGNUP_CREDITS })
+              .onConflictDoNothing()
+              .returning({ userId: credits.userId });
+            if (inserted.length === 0) {
+              console.warn("[auth] crédit initial non appliqué (ligne existante)", {
+                userId: createdUser.id,
+              });
+            }
+          } catch (err) {
+            console.error("[auth] échec crédit initial", { userId: createdUser.id, err });
+            throw err;
+          }
         },
       },
     },
