@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))
 - `GET /api/export` streame désormais le CSV ligne par ligne via un curseur Postgres : plus de timeout HTTP ni de saturation mémoire sur de grands volumes ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
 
+### Security
+
+- Routes API protégées par authentification : toutes les routes `/api/*` (sauf `/api/auth/*` et `/api/health`) retournent `401 Unauthorized` si la session est absente ; le dashboard `/` redirige vers `/login` (302) si non authentifié ([`874cd46`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/874cd46))
+- `GET /api/me` désormais protégé par le middleware d'authentification, cohérent avec le reste des routes ([`59f9104`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/59f9104))
+
 ## [0.1.0](https://github.com/alex-robert-fr/entreprise-scrapper/releases/tag/v0.1.0) - 2026-04-18
 
 ### Added

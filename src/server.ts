@@ -3,6 +3,7 @@ import path from "path";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
+import { requireAuth, dashboardGuard } from "./middleware/auth";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
@@ -35,14 +36,14 @@ let scrapeState: ScrapeState = {
 app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
+
+app.get("/", dashboardGuard);
+app.get("/index.html", dashboardGuard);
+
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/api/me", asyncHandler(async (req, res) => {
+app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
   const result = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-  if (!result) {
-    res.status(401).json({ error: "Non authentifié" });
-    return;
-  }
   res.json(result);
 }));
 
@@ -71,30 +72,31 @@ app.get("/api/health", async (_req, res) => {
   try {
     await getStats();
     res.json({ status: "ok" });
-  } catch {
-    res.status(503).json({ status: "error", reason: "db_unavailable" });
+  } catch (err) {
+    console.error("[health] db unavailable", err);
+    res.status(503).json({ status: "error" });
   }
 });
 
-app.get("/api/regions", (_req, res) => {
+app.get("/api/regions", requireAuth, (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
 
-app.get("/api/stats", asyncHandler(async (_req, res) => {
+app.get("/api/stats", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await getStats());
 }));
 
-app.get("/api/filters", asyncHandler(async (_req, res) => {
+app.get("/api/filters", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await getFilterOptions());
 }));
 
-app.get("/api/results", asyncHandler(async (req, res) => {
+app.get("/api/results", requireAuth, asyncHandler(async (req, res) => {
   const page  = Math.max(1, Number(req.query.page)  || 1);
   const limit = Math.min(5000, Math.max(1, Number(req.query.limit) || 5000));
   res.json(await getPaginated(page, limit, parseFilters(req.query as Record<string, unknown>)));
 }));
 
-app.post("/api/scrape", (req, res) => {
+app.post("/api/scrape", requireAuth, (req, res) => {
   if (scrapeState.status === "running") {
     res.status(409).json({ error: "Scrape déjà en cours" });
     return;
@@ -144,34 +146,34 @@ app.post("/api/scrape", (req, res) => {
   res.json({ message: "Scrape lancé" });
 });
 
-app.get("/api/status", (_req, res) => {
+app.get("/api/status", requireAuth, (_req, res) => {
   res.json(scrapeState);
 });
 
-app.get("/api/duplicates/phone", asyncHandler(async (_req, res) => {
+app.get("/api/duplicates/phone", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await getPhoneDuplicates());
 }));
 
-app.post("/api/duplicates/phone/clean", asyncHandler(async (_req, res) => {
+app.post("/api/duplicates/phone/clean", requireAuth, asyncHandler(async (_req, res) => {
   const deleted = await cleanPhoneDuplicates();
   res.json({ deleted });
 }));
 
-app.get("/api/duplicates/name", asyncHandler(async (_req, res) => {
+app.get("/api/duplicates/name", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await getNameDuplicates());
 }));
 
-app.post("/api/duplicates/name/clean", asyncHandler(async (_req, res) => {
+app.post("/api/duplicates/name/clean", requireAuth, asyncHandler(async (_req, res) => {
   const deleted = await cleanNameDuplicates();
   res.json({ deleted });
 }));
 
-app.get("/api/duplicates/excluded-count", asyncHandler(async (_req, res) => {
+app.get("/api/duplicates/excluded-count", requireAuth, asyncHandler(async (_req, res) => {
   res.json({ count: await getExcludedCount() });
 }));
 
 
-app.get("/api/export", asyncHandler(async (req, res) => {
+app.get("/api/export", requireAuth, asyncHandler(async (req, res) => {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=export.csv");
 
