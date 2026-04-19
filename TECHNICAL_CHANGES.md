@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `server.ts` : wrapper `asyncHandler` + middleware d'erreur global sur toutes les routes async (évite le crash du process sur erreur DB non catchée) ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
 - `phoneUtils.ts` : `phoneTypeCondition` renvoie un fragment `SQL` Drizzle typé au lieu d'une string brute ([`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160))
 - `getFilterOptions` : migration de 4 requêtes raw vers `db.selectDistinct()` typé ([`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
+- `src/middleware/auth.ts` : extraction de `makeAuthGuard(onUnauth)` pour mutualiser `requireAuth` et `dashboardGuard` ; type union `UserRole = "user" | "admin"` + helper `toUserRole` pour normaliser le champ `role` Better Auth ; ajout de `requireAdminAuth` (guard atomique session + rôle) pour les futures routes admin ([`2ec076d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2ec076d))
 
 ### Docs
 
@@ -35,4 +36,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Variable `BETTER_AUTH_TRUSTED_ORIGINS` (CSV) pour configurer plusieurs origines autorisées en plus de `BETTER_AUTH_URL` ([`0f20ef4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0f20ef4))
 - Hook `user.create.after` : gestion d'erreur avec relance et log d'avertissement si conflit sur insert crédits ([`0f20ef4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0f20ef4))
 
-[Unreleased]: https://github.com/alex-robert-fr/entreprise-scrapper/commits/main
+[Unreleased]: https://github.com/alex-robert-fr/entreprise-scrapper/compare/v0.1.0...HEAD
