@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Authentification par email/password et Google OAuth disponible sur `/api/auth/*` : signup, signin, signout avec cookie de session `HttpOnly` (secure en production) ; 50 crédits offerts automatiquement à l'inscription ([`8613e41`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8613e41))
 - `GET /api/me` — retourne la session courante de l'utilisateur connecté ; `401 Unauthorized` si non authentifié ([`8613e41`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8613e41))
+- Pages `/login` et `/signup` disponibles : formulaire email/password + bouton Google OAuth, redirection vers `/` après authentification réussie ; un utilisateur déjà connecté accédant à ces pages est automatiquement redirigé vers `/` ([`9abac3e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9abac3e))
 
 ### Changed
 
