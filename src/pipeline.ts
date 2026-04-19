@@ -14,6 +14,7 @@ export type ProgressCallback = (current: number, nom: string) => void;
 
 export async function runPipeline(
   source: Iterable<Etablissement> | AsyncIterable<Etablissement>,
+  userId: string,
   onProgress?: ProgressCallback,
   limit?: number
 ): Promise<PipelineResult> {
@@ -47,6 +48,7 @@ export async function runPipeline(
 
       const record: ScrapedRecord = {
         siret: etab.siret,
+        userId,
         nom: etab.nom,
         adresse: etab.adresse,
         ville: etab.ville,
