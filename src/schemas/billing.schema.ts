@@ -14,6 +14,6 @@ export const polarWebhookSchema = z
       })
       .passthrough(),
   })
-  .passthrough();
+  .strict();
 
 export type PolarWebhook = z.infer<typeof polarWebhookSchema>;

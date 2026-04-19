@@ -28,6 +28,8 @@ export function validateBody<S extends ZodTypeAny>(schema: S): RequestHandler {
   };
 }
 
+export const VALIDATED_QUERY_KEY = "query" as const;
+
 export function validateQuery<S extends ZodTypeAny>(schema: S): RequestHandler {
   return (req, res, next) => {
     const result = schema.safeParse(req.query);
@@ -38,7 +40,11 @@ export function validateQuery<S extends ZodTypeAny>(schema: S): RequestHandler {
       });
       return;
     }
-    req.query = result.data as typeof req.query;
+    res.locals[VALIDATED_QUERY_KEY] = result.data;
     next();
   };
+}
+
+export function getValidatedQuery<T>(res: { locals: Record<string, unknown> }): T {
+  return res.locals[VALIDATED_QUERY_KEY] as T;
 }

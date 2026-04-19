@@ -4,7 +4,7 @@ import express, { type Request, type Response, type NextFunction, type RequestHa
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
-import { validateBody, validateQuery } from "./middleware/validate";
+import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
@@ -98,8 +98,8 @@ app.get("/api/filters", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await getFilterOptions());
 }));
 
-app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHandler(async (req, res) => {
-  const query = req.query as unknown as ResultsQuery;
+app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHandler(async (_req, res) => {
+  const query = getValidatedQuery<ResultsQuery>(res);
   res.json(await getPaginated(query.page, query.limit, pickFilters(query)));
 }));
 
@@ -186,7 +186,7 @@ app.get("/api/export", requireAuth, validateQuery(exportQuerySchema), asyncHandl
 
   res.write("siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,dirigeants,source,scraped_at\n");
 
-  for await (const r of streamAll(pickFilters(req.query as unknown as ExportQuery))) {
+  for await (const r of streamAll(pickFilters(getValidatedQuery<ExportQuery>(res)))) {
     const row = [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.dirigeants, r.source, r.scraped_at]
       .map(escape)
       .join(",");

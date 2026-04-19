@@ -20,19 +20,19 @@ const departementSchema = z
     message: "Departement inconnu",
   });
 
-const nafCodeSchema = z
-  .string()
-  .regex(/^\d{4}[A-Z]$/, "Format code NAF invalide (ex: 1071C)");
-
 export const scrapeBodySchema = z
   .object({
     region: regionSchema.optional(),
     departement: departementSchema.optional(),
     all: z.boolean().optional(),
     limit: z.number().int().min(1).max(10000).optional(),
-    professionId: z.string().trim().min(1).optional(),
-    nafCodes: z.array(nafCodeSchema).min(1).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (body) =>
+      [body.region !== undefined, body.departement !== undefined, body.all === true]
+        .filter(Boolean).length <= 1,
+    { message: "region, departement et all sont mutuellement exclusifs" },
+  );
 
 export type ScrapeBody = z.infer<typeof scrapeBodySchema>;
