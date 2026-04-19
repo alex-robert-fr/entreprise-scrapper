@@ -36,6 +36,23 @@ let scrapeState: ScrapeState = {
 app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
+
+const dashboardGuard: RequestHandler = (req, res, next) => {
+  auth.api
+    .getSession({ headers: fromNodeHeaders(req.headers) })
+    .then((result) => {
+      if (!result) {
+        res.redirect(302, "/login");
+        return;
+      }
+      next();
+    })
+    .catch(next);
+};
+
+app.get("/", dashboardGuard);
+app.get("/index.html", dashboardGuard);
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/me", asyncHandler(async (req, res) => {
