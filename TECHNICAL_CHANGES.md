@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `phoneUtils.ts` : `phoneTypeCondition` renvoie un fragment `SQL` Drizzle typé au lieu d'une string brute ([`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160))
 - `getFilterOptions` : migration de 4 requêtes raw vers `db.selectDistinct()` typé ([`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
 - `src/middleware/auth.ts` : extraction de `makeAuthGuard(onUnauth)` pour mutualiser `requireAuth` et `dashboardGuard` ; type union `UserRole = "user" | "admin"` + helper `toUserRole` pour normaliser le champ `role` Better Auth ; ajout de `requireAdminAuth` (guard atomique session + rôle) pour les futures routes admin ([`2ec076d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2ec076d))
+- Pages login/signup déplacées de `src/public/` vers `src/views/` (servies exclusivement via routes Express, non exposées par `express.static`) ; ajout de `alreadyAuthGuard` dans `src/middleware/auth.ts` ; script `build` étendu pour copier `src/views/` vers `dist/views/` ([`43cde21`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/43cde21))
 
 ### Docs
 

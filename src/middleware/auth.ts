@@ -49,6 +49,19 @@ export const dashboardGuard = makeAuthGuard((_req, res) => {
   res.redirect(302, "/login");
 });
 
+export const alreadyAuthGuard: RequestHandler = (req, res, next) => {
+  auth.api
+    .getSession({ headers: fromNodeHeaders(req.headers) })
+    .then((result) => {
+      if (result) {
+        res.redirect(302, "/");
+        return;
+      }
+      next();
+    })
+    .catch(next);
+};
+
 export const requireAdmin: RequestHandler = (req, res, next) => {
   if (!req.user) {
     res.status(401).json({ error: "Unauthorized" });

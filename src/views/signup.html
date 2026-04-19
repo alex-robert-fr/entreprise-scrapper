@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription — Scraper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #080a0f;
+      --bg-card:      #0d1018;
+      --bg-elevated:  #12151e;
+      --border:       rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.11);
+      --text:         #e8e2d9;
+      --muted:        #4e5668;
+      --dim:          #303744;
+      --accent:       #e8622a;
+      --accent-glow:  rgba(232,98,42,0.18);
+      --accent-dim:   rgba(232,98,42,0.08);
+      --error:        #ef4444;
+      --error-dim:    rgba(239,68,68,0.1);
+      --mono: 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background-image: radial-gradient(ellipse 900px 500px at 50% -60px, rgba(232,98,42,0.04) 0%, transparent 70%);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem 1.75rem;
+    }
+
+    .title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .field { margin-bottom: 0.85rem; }
+
+    .field label {
+      display: block;
+      font-size: 0.58rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hover);
+      border-radius: 5px;
+      padding: 0.55rem 0.7rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      background: var(--bg);
+    }
+
+    .btn {
+      width: 100%;
+      border: 1px solid var(--border-hover);
+      background: var(--bg-elevated);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      padding: 0.65rem 0.8rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      margin-top: 0.4rem;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #f26f35;
+      border-color: #f26f35;
+      color: #fff;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin: 1.1rem 0;
+      color: var(--muted);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .error {
+      display: none;
+      background: var(--error-dim);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: var(--error);
+      font-size: 0.68rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 5px;
+      margin-top: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .error.visible { display: block; }
+
+    .footer-link {
+      margin-top: 1.4rem;
+      text-align: center;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .footer-link a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 class="title">Créer un compte</h1>
+    <p class="subtitle">Démarre avec 50 crédits offerts</p>
+
+    <form id="signup-form" novalidate>
+      <div class="field">
+        <label for="name">Nom</label>
+        <input id="name" name="name" type="text" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <button type="submit" class="btn btn-primary" id="submit-btn">S'inscrire</button>
+    </form>
+
+    <div class="divider">ou</div>
+
+    <button type="button" class="btn" id="google-btn">S'inscrire avec Google</button>
+
+    <p class="error" id="error"></p>
+
+    <p class="footer-link">
+      Déjà un compte ? <a href="/login">Se connecter</a>
+    </p>
+  </main>
+
+  <script>
+    const form = document.getElementById("signup-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const googleBtn = document.getElementById("google-btn");
+    const errorBox = document.getElementById("error");
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.add("visible");
+    }
+
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.classList.remove("visible");
+    }
+
+    function extractErrorMessage(payload) {
+      if (!payload) return "Erreur inconnue";
+      if (typeof payload === "string") return payload;
+      if (payload.message) return payload.message;
+      if (payload.error && typeof payload.error === "object" && payload.error.message) {
+        return payload.error.message;
+      }
+      if (typeof payload.error === "string") return payload.error;
+      return "Erreur inconnue";
+    }
+
+    async function parseResponse(res) {
+      try { return await res.json(); } catch { return null; }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearError();
+      submitBtn.disabled = true;
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (password.length < 8) {
+        showError("Le mot de passe doit contenir au moins 8 caractères.");
+        submitBtn.disabled = false;
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/sign-up/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password, name }),
+        });
+        const data = await parseResponse(res);
+        if (!res.ok) {
+          showError(extractErrorMessage(data) || `Erreur ${res.status}`);
+          submitBtn.disabled = false;
+          return;
+        }
+        submitBtn.disabled = false;
+        window.location.href = "/";
+      } catch (err) {
+        showError("Erreur réseau. Réessaye.");
+        submitBtn.disabled = false;
+      }
+    });
+
+    googleBtn.addEventListener("click", async () => {
+      clearError();
+      googleBtn.disabled = true;
+      try {
+        const res = await fetch("/api/auth/sign-in/social", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ provider: "google", callbackURL: "/" }),
+        });
+        const data = await parseResponse(res);
+        if (!res.ok || !data?.url || typeof data.url !== "string") {
+          showError(extractErrorMessage(data) || "OAuth Google indisponible");
+          googleBtn.disabled = false;
+          return;
+        }
+        googleBtn.disabled = false;
+        window.location.href = data.url;
+      } catch (err) {
+        showError("Erreur réseau. Réessaye.");
+        googleBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
