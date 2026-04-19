@@ -81,7 +81,7 @@ function buildWhereClause(userId: string, filters: ResultFilters): SQL {
   if (filters.departement?.trim()) conditions.push(like(scrapedRecords.codePostal, filters.departement.trim() + "%"));
   if (filters.formeJuridique?.trim()) conditions.push(eq(scrapedRecords.formeJuridique, filters.formeJuridique.trim()));
 
-  return and(...conditions) as SQL;
+  return and(...conditions)!;
 }
 
 function toRecord(row: {
@@ -367,7 +367,9 @@ export async function cleanPhoneDuplicates(userId: string): Promise<number> {
       for (let i = 1; i < rows.length; i++) {
         const { siret } = rows[i];
         await tx.insert(excluded).values({ siret }).onConflictDoNothing({ target: excluded.siret });
-        await tx.delete(scrapedRecords).where(eq(scrapedRecords.siret, siret));
+        await tx
+          .delete(scrapedRecords)
+          .where(and(eq(scrapedRecords.siret, siret), eq(scrapedRecords.userId, userId)));
         deleted++;
       }
     }
@@ -447,12 +449,16 @@ export async function cleanNameDuplicates(userId: string): Promise<number> {
   await db.transaction(async (tx) => {
     for (const { siret } of toExclude) {
       await tx.insert(excluded).values({ siret }).onConflictDoNothing({ target: excluded.siret });
-      await tx.delete(scrapedRecords).where(eq(scrapedRecords.siret, siret));
+      await tx
+        .delete(scrapedRecords)
+        .where(and(eq(scrapedRecords.siret, siret), eq(scrapedRecords.userId, userId)));
     }
   });
   return toExclude.length;
 }
 
+// Retourne quasi-toujours 0 aujourd'hui : les SIRET dans excluded ont ete supprimes de
+// scraped_records, donc le EXISTS ne matche pas. A refondre avec #66 (user_leads).
 export async function getExcludedCount(userId: string): Promise<number> {
   const [{ count }] = await db.execute<{ count: number }>(
     sql`select count(*)::int as count from ${excluded} e

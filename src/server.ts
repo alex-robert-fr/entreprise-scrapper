@@ -36,12 +36,12 @@ interface ScrapeState {
   result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
 }
 
-let scrapeState: ScrapeState = {
-  status: "idle",
-  progress: 0,
-  total: 0,
-  current: "",
-};
+const IDLE_STATE: ScrapeState = { status: "idle", progress: 0, total: 0, current: "" };
+const scrapeStates = new Map<string, ScrapeState>();
+
+function getScrapeState(userId: string): ScrapeState {
+  return scrapeStates.get(userId) ?? IDLE_STATE;
+}
 
 // Better Auth doit lire le body brut — monté AVANT express.json()
 app.all("/api/auth/*", toNodeHandler(auth));
@@ -106,50 +106,52 @@ app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHan
 }));
 
 app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) => {
-  if (scrapeState.status === "running") {
+  const userId = req.user!.id;
+
+  if (scrapeStates.get(userId)?.status === "running") {
     res.status(409).json({ error: "Scrape déjà en cours" });
     return;
   }
 
   const { region, departement, all, limit } = req.body as ScrapeBody;
-  const userId = req.user!.id;
 
-  scrapeState = { status: "running", progress: 0, total: 0, current: "" };
+  const state: ScrapeState = { status: "running", progress: 0, total: 0, current: "" };
+  scrapeStates.set(userId, state);
 
   (async () => {
     const options = all ? {} : { region, departement };
 
     let source: Iterable<import("./sirene").Etablissement> | AsyncIterable<import("./sirene").Etablissement>;
     if (limit !== undefined) {
-      scrapeState.total = limit;
+      state.total = limit;
       source = streamEtablissements(options);
     } else {
       const etablissements = await fetchEtablissements(options);
-      scrapeState.total = etablissements.length;
+      state.total = etablissements.length;
       source = etablissements;
     }
 
     const result = await runPipeline(source, userId, (current, nom) => {
-      scrapeState.progress = current;
-      scrapeState.current = nom;
+      state.progress = current;
+      state.current = nom;
     }, limit);
 
-    scrapeState.status = "done";
-    scrapeState.result = {
+    state.status = "done";
+    state.result = {
       newCount: result.newCount,
       alreadyKnown: result.alreadyKnown,
       notFoundCount: result.notFoundCount,
     };
   })().catch((err) => {
-    scrapeState.status = "done";
-    scrapeState.current = `Erreur : ${err instanceof Error ? err.message : String(err)}`;
+    state.status = "done";
+    state.current = `Erreur : ${err instanceof Error ? err.message : String(err)}`;
   });
 
   res.json({ message: "Scrape lancé" });
 });
 
-app.get("/api/status", requireAuth, (_req, res) => {
-  res.json(scrapeState);
+app.get("/api/status", requireAuth, (req, res) => {
+  res.json(getScrapeState(req.user!.id));
 });
 
 app.get("/api/duplicates/phone", requireAuth, asyncHandler(async (req, res) => {
