@@ -7,6 +7,7 @@ import {
   boolean,
   index,
   check,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { sql, type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 
@@ -73,13 +74,14 @@ export const verification = pgTable("verification", {
 });
 
 // Scraped records — une fiche entreprise enrichie par SIRENE + Google Maps.
-// `userId` est nullable le temps que #37 (Better Auth) crée la table `users` ;
-// #41 activera la FK et le NOT NULL.
+// PK composite (user_id, siret) : chaque user possede ses propres fiches,
+// deux users peuvent scraper le meme SIRET sans collision.
+// excluded reste globale pour l'instant (refonte multi-tenant complete prevue #66).
 export const scrapedRecords = pgTable(
   "scraped_records",
   {
-    siret:           text("siret").primaryKey(),
-    userId:          text("user_id"),
+    siret:           text("siret").notNull(),
+    userId:          text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     nom:             text("nom"),
     adresse:         text("adresse"),
     ville:           text("ville"),
@@ -92,6 +94,7 @@ export const scrapedRecords = pgTable(
     scrapedAt:       timestamp("scraped_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    primaryKey({ columns: [t.userId, t.siret] }),
     index("scraped_records_user_id_idx").on(t.userId),
     index("scraped_records_source_idx").on(t.source),
     index("scraped_records_code_postal_idx").on(t.codePostal),

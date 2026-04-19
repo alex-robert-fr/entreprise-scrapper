@@ -15,6 +15,13 @@
       "when": 1776592077335,
       "tag": "0001_auth_better_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776631243925,
+      "tag": "0002_multi_tenant_scoped_records",
+      "breakpoints": true
     }
   ]
 }
