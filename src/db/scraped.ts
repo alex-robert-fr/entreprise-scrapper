@@ -17,18 +17,18 @@ export interface ResultFilters {
 }
 
 export interface ScrapedRecord {
-  siret: string;
-  userId: string;
-  nom: string;
-  adresse: string;
-  ville: string;
-  codePostal: string;
-  telephone: string | null;
+  siret:           string;
+  userId:          string;
+  nom:             string;
+  adresse:         string;
+  ville:           string;
+  codePostal:      string;
+  telephone:       string | null;
   effectifTranche: string;
-  formeJuridique: string;
-  dirigeants: string | null;
-  source: string;
-  scraped_at: string;
+  formeJuridique:  string;
+  dirigeants:      string | null;
+  source:          string;
+  scraped_at:      string;
 }
 
 export interface ScrapedStats {
@@ -85,41 +85,47 @@ function buildWhereClause(userId: string, filters: ResultFilters): SQL {
 }
 
 function toRecord(row: {
-  siret: string;
-  userId: string | null;
-  nom: string | null;
-  adresse: string | null;
-  ville: string | null;
-  codePostal: string | null;
-  telephone: string | null;
+  siret:           string;
+  userId:          string;
+  nom:             string | null;
+  adresse:         string | null;
+  ville:           string | null;
+  codePostal:      string | null;
+  telephone:       string | null;
   effectifTranche: string | null;
-  formeJuridique: string | null;
-  dirigeants: string | null;
-  source: string;
-  scrapedAt: Date;
+  formeJuridique:  string | null;
+  dirigeants:      string | null;
+  source:          string;
+  scrapedAt:       Date;
 }): ScrapedRecord {
   return {
-    siret: row.siret,
-    userId: row.userId ?? "",
-    nom: row.nom ?? "",
-    adresse: row.adresse ?? "",
-    ville: row.ville ?? "",
-    codePostal: row.codePostal ?? "",
-    telephone: row.telephone,
+    siret:           row.siret,
+    userId:          row.userId,
+    nom:             row.nom ?? "",
+    adresse:         row.adresse ?? "",
+    ville:           row.ville ?? "",
+    codePostal:      row.codePostal ?? "",
+    telephone:       row.telephone,
     effectifTranche: row.effectifTranche ?? "",
-    formeJuridique: row.formeJuridique ?? "",
-    dirigeants: row.dirigeants,
-    source: row.source,
-    scraped_at: row.scrapedAt.toISOString(),
+    formeJuridique:  row.formeJuridique ?? "",
+    dirigeants:      row.dirigeants,
+    source:          row.source,
+    scraped_at:      row.scrapedAt.toISOString(),
   };
 }
 
 // No-op conservé pour compatibilité — les migrations sont gérées par drizzle-kit.
 export function initDb(): void {}
 
-export async function isKnown(siret: string): Promise<boolean> {
+// Scope par user : deux users peuvent avoir la meme fiche SIRET independamment.
+// `excluded` reste globale pour cette issue (refonte prevue #66).
+export async function isKnownByUser(userId: string, siret: string): Promise<boolean> {
   const [scraped, excl] = await Promise.all([
-    db.select({ one: sql`1` }).from(scrapedRecords).where(eq(scrapedRecords.siret, siret)).limit(1),
+    db
+      .select({ one: sql`1` })
+      .from(scrapedRecords)
+      .where(and(eq(scrapedRecords.userId, userId), eq(scrapedRecords.siret, siret)))
+      .limit(1),
     db.select({ one: sql`1` }).from(excluded).where(eq(excluded.siret, siret)).limit(1),
   ]);
   return scraped.length > 0 || excl.length > 0;
@@ -142,7 +148,7 @@ export async function insert(record: ScrapedRecord): Promise<void> {
       source: record.source,
       scrapedAt: new Date(record.scraped_at),
     })
-    .onConflictDoNothing({ target: scrapedRecords.siret });
+    .onConflictDoNothing({ target: [scrapedRecords.userId, scrapedRecords.siret] });
 }
 
 export async function getStats(userId: string): Promise<ScrapedStats> {
@@ -186,7 +192,7 @@ function toRecordFromRaw(row: Record<string, unknown>): ScrapedRecord {
     scrapedAt instanceof Date ? scrapedAt.toISOString() : new Date(String(scrapedAt)).toISOString();
   return {
     siret:           row.siret as string,
-    userId:          (row.user_id         as string | null) ?? "",
+    userId:          row.user_id as string,
     nom:             (row.nom             as string | null) ?? "",
     adresse:         (row.adresse         as string | null) ?? "",
     ville:           (row.ville           as string | null) ?? "",
