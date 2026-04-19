@@ -18,6 +18,7 @@ export interface ResultFilters {
 
 export interface ScrapedRecord {
   siret: string;
+  userId: string;
   nom: string;
   adresse: string;
   ville: string;
@@ -62,8 +63,8 @@ const EFFECTIF_LABELS: Record<string, string> = {
   "32": "250-499 sal.",
 };
 
-function buildWhereClause(filters: ResultFilters): SQL | undefined {
-  const conditions: SQL[] = [];
+function buildWhereClause(userId: string, filters: ResultFilters): SQL {
+  const conditions: SQL[] = [eq(scrapedRecords.userId, userId)];
 
   if (filters.sourceExact) {
     conditions.push(eq(scrapedRecords.source, filters.sourceExact));
@@ -80,11 +81,12 @@ function buildWhereClause(filters: ResultFilters): SQL | undefined {
   if (filters.departement?.trim()) conditions.push(like(scrapedRecords.codePostal, filters.departement.trim() + "%"));
   if (filters.formeJuridique?.trim()) conditions.push(eq(scrapedRecords.formeJuridique, filters.formeJuridique.trim()));
 
-  return conditions.length ? and(...conditions) : undefined;
+  return and(...conditions) as SQL;
 }
 
 function toRecord(row: {
   siret: string;
+  userId: string | null;
   nom: string | null;
   adresse: string | null;
   ville: string | null;
@@ -98,6 +100,7 @@ function toRecord(row: {
 }): ScrapedRecord {
   return {
     siret: row.siret,
+    userId: row.userId ?? "",
     nom: row.nom ?? "",
     adresse: row.adresse ?? "",
     ville: row.ville ?? "",
@@ -127,6 +130,7 @@ export async function insert(record: ScrapedRecord): Promise<void> {
     .insert(scrapedRecords)
     .values({
       siret: record.siret,
+      userId: record.userId,
       nom: record.nom,
       adresse: record.adresse,
       ville: record.ville,
@@ -141,7 +145,7 @@ export async function insert(record: ScrapedRecord): Promise<void> {
     .onConflictDoNothing({ target: scrapedRecords.siret });
 }
 
-export async function getStats(): Promise<ScrapedStats> {
+export async function getStats(userId: string): Promise<ScrapedStats> {
   const mobileCond = phoneTypeCondition("mobile");
   const [row] = await db
     .select({
@@ -150,24 +154,30 @@ export async function getStats(): Promise<ScrapedStats> {
       notFound: sql<number>`count(*) filter (where ${scrapedRecords.source} = 'non_trouvé')::int`,
       mobile:   sql<number>`count(*) filter (where ${scrapedRecords.source} != 'non_trouvé' and ${mobileCond})::int`,
     })
-    .from(scrapedRecords);
+    .from(scrapedRecords)
+    .where(eq(scrapedRecords.userId, userId));
   return row;
 }
 
-export async function getNotFound(): Promise<ScrapedRecord[]> {
+export async function getNotFound(userId: string): Promise<ScrapedRecord[]> {
   const rows = await db
     .select()
     .from(scrapedRecords)
-    .where(eq(scrapedRecords.source, "non_trouvé"))
+    .where(and(eq(scrapedRecords.userId, userId), eq(scrapedRecords.source, "non_trouvé")))
     .orderBy(desc(scrapedRecords.scrapedAt));
   return rows.map(toRecord);
 }
 
-export async function updateRecord(siret: string, telephone: string, source: string): Promise<void> {
+export async function updateRecord(
+  userId: string,
+  siret: string,
+  telephone: string,
+  source: string,
+): Promise<void> {
   await db
     .update(scrapedRecords)
     .set({ telephone, source, scrapedAt: new Date() })
-    .where(eq(scrapedRecords.siret, siret));
+    .where(and(eq(scrapedRecords.siret, siret), eq(scrapedRecords.userId, userId)));
 }
 
 function toRecordFromRaw(row: Record<string, unknown>): ScrapedRecord {
@@ -176,6 +186,7 @@ function toRecordFromRaw(row: Record<string, unknown>): ScrapedRecord {
     scrapedAt instanceof Date ? scrapedAt.toISOString() : new Date(String(scrapedAt)).toISOString();
   return {
     siret:           row.siret as string,
+    userId:          (row.user_id         as string | null) ?? "",
     nom:             (row.nom             as string | null) ?? "",
     adresse:         (row.adresse         as string | null) ?? "",
     ville:           (row.ville           as string | null) ?? "",
@@ -190,12 +201,12 @@ function toRecordFromRaw(row: Record<string, unknown>): ScrapedRecord {
 }
 
 export async function* streamAll(
+  userId: string,
   filters: ResultFilters = {},
   chunkSize = 500,
 ): AsyncIterable<ScrapedRecord> {
-  const where = buildWhereClause(filters);
-  const builder = db.select().from(scrapedRecords).orderBy(desc(scrapedRecords.scrapedAt));
-  const query = where ? builder.where(where) : builder;
+  const where = buildWhereClause(userId, filters);
+  const query = db.select().from(scrapedRecords).where(where).orderBy(desc(scrapedRecords.scrapedAt));
   const { sql: sqlText, params } = query.toSQL();
 
   // Drizzle renvoie `unknown[]`, postgres-js attend son type interne — cast nécessaire pour l'interop.
@@ -208,53 +219,58 @@ export async function* streamAll(
 }
 
 export async function getPaginated(
+  userId: string,
   page: number,
   limit: number,
   filters: ResultFilters = {},
 ): Promise<PaginatedResult<ScrapedRecord>> {
   if (limit < 1) throw new Error("limit doit être >= 1");
-  const where = buildWhereClause(filters);
+  const where = buildWhereClause(userId, filters);
 
-  const countQuery = db.select({ count: sql<number>`count(*)::int` }).from(scrapedRecords);
-  const [{ count }] = await (where ? countQuery.where(where) : countQuery);
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(scrapedRecords)
+    .where(where);
 
   const totalPages = Math.max(1, Math.ceil(count / limit));
   const safePage = Math.max(1, Math.min(page, totalPages));
   const offset = (safePage - 1) * limit;
 
-  const dataQuery = db
+  const rows = await db
     .select()
     .from(scrapedRecords)
+    .where(where)
     .orderBy(desc(scrapedRecords.scrapedAt))
     .limit(limit)
     .offset(offset);
-  const rows = await (where ? dataQuery.where(where) : dataQuery);
 
   return { data: rows.map(toRecord), total: count, page: safePage, totalPages };
 }
 
-export async function getFilterOptions(): Promise<FilterOptions> {
+export async function getFilterOptions(userId: string): Promise<FilterOptions> {
+  const userScope = eq(scrapedRecords.userId, userId);
   const [villesRows, sourcesRows, effectifsRows, departementsRows, formesRows] = await Promise.all([
     db.selectDistinct({ value: scrapedRecords.ville })
       .from(scrapedRecords)
-      .where(sql`${scrapedRecords.ville} is not null and ${scrapedRecords.ville} != ''`)
+      .where(and(userScope, sql`${scrapedRecords.ville} is not null and ${scrapedRecords.ville} != ''`))
       .orderBy(scrapedRecords.ville),
     db.selectDistinct({ value: scrapedRecords.source })
       .from(scrapedRecords)
-      .where(sql`${scrapedRecords.source} not in ('pagesjaunes')`)
+      .where(and(userScope, sql`${scrapedRecords.source} not in ('pagesjaunes')`))
       .orderBy(scrapedRecords.source),
     db.selectDistinct({ value: scrapedRecords.effectifTranche })
       .from(scrapedRecords)
-      .where(sql`${scrapedRecords.effectifTranche} is not null`)
+      .where(and(userScope, sql`${scrapedRecords.effectifTranche} is not null`))
       .orderBy(scrapedRecords.effectifTranche),
     db.execute<{ dep: string }>(
       sql`select distinct substring(${scrapedRecords.codePostal} from 1 for 2) as dep from ${scrapedRecords}
-          where ${scrapedRecords.codePostal} is not null and ${scrapedRecords.codePostal} != ''
+          where ${scrapedRecords.userId} = ${userId}
+            and ${scrapedRecords.codePostal} is not null and ${scrapedRecords.codePostal} != ''
           order by dep`,
     ),
     db.selectDistinct({ value: scrapedRecords.formeJuridique })
       .from(scrapedRecords)
-      .where(sql`${scrapedRecords.formeJuridique} is not null and ${scrapedRecords.formeJuridique} != ''`)
+      .where(and(userScope, sql`${scrapedRecords.formeJuridique} is not null and ${scrapedRecords.formeJuridique} != ''`))
       .orderBy(scrapedRecords.formeJuridique),
   ]);
 
@@ -284,10 +300,11 @@ export interface PhoneDuplicatesReport {
   totalToDelete: number;
 }
 
-export async function getPhoneDuplicates(): Promise<PhoneDuplicatesReport> {
+export async function getPhoneDuplicates(userId: string): Promise<PhoneDuplicatesReport> {
   const phones = await db.execute<{ telephone: string; cnt: number }>(
     sql`select telephone, count(*)::int as cnt from ${scrapedRecords}
-        where telephone is not null and telephone != ''
+        where ${scrapedRecords.userId} = ${userId}
+          and telephone is not null and telephone != ''
         group by telephone
         having count(*) > 1
         order by cnt desc`,
@@ -300,7 +317,7 @@ export async function getPhoneDuplicates(): Promise<PhoneDuplicatesReport> {
   const rows = await db
     .select()
     .from(scrapedRecords)
-    .where(inArray(scrapedRecords.telephone, telephones))
+    .where(and(eq(scrapedRecords.userId, userId), inArray(scrapedRecords.telephone, telephones)))
     .orderBy(
       sql`case when ${scrapedRecords.source} != 'non_trouvé' then 0 else 1 end`,
       desc(scrapedRecords.scrapedAt),
@@ -325,10 +342,11 @@ export async function getPhoneDuplicates(): Promise<PhoneDuplicatesReport> {
   return { groups, totalDuplicateGroups: groups.length, totalToDelete };
 }
 
-export async function cleanPhoneDuplicates(): Promise<number> {
+export async function cleanPhoneDuplicates(userId: string): Promise<number> {
   const phones = await db.execute<{ telephone: string }>(
     sql`select telephone from ${scrapedRecords}
-        where telephone is not null and telephone != ''
+        where ${scrapedRecords.userId} = ${userId}
+          and telephone is not null and telephone != ''
         group by telephone
         having count(*) > 1`,
   );
@@ -340,7 +358,7 @@ export async function cleanPhoneDuplicates(): Promise<number> {
       const rows = await tx
         .select({ siret: scrapedRecords.siret })
         .from(scrapedRecords)
-        .where(eq(scrapedRecords.telephone, telephone))
+        .where(and(eq(scrapedRecords.userId, userId), eq(scrapedRecords.telephone, telephone)))
         .orderBy(
           sql`case when ${scrapedRecords.source} != 'non_trouvé' then 0 else 1 end`,
           desc(scrapedRecords.scrapedAt),
@@ -369,9 +387,10 @@ export interface NameDuplicatesReport {
   totalToDelete: number;
 }
 
-export async function getNameDuplicates(): Promise<NameDuplicatesReport> {
+export async function getNameDuplicates(userId: string): Promise<NameDuplicatesReport> {
   const names = await db.execute<{ nom: string }>(
     sql`select nom from ${scrapedRecords}
+        where ${scrapedRecords.userId} = ${userId}
         group by nom
         having
           count(*) filter (where telephone is not null and telephone != '') > 0
@@ -386,7 +405,7 @@ export async function getNameDuplicates(): Promise<NameDuplicatesReport> {
   const rows = await db
     .select()
     .from(scrapedRecords)
-    .where(inArray(scrapedRecords.nom, noms))
+    .where(and(eq(scrapedRecords.userId, userId), inArray(scrapedRecords.nom, noms)))
     .orderBy(
       sql`case when ${scrapedRecords.telephone} is not null and ${scrapedRecords.telephone} != '' then 0 else 1 end`,
       desc(scrapedRecords.scrapedAt),
@@ -412,13 +431,15 @@ export async function getNameDuplicates(): Promise<NameDuplicatesReport> {
   return { groups, totalDuplicateGroups: groups.length, totalToDelete };
 }
 
-export async function cleanNameDuplicates(): Promise<number> {
+export async function cleanNameDuplicates(userId: string): Promise<number> {
   const toExclude = await db.execute<{ siret: string }>(
-    sql`select siret from ${scrapedRecords}
-        where (telephone is null or telephone = '')
-          and nom in (
-            select nom from ${scrapedRecords}
-            where telephone is not null and telephone != ''
+    sql`select siret from ${scrapedRecords} s1
+        where s1.user_id = ${userId}
+          and (s1.telephone is null or s1.telephone = '')
+          and s1.nom in (
+            select nom from ${scrapedRecords} s2
+            where s2.user_id = ${userId}
+              and s2.telephone is not null and s2.telephone != ''
           )`,
   );
   if (toExclude.length === 0) return 0;
@@ -432,9 +453,14 @@ export async function cleanNameDuplicates(): Promise<number> {
   return toExclude.length;
 }
 
-export async function getExcludedCount(): Promise<number> {
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(excluded);
+export async function getExcludedCount(userId: string): Promise<number> {
+  const [{ count }] = await db.execute<{ count: number }>(
+    sql`select count(*)::int as count from ${excluded} e
+        where exists (
+          select 1 from ${scrapedRecords} s
+          where s.siret = e.siret
+            and s.user_id = ${userId}
+        )`,
+  );
   return count;
 }
