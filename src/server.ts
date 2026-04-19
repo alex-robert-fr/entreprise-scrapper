@@ -3,7 +3,7 @@ import path from "path";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
-import { requireAuth } from "./middleware/auth";
+import { requireAuth, dashboardGuard } from "./middleware/auth";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
@@ -37,30 +37,13 @@ app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(express.json());
 
-const dashboardGuard: RequestHandler = (req, res, next) => {
-  auth.api
-    .getSession({ headers: fromNodeHeaders(req.headers) })
-    .then((result) => {
-      if (!result) {
-        res.redirect(302, "/login");
-        return;
-      }
-      next();
-    })
-    .catch(next);
-};
-
 app.get("/", dashboardGuard);
 app.get("/index.html", dashboardGuard);
 
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/api/me", asyncHandler(async (req, res) => {
+app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
   const result = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-  if (!result) {
-    res.status(401).json({ error: "Non authentifié" });
-    return;
-  }
   res.json(result);
 }));
 
@@ -89,8 +72,9 @@ app.get("/api/health", async (_req, res) => {
   try {
     await getStats();
     res.json({ status: "ok" });
-  } catch {
-    res.status(503).json({ status: "error", reason: "db_unavailable" });
+  } catch (err) {
+    console.error("[health] db unavailable", err);
+    res.status(503).json({ status: "error" });
   }
 });
 

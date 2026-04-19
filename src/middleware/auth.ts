@@ -2,11 +2,16 @@ import type { RequestHandler } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../auth";
 
+export type UserRole = "user" | "admin";
+
 export interface AuthUser {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
+
+const toUserRole = (raw: string | null | undefined): UserRole =>
+  raw === "admin" ? "admin" : "user";
 
 declare global {
   namespace Express {
@@ -16,23 +21,33 @@ declare global {
   }
 }
 
-export const requireAuth: RequestHandler = (req, res, next) => {
-  auth.api
-    .getSession({ headers: fromNodeHeaders(req.headers) })
-    .then((result) => {
-      if (!result) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
-      req.user = {
-        id: result.user.id,
-        email: result.user.email,
-        role: result.user.role ?? "user",
-      };
-      next();
-    })
-    .catch(next);
-};
+export function makeAuthGuard(onUnauth: RequestHandler): RequestHandler {
+  return (req, res, next) => {
+    auth.api
+      .getSession({ headers: fromNodeHeaders(req.headers) })
+      .then((result) => {
+        if (!result) {
+          onUnauth(req, res, next);
+          return;
+        }
+        req.user = {
+          id: result.user.id,
+          email: result.user.email,
+          role: toUserRole(result.user.role),
+        };
+        next();
+      })
+      .catch(next);
+  };
+}
+
+export const requireAuth = makeAuthGuard((_req, res) => {
+  res.status(401).json({ error: "Unauthorized" });
+});
+
+export const dashboardGuard = makeAuthGuard((_req, res) => {
+  res.redirect(302, "/login");
+});
 
 export const requireAdmin: RequestHandler = (req, res, next) => {
   if (!req.user) {
@@ -44,4 +59,27 @@ export const requireAdmin: RequestHandler = (req, res, next) => {
     return;
   }
   next();
+};
+
+export const requireAdminAuth: RequestHandler = (req, res, next) => {
+  auth.api
+    .getSession({ headers: fromNodeHeaders(req.headers) })
+    .then((result) => {
+      if (!result) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const role = toUserRole(result.user.role);
+      if (role !== "admin") {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+      req.user = {
+        id: result.user.id,
+        email: result.user.email,
+        role,
+      };
+      next();
+    })
+    .catch(next);
 };
