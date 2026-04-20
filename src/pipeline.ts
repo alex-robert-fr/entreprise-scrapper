@@ -1,5 +1,5 @@
 import { Etablissement } from "./sirene";
-import { isKnown, insert, ScrapedRecord } from "./db/scraped";
+import { isKnownByUser, insert, ScrapedRecord } from "./db/scraped";
 import { findPhoneGoogle } from "./googleMaps";
 import { fetchDirigeants } from "./annuaireEntreprises";
 
@@ -25,12 +25,12 @@ export async function runPipeline(
   let i = 0;
 
   for await (const etab of source) {
-      if (await isKnown(etab.siret)) {
+      if (limit !== undefined && newCount + notFoundCount >= limit) break;
+
+      if (await isKnownByUser(userId, etab.siret)) {
         alreadyKnown++;
         continue;
       }
-
-      if (limit !== undefined && newCount + notFoundCount >= limit) break;
 
       onProgress?.(++i, etab.nom);
 
@@ -58,7 +58,7 @@ export async function runPipeline(
         formeJuridique: etab.formeJuridique,
         dirigeants,
         source: scrapeSource,
-        scraped_at: new Date().toISOString(),
+        scrapedAt: new Date().toISOString(),
       };
 
       await insert(record);

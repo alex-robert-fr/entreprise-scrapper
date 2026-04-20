@@ -71,7 +71,7 @@ scraper/
 
 Utiliser **Postgres via Drizzle ORM** (table `scraped_records`, définie dans `src/db/schema.ts`).
 
-- Avant chaque scrape → `isKnown(siret)` vérifie dans `scraped_records` **et** `excluded`
+- Avant chaque scrape → `isKnownByUser(userId, siret)` vérifie dans `scraped_records` (scope user) **et** `excluded` (global)
 - Si oui → skip silencieux, incrémenter un compteur `already_known`
 - Si non → scraper, puis `insert(record)` avec `onConflictDoNothing`
 - La DB persiste entre les runs → relancer le script ne re-scrape jamais un établissement déjà traité
