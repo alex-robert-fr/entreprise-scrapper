@@ -1205,7 +1205,7 @@
         var tdSiret  = document.createElement("td"); tdSiret.style.fontFamily = "var(--mono)"; tdSiret.textContent = r.siret;
         var tdTel    = document.createElement("td"); tdTel.textContent = r.telephone || "—";
         var tdSource = document.createElement("td"); tdSource.textContent = r.source;
-        var tdDate   = document.createElement("td"); tdDate.textContent = r.scraped_at ? r.scraped_at.slice(0, 10) : "—";
+        var tdDate   = document.createElement("td"); tdDate.textContent = r.scrapedAt ? r.scrapedAt.slice(0, 10) : "—";
 
         tr.style.opacity = kept ? "1" : "0.5";
         tr.append(tdStatus, tdNom, tdVille, tdSiret, tdTel, tdSource, tdDate);

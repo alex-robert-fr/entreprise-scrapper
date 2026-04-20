@@ -33,6 +33,7 @@ interface ScrapeState {
   progress: number;
   total: number;
   current: string;
+  error?: string;
   result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
 }
 
@@ -144,7 +145,7 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) 
     };
   })().catch((err) => {
     state.status = "done";
-    state.current = `Erreur : ${err instanceof Error ? err.message : String(err)}`;
+    state.error = err instanceof Error ? err.message : String(err);
   });
 
   res.json({ message: "Scrape lancé" });
@@ -192,7 +193,7 @@ app.get("/api/export", requireAuth, validateQuery(exportQuerySchema), asyncHandl
   res.write("siret,nom,adresse,ville,code_postal,telephone,effectif_tranche,forme_juridique,dirigeants,source,scraped_at\n");
 
   for await (const r of streamAll(req.user!.id, pickFilters(getValidatedQuery<ExportQuery>(res)))) {
-    const row = [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.dirigeants, r.source, r.scraped_at]
+    const row = [r.siret, r.nom, r.adresse, r.ville, r.codePostal, r.telephone, r.effectifTranche, r.formeJuridique, r.dirigeants, r.source, r.scrapedAt]
       .map(escape)
       .join(",");
     res.write(row + "\n");

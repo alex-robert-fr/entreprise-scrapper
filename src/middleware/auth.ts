@@ -62,18 +62,6 @@ export const alreadyAuthGuard: RequestHandler = (req, res, next) => {
     .catch(next);
 };
 
-export const requireAdmin: RequestHandler = (req, res, next) => {
-  if (!req.user) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  if (req.user.role !== "admin") {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-  next();
-};
-
 export const requireAdminAuth: RequestHandler = (req, res, next) => {
   auth.api
     .getSession({ headers: fromNodeHeaders(req.headers) })

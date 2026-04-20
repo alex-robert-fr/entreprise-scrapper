@@ -28,7 +28,7 @@ export interface ScrapedRecord {
   formeJuridique:  string;
   dirigeants:      string | null;
   source:          string;
-  scraped_at:      string;
+  scrapedAt:       string;
 }
 
 export interface ScrapedStats {
@@ -63,6 +63,12 @@ const EFFECTIF_LABELS: Record<string, string> = {
   "32": "250-499 sal.",
 };
 
+// Echappe les wildcards LIKE/ILIKE (%, _, \) dans la saisie utilisateur pour
+// eviter que "M_ie" matche tout nom de 4 lettres ou que "100%" soit imprevisible.
+function escapeLike(input: string): string {
+  return input.replace(/[\\%_]/g, "\\$&");
+}
+
 function buildWhereClause(userId: string, filters: ResultFilters): SQL {
   const conditions: SQL[] = [eq(scrapedRecords.userId, userId)];
 
@@ -75,8 +81,8 @@ function buildWhereClause(userId: string, filters: ResultFilters): SQL {
   }
 
   if (filters.phoneType) conditions.push(phoneTypeCondition(filters.phoneType));
-  if (filters.nom?.trim())         conditions.push(ilike(scrapedRecords.nom, "%" + filters.nom.trim() + "%"));
-  if (filters.ville?.trim())       conditions.push(ilike(scrapedRecords.ville, "%" + filters.ville.trim() + "%"));
+  if (filters.nom?.trim())         conditions.push(ilike(scrapedRecords.nom, `%${escapeLike(filters.nom.trim())}%`));
+  if (filters.ville?.trim())       conditions.push(ilike(scrapedRecords.ville, `%${escapeLike(filters.ville.trim())}%`));
   if (filters.effectif?.trim())    conditions.push(eq(scrapedRecords.effectifTranche, filters.effectif.trim()));
   if (filters.departement?.trim()) conditions.push(like(scrapedRecords.codePostal, filters.departement.trim() + "%"));
   if (filters.formeJuridique?.trim()) conditions.push(eq(scrapedRecords.formeJuridique, filters.formeJuridique.trim()));
@@ -110,7 +116,7 @@ function toRecord(row: {
     formeJuridique:  row.formeJuridique ?? "",
     dirigeants:      row.dirigeants,
     source:          row.source,
-    scraped_at:      row.scrapedAt.toISOString(),
+    scrapedAt:       row.scrapedAt.toISOString(),
   };
 }
 
@@ -146,7 +152,7 @@ export async function insert(record: ScrapedRecord): Promise<void> {
       formeJuridique: record.formeJuridique,
       dirigeants: record.dirigeants,
       source: record.source,
-      scrapedAt: new Date(record.scraped_at),
+      scrapedAt: new Date(record.scrapedAt),
     })
     .onConflictDoNothing({ target: [scrapedRecords.userId, scrapedRecords.siret] });
 }
@@ -202,8 +208,25 @@ function toRecordFromRaw(row: Record<string, unknown>): ScrapedRecord {
     formeJuridique:  (row.forme_juridique as string | null) ?? "",
     dirigeants:      (row.dirigeants      as string | null) ?? null,
     source:          row.source as string,
-    scraped_at:      scrapedAtIso,
+    scrapedAt:       scrapedAtIso,
   };
+}
+
+// Pont Drizzle -> postgres-js : Drizzle n'expose pas de cursor streame, donc on
+// utilise pgClient.unsafe avec la SQL et les params produits par Drizzle. Le
+// cast `params as never[]` contourne le typage interne de postgres-js et reste
+// le SEUL point de fragilite : si Drizzle change son format de serialisation
+// (dates, tableaux, UUIDs), ca compile mais crash a l'execution. A auditer a
+// chaque bump majeur de drizzle-orm.
+async function* streamDrizzleQuery<T extends Record<string, unknown>>(
+  query: { toSQL(): { sql: string; params: unknown[] } },
+  chunkSize: number,
+): AsyncIterable<T> {
+  const { sql: sqlText, params } = query.toSQL();
+  const cursor = pgClient.unsafe<T[]>(sqlText, params as never[]).cursor(chunkSize);
+  for await (const chunk of cursor) {
+    for (const row of chunk) yield row;
+  }
 }
 
 export async function* streamAll(
@@ -213,14 +236,8 @@ export async function* streamAll(
 ): AsyncIterable<ScrapedRecord> {
   const where = buildWhereClause(userId, filters);
   const query = db.select().from(scrapedRecords).where(where).orderBy(desc(scrapedRecords.scrapedAt));
-  const { sql: sqlText, params } = query.toSQL();
-
-  // Drizzle renvoie `unknown[]`, postgres-js attend son type interne — cast nécessaire pour l'interop.
-  const cursor = pgClient.unsafe(sqlText, params as never[]).cursor(chunkSize);
-  for await (const chunk of cursor) {
-    for (const row of chunk as Array<Record<string, unknown>>) {
-      yield toRecordFromRaw(row);
-    }
+  for await (const row of streamDrizzleQuery<Record<string, unknown>>(query, chunkSize)) {
+    yield toRecordFromRaw(row);
   }
 }
 
@@ -349,38 +366,39 @@ export async function getPhoneDuplicates(userId: string): Promise<PhoneDuplicate
 }
 
 export async function cleanPhoneDuplicates(userId: string): Promise<number> {
-  const phones = await db.execute<{ telephone: string }>(
-    sql`select telephone from ${scrapedRecords}
-        where ${scrapedRecords.userId} = ${userId}
-          and telephone is not null and telephone != ''
-        group by telephone
-        having count(*) > 1`,
+  const toExclude = await db.execute<{ siret: string }>(
+    sql`with ranked as (
+          select siret,
+                 row_number() over (
+                   partition by telephone
+                   order by case when source != 'non_trouvé' then 0 else 1 end,
+                            scraped_at desc
+                 ) as rn
+          from ${scrapedRecords}
+          where user_id = ${userId}
+            and telephone is not null and telephone != ''
+            and telephone in (
+              select telephone from ${scrapedRecords}
+              where user_id = ${userId}
+                and telephone is not null and telephone != ''
+              group by telephone having count(*) > 1
+            )
+        )
+        select siret from ranked where rn > 1`,
   );
-  if (phones.length === 0) return 0;
+  if (toExclude.length === 0) return 0;
 
-  let deleted = 0;
+  const sirets = toExclude.map((r) => r.siret);
   await db.transaction(async (tx) => {
-    for (const { telephone } of phones) {
-      const rows = await tx
-        .select({ siret: scrapedRecords.siret })
-        .from(scrapedRecords)
-        .where(and(eq(scrapedRecords.userId, userId), eq(scrapedRecords.telephone, telephone)))
-        .orderBy(
-          sql`case when ${scrapedRecords.source} != 'non_trouvé' then 0 else 1 end`,
-          desc(scrapedRecords.scrapedAt),
-        );
-
-      for (let i = 1; i < rows.length; i++) {
-        const { siret } = rows[i];
-        await tx.insert(excluded).values({ siret }).onConflictDoNothing({ target: excluded.siret });
-        await tx
-          .delete(scrapedRecords)
-          .where(and(eq(scrapedRecords.siret, siret), eq(scrapedRecords.userId, userId)));
-        deleted++;
-      }
-    }
+    await tx
+      .insert(excluded)
+      .values(sirets.map((siret) => ({ siret })))
+      .onConflictDoNothing({ target: excluded.siret });
+    await tx
+      .delete(scrapedRecords)
+      .where(and(eq(scrapedRecords.userId, userId), inArray(scrapedRecords.siret, sirets)));
   });
-  return deleted;
+  return sirets.length;
 }
 
 export interface NameDuplicateGroup {
