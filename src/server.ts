@@ -35,6 +35,7 @@ interface ScrapeState {
   current: string;
   error?: string;
   result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
+  finishedAt?: number;
 }
 
 const IDLE_STATE: ScrapeState = { status: "idle", progress: 0, total: 0, current: "" };
@@ -143,9 +144,11 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) 
       alreadyKnown: result.alreadyKnown,
       notFoundCount: result.notFoundCount,
     };
+    state.finishedAt = Date.now();
   })().catch((err) => {
     state.status = "done";
     state.error = err instanceof Error ? err.message : String(err);
+    state.finishedAt = Date.now();
   });
 
   res.json({ message: "Scrape lancé" });
