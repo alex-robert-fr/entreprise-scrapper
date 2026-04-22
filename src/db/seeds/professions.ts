@@ -6,7 +6,8 @@ export const PROFESSIONS_SEED: NewProfession[] = [
   { slug: "boulanger",     libelle: "Boulangerie-Pâtisserie",     nafCodes: ["1071C", "1071D"], category: "Alimentation", active: true },
   { slug: "restaurateur",  libelle: "Restauration traditionnelle", nafCodes: ["5610A"],          category: "Alimentation", active: true },
   { slug: "boucher",       libelle: "Boucherie-Charcuterie",      nafCodes: ["4722Z", "1013B"], category: "Alimentation", active: true },
-  { slug: "fleuriste",     libelle: "Fleuriste",                   nafCodes: ["4776Z"],          category: "Alimentation", active: true },
+
+  { slug: "fleuriste",     libelle: "Fleuriste",                   nafCodes: ["4776Z"],          category: "Commerce",     active: true },
 
   { slug: "plombier",      libelle: "Plombier-Chauffagiste",       nafCodes: ["4322A", "4322B"], category: "BTP",          active: true },
   { slug: "macon",         libelle: "Maçon",                       nafCodes: ["4399C", "4120A"], category: "BTP",          active: true },

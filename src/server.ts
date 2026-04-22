@@ -113,7 +113,7 @@ app.get("/api/regions", requireAuth, (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
 
-app.get("/api/professions", asyncHandler(async (_req, res) => {
+app.get("/api/professions", requireAuth, asyncHandler(async (_req, res) => {
   res.json(await listActiveProfessions());
 }));
 
