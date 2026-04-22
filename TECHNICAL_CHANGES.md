@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Chore
 
+- Suppression du dead code `phone_cache` : table retirée du schéma Drizzle, `src/db/phoneCache.ts` supprimé, migration `0003_drop_phone_cache.sql` générée (drop de la table en base) ; remplacé à terme par la table `entreprises` normalisée (#66) ([`2c1957e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2c1957e))
 - `docker-compose.yml` : service Postgres 16-alpine sur le port 5433 (évite tout conflit avec un Postgres système) avec variables d'environnement surchargeables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`) ([`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b), [`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
 - `drizzle.config.ts` : configuration drizzle-kit (schema path, dialect `postgresql`, strict + verbose) ([`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b))
 - Migration initiale `drizzle/0000_init.sql` : 6 tables métier (`scraped_records`, `excluded`, `phone_cache`, `professions`, `credits`, `credit_transactions`) + 13 indexes ([`2bf5a30`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2bf5a30))
