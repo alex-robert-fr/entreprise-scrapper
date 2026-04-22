@@ -56,10 +56,9 @@ scraper/
 │   ├── pipeline.ts         # Orchestration des 3 sources
 │   ├── exporter.ts         # Export CSV
 │   ├── db/
-│   │   ├── schema.ts       # Tables Drizzle (scraped_records, phone_cache, credits...)
+│   │   ├── schema.ts       # Tables Drizzle (scraped_records, credits...)
 │   │   ├── client.ts       # Connexion Postgres singleton
 │   │   ├── scraped.ts      # Queries scraped_records/excluded (ex-dedup.ts)
-│   │   ├── phoneCache.ts   # Cache mutualisé TTL 90j
 │   │   └── index.ts        # Barrel
 │   └── public/
 │       └── index.html      # Dashboard web (HTML/CSS/JS vanilla, pas de framework)

@@ -108,18 +108,6 @@ export const excluded = pgTable("excluded", {
   excludedAt: timestamp("excluded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Phone cache mutualisé entre users (TTL 3 mois), consommé par #43.
-export const phoneCache = pgTable(
-  "phone_cache",
-  {
-    siret:     text("siret").primaryKey(),
-    telephone: text("telephone").notNull(),
-    source:    text("source").notNull(),
-    scrapedAt: timestamp("scraped_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [index("phone_cache_scraped_at_idx").on(t.scrapedAt)],
-);
-
 // Métiers supportés (boulanger, pâtissier, boucher...) — seedés en #44.
 export const professions = pgTable("professions", {
   id:       serial("id").primaryKey(),
@@ -162,8 +150,6 @@ export type VerificationRow      = InferSelectModel<typeof verification>;
 export type ScrapedRecordRow     = InferSelectModel<typeof scrapedRecords>;
 export type NewScrapedRecord     = InferInsertModel<typeof scrapedRecords>;
 export type ExcludedRow          = InferSelectModel<typeof excluded>;
-export type PhoneCacheRow        = InferSelectModel<typeof phoneCache>;
-export type NewPhoneCache        = InferInsertModel<typeof phoneCache>;
 export type ProfessionRow        = InferSelectModel<typeof professions>;
 export type NewProfession        = InferInsertModel<typeof professions>;
 export type CreditsRow           = InferSelectModel<typeof credits>;
