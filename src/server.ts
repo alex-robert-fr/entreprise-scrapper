@@ -35,14 +35,33 @@ interface ScrapeState {
   current: string;
   error?: string;
   result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
+  finishedAt?: number;
 }
 
 const IDLE_STATE: ScrapeState = { status: "idle", progress: 0, total: 0, current: "" };
 const scrapeStates = new Map<string, ScrapeState>();
 
+const CLEANUP_TTL_MS = 60 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
 function getScrapeState(userId: string): ScrapeState {
-  return scrapeStates.get(userId) ?? IDLE_STATE;
+  return scrapeStates.get(userId) ?? { ...IDLE_STATE };
 }
+
+function cleanupFinishedStates(now: number = Date.now()) {
+  for (const [userId, state] of scrapeStates) {
+    if (
+      state.status !== "running" &&
+      (state.finishedAt === undefined || now - state.finishedAt > CLEANUP_TTL_MS)
+    ) {
+      scrapeStates.delete(userId);
+    }
+  }
+}
+
+const cleanupTimer =
+  process.env.NODE_ENV === "test" ? null : setInterval(cleanupFinishedStates, CLEANUP_INTERVAL_MS);
+cleanupTimer?.unref();
 
 // Better Auth doit lire le body brut — monté AVANT express.json()
 app.all("/api/auth/*", toNodeHandler(auth));
@@ -143,9 +162,11 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) 
       alreadyKnown: result.alreadyKnown,
       notFoundCount: result.notFoundCount,
     };
+    state.finishedAt = Date.now();
   })().catch((err) => {
     state.status = "done";
     state.error = err instanceof Error ? err.message : String(err);
+    state.finishedAt = Date.now();
   });
 
   res.json({ message: "Scrape lancé" });
@@ -208,6 +229,13 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Erreur serveur" });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Dashboard disponible sur http://localhost:${PORT}`);
 });
+
+function shutdown() {
+  if (cleanupTimer) clearInterval(cleanupTimer);
+  server.close(() => process.exit(0));
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
