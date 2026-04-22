@@ -6,6 +6,7 @@ import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
 import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
+import { listActiveProfessions } from "./db/professions";
 import { sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
@@ -111,6 +112,10 @@ app.get("/api/health", async (_req, res) => {
 app.get("/api/regions", requireAuth, (_req, res) => {
   res.json(Object.keys(REGIONS_DEPARTEMENTS));
 });
+
+app.get("/api/professions", asyncHandler(async (_req, res) => {
+  res.json(await listActiveProfessions());
+}));
 
 app.get("/api/stats", requireAuth, asyncHandler(async (req, res) => {
   res.json(await getStats(req.user!.id));
