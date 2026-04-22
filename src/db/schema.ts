@@ -109,11 +109,19 @@ export const excluded = pgTable("excluded", {
 });
 
 // Métiers supportés (boulanger, pâtissier, boucher...) — seedés en #44.
-export const professions = pgTable("professions", {
-  id:       serial("id").primaryKey(),
-  libelle:  text("libelle").notNull().unique(),
-  nafCodes: text("naf_codes").array().notNull(),
-});
+// naf_codes stockés sans point (format SIRENE "1071C", pas "10.71C") pour matcher directement l'API.
+export const professions = pgTable(
+  "professions",
+  {
+    id:       serial("id").primaryKey(),
+    slug:     text("slug").notNull().unique(),
+    libelle:  text("libelle").notNull().unique(),
+    nafCodes: text("naf_codes").array().notNull(),
+    category: text("category").notNull(),
+    active:   boolean("active").notNull().default(true),
+  },
+  (t) => [index("professions_category_idx").on(t.category)],
+);
 
 // Solde de crédits par user (1 fiche affichée = 1 crédit consommé en #47).
 export const credits = pgTable("credits", {
