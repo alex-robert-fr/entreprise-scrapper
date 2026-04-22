@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **BREAKING** — La base de données passe de SQLite à Postgres. L'application nécessite désormais une `DATABASE_URL` ; en local, lancer `docker compose up -d db` puis `npm run db:migrate` avant de démarrer le serveur. L'ancienne base `data/scraper.db` n'est pas migrée (décision produit : on repart from scratch) ([`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160), [`9b0b101`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9b0b101), [`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b))
+- **BREAKING** — Migration requise : `scraped_records` passe à une clé primaire composite `(user_id, siret)` avec contrainte FK `user_id → user.id` (cascade delete) ; lancer `npm run db:migrate` avant de démarrer cette version ([#68](https://github.com/alex-robert-fr/entreprise-scrapper/pull/68))
 
 ### Fixed
 

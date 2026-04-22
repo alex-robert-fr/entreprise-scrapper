@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/db/scraped.ts` : toutes les fonctions publiques reçoivent `userId: string` en premier argument ; `buildWhereClause` filtre systématiquement par `user_id` ; les `DELETE` dans `cleanPhoneDuplicates`/`cleanNameDuplicates` incluent le scope `userId` en défense en profondeur ([`3d004ce`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/3d004ce), [`063fd61`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/063fd61))
 - `src/server.ts` : `scrapeState` devient `Map<userId, ScrapeState>` pour isoler le statut de scrape par utilisateur ; `/api/health` bascule sur `SELECT 1` indépendant du scope user ([`8c19bf6`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8c19bf6), [`063fd61`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/063fd61))
 - `src/pipeline.ts` : signature `runPipeline(source, userId, onProgress?, limit?)` — `userId` propagé à chaque `ScrapedRecord` inséré ([`3442b43`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/3442b43))
+- `src/db/scraped.ts` : `isKnownByUser(userId, siret)` remplace la déduplication globale par SIRET seul ; schéma `scraped_records` passe à une PK composite `(user_id, siret)` avec FK `user_id → user.id` et cascade delete ([#68](https://github.com/alex-robert-fr/entreprise-scrapper/pull/68))
+- `src/server.ts` : cleanup périodique de `scrapeStates` (purge toutes les 5 min les états terminés depuis > 1h, `setInterval` avec `.unref()` et désactivé en `NODE_ENV=test`) ; `finishedAt` ajouté à `ScrapeState` pour tracer la fin du scrape ; shutdown propre via `server.close()` sur SIGINT/SIGTERM ; `getScrapeState` retourne une copie de `IDLE_STATE` pour éviter toute mutation partagée ([#69](https://github.com/alex-robert-fr/entreprise-scrapper/pull/69))
 
 ### Docs
 
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CLAUDE.md` : structure projet et système de déduplication mis à jour ; codes INSEE effectif corrigés (11, 12, 21, 22, 31, 32) ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e), [`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
 - `.claude/skills/tech-stack/SKILL.md` : stack DB mise à jour (Postgres + Drizzle) ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e))
 - `.env.example` : `SCRAPE_USER_ID` documenté pour la CLI (usage futur quand `src/main.ts` sera implémenté) ([`1701c1a`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/1701c1a))
+- `CLAUDE.md` mis à jour pour refléter `isKnownByUser` comme interface de déduplication ([`a7d0b65`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/a7d0b65))
 
 ### Dependencies
 
