@@ -4,6 +4,9 @@ import { seedProfessions } from "./professions";
 
 async function main(): Promise<void> {
   const { inserted, skipped } = await seedProfessions(db);
+  if (skipped > 0) {
+    console.warn(`⚠️  ${skipped} profession(s) déjà présentes — nafCodes/category NE sont PAS mis à jour automatiquement.`);
+  }
   console.log(`✅ Seed professions — ${inserted} insérés, ${skipped} déjà présents`);
 }
 

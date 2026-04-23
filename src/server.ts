@@ -114,7 +114,8 @@ app.get("/api/regions", requireAuth, (_req, res) => {
 });
 
 app.get("/api/professions", requireAuth, asyncHandler(async (_req, res) => {
-  res.json(await listActiveProfessions());
+  const rows = await listActiveProfessions();
+  res.json(rows.map(({ slug, libelle, nafCodes, category }) => ({ slug, libelle, nafCodes, category })));
 }));
 
 app.get("/api/stats", requireAuth, asyncHandler(async (req, res) => {
