@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authentification par email/password et Google OAuth disponible sur `/api/auth/*` : signup, signin, signout avec cookie de session `HttpOnly` (secure en production) ; 50 crédits offerts automatiquement à l'inscription ([`8613e41`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8613e41))
 - `GET /api/me` — retourne la session courante de l'utilisateur connecté ; `401 Unauthorized` si non authentifié ([`8613e41`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8613e41))
 - Pages `/login` et `/signup` disponibles : formulaire email/password + bouton Google OAuth, redirection vers `/` après authentification réussie ; un utilisateur déjà connecté accédant à ces pages est automatiquement redirigé vers `/` ([`9abac3e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9abac3e))
-- `GET /api/professions` — retourne la liste des 20 métiers actifs (`slug`, `libelle`, `nafCodes`, `category`) pré-seedés et catégorisés (Alimentation, BTP, Santé, Services, Automobile, Commerce, Beauté) ; disponibles immédiatement après `npm run db:setup` ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
+- `GET /api/professions` — retourne la liste des 20 métiers actifs (`slug`, `libelle`, `category`) pré-seedés et catégorisés (Alimentation, BTP, Santé, Services, Automobile, Commerce, Beauté) ; disponibles immédiatement après `npm run db:setup` ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
+- Sélection de la profession cible dans le formulaire de scrape du dashboard : dropdown groupé par catégorie, chargé dynamiquement depuis `GET /api/professions` ; `POST /api/scrape` accepte un `professionId` optionnel pour restreindre la requête SIRENE aux codes NAF de la profession choisie — comportement boulanger/pâtissier conservé si absent ([`0746e04`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0746e04))
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))
 - `GET /api/export` streame désormais le CSV ligne par ligne via un curseur Postgres : plus de timeout HTTP ni de saturation mémoire sur de grands volumes ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
+- `POST /api/scrape` : retourne `400` avec message explicite si `professionId` est inconnu ou si la profession n'a pas de codes NAF configurés, au lieu d'un fallback silencieux sur les codes boulanger/pâtissier ([`66c39a2`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/66c39a2))
 
 ### Security
 

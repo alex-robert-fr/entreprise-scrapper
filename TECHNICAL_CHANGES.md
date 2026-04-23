@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/db/scraped.ts` : `isKnownByUser(userId, siret)` remplace la déduplication globale par SIRET seul ; schéma `scraped_records` passe à une PK composite `(user_id, siret)` avec FK `user_id → user.id` et cascade delete ([#68](https://github.com/alex-robert-fr/entreprise-scrapper/pull/68))
 - `src/server.ts` : cleanup périodique de `scrapeStates` (purge toutes les 5 min les états terminés depuis > 1h, `setInterval` avec `.unref()` et désactivé en `NODE_ENV=test`) ; `finishedAt` ajouté à `ScrapeState` pour tracer la fin du scrape ; shutdown propre via `server.close()` sur SIGINT/SIGTERM ; `getScrapeState` retourne une copie de `IDLE_STATE` pour éviter toute mutation partagée ([#69](https://github.com/alex-robert-fr/entreprise-scrapper/pull/69))
 - `src/db/professions.ts` : ajout de `listActiveProfessions()` — query Drizzle filtrée sur `active = true`, ordonnée par `category` puis `libelle` ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
+- `src/sirene.ts` : `DEFAULT_NAF_CODES` aligné sur le format DB sans point (`["1071C", "1071D"]`) ; `normalizeNafCode` appliquée systématiquement à tous les codes (default et fournis) avant la requête Lucene ; `FetchOptions` étendu avec `nafCodes?: string[]` ([`8aaa9de`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8aaa9de))
+- `src/db/professions.ts` : ajout de `getProfessionById(id: number)` ; `src/schemas/scrape.schema.ts` : `professionId` optionnel ajouté au body de scrape ; résolution des codes NAF côté serveur uniquement pour éviter la confiance client ([`96991f1`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/96991f1))
 
 ### Docs
 
