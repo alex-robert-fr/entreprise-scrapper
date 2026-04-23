@@ -4,7 +4,14 @@ import "dotenv/config";
 
 const SIRENE_BASE_URL = "https://api.insee.fr/api-sirene/3.11/siret";
 
-const NAF_CODES = ["10.71C", "10.71D"];
+export const DEFAULT_NAF_CODES = ["10.71C", "10.71D"];
+
+export function normalizeNafCode(code: string): string {
+  const trimmed = code.trim().toUpperCase();
+  if (trimmed.includes(".")) return trimmed;
+  if (trimmed.length < 3) return trimmed;
+  return `${trimmed.slice(0, 2)}.${trimmed.slice(2)}`;
+}
 
 const FORMES_JURIDIQUES: Record<string, string> = {
   "1000": "EI",
@@ -64,6 +71,7 @@ export interface Etablissement {
 export interface FetchOptions {
   region?: string;
   departement?: string;
+  nafCodes?: string[];
 }
 
 // --- Helpers ---
@@ -273,8 +281,11 @@ export async function* streamEtablissements(
 
   const departements = getDepartements(options);
   const seen = new Set<string>();
+  const nafCodes = options.nafCodes?.length
+    ? options.nafCodes.map(normalizeNafCode)
+    : DEFAULT_NAF_CODES;
 
-  for (const nafCode of NAF_CODES) {
+  for (const nafCode of nafCodes) {
     for await (const etab of streamForNaf(nafCode, departements, headers)) {
       if (!seen.has(etab.siret)) {
         seen.add(etab.siret);
