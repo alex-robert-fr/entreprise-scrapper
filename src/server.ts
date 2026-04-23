@@ -6,7 +6,7 @@ import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
 import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
-import { listActiveProfessions } from "./db/professions";
+import { listActiveProfessions, getProfessionById } from "./db/professions";
 import { sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
@@ -115,7 +115,7 @@ app.get("/api/regions", requireAuth, (_req, res) => {
 
 app.get("/api/professions", requireAuth, asyncHandler(async (_req, res) => {
   const rows = await listActiveProfessions();
-  res.json(rows.map(({ slug, libelle, nafCodes, category }) => ({ slug, libelle, nafCodes, category })));
+  res.json(rows.map(({ id, slug, libelle, category }) => ({ id, slug, libelle, category })));
 }));
 
 app.get("/api/stats", requireAuth, asyncHandler(async (req, res) => {
@@ -131,7 +131,7 @@ app.get("/api/results", requireAuth, validateQuery(resultsQuerySchema), asyncHan
   res.json(await getPaginated(req.user!.id, query.page, query.limit, pickFilters(query)));
 }));
 
-app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) => {
+app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
 
   if (scrapeStates.get(userId)?.status === "running") {
@@ -139,13 +139,28 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) 
     return;
   }
 
-  const { region, departement, all, limit } = req.body as ScrapeBody;
+  const { region, departement, all, limit, professionId } = req.body as ScrapeBody;
+
+  let nafCodes: string[] | undefined;
+  if (professionId !== undefined) {
+    const profession = await getProfessionById(professionId);
+    if (!profession) {
+      res.status(400).json({ error: "Profession inconnue" });
+      return;
+    }
+    if (!profession.nafCodes.length) {
+      res.status(400).json({ error: "Cette profession n'a pas de codes NAF configurés" });
+      return;
+    }
+    nafCodes = profession.nafCodes;
+  }
 
   const state: ScrapeState = { status: "running", progress: 0, total: 0, current: "" };
   scrapeStates.set(userId, state);
 
   (async () => {
-    const options = all ? {} : { region, departement };
+    const baseOptions = all ? {} : { region, departement };
+    const options = { ...baseOptions, ...(nafCodes ? { nafCodes } : {}) };
 
     let source: Iterable<import("./sirene").Etablissement> | AsyncIterable<import("./sirene").Etablissement>;
     if (limit !== undefined) {
@@ -176,7 +191,7 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), (req, res) 
   });
 
   res.json({ message: "Scrape lancé" });
-});
+}));
 
 app.get("/api/status", requireAuth, (req, res) => {
   res.json(getScrapeState(req.user!.id));

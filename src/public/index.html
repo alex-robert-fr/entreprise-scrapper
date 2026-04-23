@@ -776,6 +776,13 @@
     <div class="s-section">
       <div class="s-label">Périmètre</div>
 
+      <div class="field" id="field-profession">
+        <label>Profession</label>
+        <select id="profession">
+          <option value="">— Chargement… —</option>
+        </select>
+      </div>
+
       <div class="radio-group" id="scopeToggle">
         <label id="lbl-region" class="active" onclick="setScope('region')">
           <input type="radio" name="scope" value="region" checked>
@@ -1446,6 +1453,54 @@
       counter(document.getElementById("statNotFound"), s.notFound);
     }
 
+    async function fetchProfessions() {
+      const sel = document.getElementById("profession");
+      let professionList;
+      try {
+        professionList = await fetch("/api/professions").then(function(r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        });
+      } catch {
+        sel.innerHTML = '<option value="">Erreur de chargement</option>';
+        return;
+      }
+
+      if (!professionList.length) {
+        sel.innerHTML = '<option value="">— Aucune profession disponible —</option>';
+        document.getElementById("btnScrape").disabled = true;
+        return;
+      }
+
+      sel.innerHTML = "";
+
+      var byCategory = {};
+      professionList.forEach(function(p) {
+        if (!byCategory[p.category]) byCategory[p.category] = [];
+        byCategory[p.category].push(p);
+      });
+
+      Object.keys(byCategory).sort().forEach(function(cat) {
+        var group = document.createElement("optgroup");
+        group.label = cat;
+        byCategory[cat].forEach(function(p) {
+          var o = document.createElement("option");
+          o.value = String(p.id);
+          o.dataset.slug = p.slug;
+          o.textContent = p.libelle;
+          group.appendChild(o);
+        });
+        sel.appendChild(group);
+      });
+
+      var defaultOption = sel.querySelector('option[data-slug="boulanger"]');
+      if (defaultOption) {
+        sel.value = defaultOption.value;
+      } else {
+        sel.selectedIndex = 0;
+      }
+    }
+
     async function fetchRegions() {
       const regions = await fetch("/api/regions").then(r => r.json());
       const sel = document.getElementById("region");
@@ -1529,6 +1584,9 @@
 
       const limitVal = parseInt(document.getElementById("limit").value);
       if (!isNaN(limitVal) && limitVal > 0) body.limit = limitVal;
+
+      const professionId = parseInt(document.getElementById("profession").value);
+      if (!isNaN(professionId) && professionId > 0) body.professionId = professionId;
 
       const res = await fetch("/api/scrape", {
         method: "POST",
@@ -1624,6 +1682,7 @@ function setExportScope(scope) {
     fetchStats();
     fetchResults();
     fetchRegions();
+    fetchProfessions();
     fetchFilterOptions();
     pollStatus();
 
