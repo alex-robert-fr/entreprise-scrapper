@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))
 - `GET /api/export` streame désormais le CSV ligne par ligne via un curseur Postgres : plus de timeout HTTP ni de saturation mémoire sur de grands volumes ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
 - `POST /api/scrape` : retourne `400` avec message explicite si `professionId` est inconnu ou si la profession n'a pas de codes NAF configurés, au lieu d'un fallback silencieux sur les codes boulanger/pâtissier ([`66c39a2`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/66c39a2))
+- Les erreurs 401 et 403 de l'API Google Maps lèvent désormais une exception explicite au lieu de retourner silencieusement `null`, rendant immédiatement visible tout problème de clé API invalide ou quota dépassé ([`d90a487`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d90a487))
 
 ### Security
 
