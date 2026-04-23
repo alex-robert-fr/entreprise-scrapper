@@ -103,14 +103,18 @@ Vérifier :
 
 - Vérifier que `/api/health` répond localement : `curl http://localhost:3000/api/health`
 - Ajuster `healthcheckTimeout` dans `railway.json` si le démarrage est long
-- Le healthcheck interroge la DB via `getStats()` — si Postgres n'est pas joignable, le check renvoie 503
+- Si Postgres n'est pas joignable, le check renvoie 503 — vérifier `DATABASE_URL` dans les variables Railway
+- Si `BETTER_AUTH_SECRET` est absent, le process crash avant d'écouter → vérifier les variables d'env
 
-### Appliquer les migrations en prod
+### Migrations en prod
 
-Railway ne joue pas automatiquement `drizzle-kit migrate`. Deux options :
+Les migrations Drizzle et le seed des professions sont **automatiques au boot** (`src/db/migrate.ts` + `src/db/seeds/professions.ts` appelés dans `src/server.ts` avant `app.listen`). Aucune action manuelle requise.
 
-- Ajouter `npm run db:migrate && npm run start:prod` dans la `startCommand` de `railway.json`
-- Ou exécuter manuellement via `railway run npm run db:migrate` après chaque nouvelle migration
+Si le schéma de la DB staging a été initialisé via `drizzle-kit push` (sans table `__drizzle_migrations`), bootstrapper une fois manuellement :
+
+```bash
+railway run npm run db:migrate
+```
 
 ---
 
