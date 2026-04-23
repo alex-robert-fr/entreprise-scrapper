@@ -1,6 +1,8 @@
 import "dotenv/config";
 import path from "path";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
+import { runMigrations } from "./db/migrate";
+import { seedProfessions } from "./db/seeds/professions";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
@@ -250,13 +252,24 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Erreur serveur" });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Dashboard disponible sur http://localhost:${PORT}`);
-});
+(async () => {
+  try {
+    await runMigrations();
+    const { inserted, skipped } = await seedProfessions(db);
+    console.log(`[seed] professions: ${inserted} insérées, ${skipped} déjà présentes`);
+  } catch (err) {
+    console.error("[boot] échec migrations/seed :", err);
+    process.exit(1);
+  }
 
-function shutdown() {
-  if (cleanupTimer) clearInterval(cleanupTimer);
-  server.close(() => process.exit(0));
-}
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+  const server = app.listen(PORT, () => {
+    console.log(`Dashboard disponible sur http://localhost:${PORT}`);
+  });
+
+  function shutdown() {
+    if (cleanupTimer) clearInterval(cleanupTimer);
+    server.close(() => process.exit(0));
+  }
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+})();
