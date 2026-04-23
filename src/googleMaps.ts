@@ -31,6 +31,9 @@ async function searchPlace(
     body: JSON.stringify({ textQuery: `${nom} ${ville}` }),
   });
 
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`Google Maps — clé API invalide ou quota dépassé (HTTP ${response.status})`);
+  }
   if (!response.ok) {
     console.warn(`Google Maps Text Search — HTTP ${response.status}`);
     return null;
@@ -47,7 +50,7 @@ async function getPhoneNumber(
   apiKey: string
 ): Promise<string | null> {
   const response = await fetchWithRetry(
-    `${PLACES_NEW_BASE_URL}/${encodeURIComponent(placeId)}`,
+    `${PLACES_NEW_BASE_URL}/${placeId}`,
     {
       headers: {
         "X-Goog-Api-Key": apiKey,
@@ -56,6 +59,9 @@ async function getPhoneNumber(
     }
   );
 
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`Google Maps — clé API invalide ou quota dépassé (HTTP ${response.status})`);
+  }
   if (!response.ok) {
     console.warn(`Google Maps Place Details — HTTP ${response.status}`);
     return null;

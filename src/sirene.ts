@@ -249,6 +249,7 @@ export async function* streamEtablissements(
   };
 
   const departements = getDepartements(options);
+  // Déduplique les SIRETs présents dans plusieurs passes NAF — croît en O(n) en mémoire sur --all
   const seen = new Set<string>();
   const nafCodes = (options.nafCodes?.length ? options.nafCodes : DEFAULT_NAF_CODES).map(normalizeNafCode);
 
