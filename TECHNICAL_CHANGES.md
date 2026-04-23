@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/db/professions.ts` : ajout de `listActiveProfessions()` — query Drizzle filtrée sur `active = true`, ordonnée par `category` puis `libelle` ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
 - `src/sirene.ts` : `DEFAULT_NAF_CODES` aligné sur le format DB sans point (`["1071C", "1071D"]`) ; `normalizeNafCode` appliquée systématiquement à tous les codes (default et fournis) avant la requête Lucene ; `FetchOptions` étendu avec `nafCodes?: string[]` ([`8aaa9de`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8aaa9de))
 - `src/db/professions.ts` : ajout de `getProfessionById(id: number)` ; `src/schemas/scrape.schema.ts` : `professionId` optionnel ajouté au body de scrape ; résolution des codes NAF côté serveur uniquement pour éviter la confiance client ([`96991f1`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/96991f1))
+- Centralisation de `fetchWithRetry` dans `src/http.ts` : suppression des 3 implémentations dupliquées dans `sirene.ts`, `googleMaps.ts` et `annuaireEntreprises.ts` ; throw explicite après `MAX_RETRIES` tentatives retryables, `sleep()` dédupliquée ([`7215f1b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/7215f1b))
 
 ### Docs
 

@@ -1,7 +1,6 @@
+import { fetchWithRetry } from "./http";
+
 const BASE_URL = "https://recherche-entreprises.api.gouv.fr/search";
-const MAX_RETRIES = 3;
-const RETRY_BASE_DELAY = 1000;
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 interface Dirigeant {
   nom: string;
@@ -11,35 +10,6 @@ interface Dirigeant {
 
 interface SearchResult {
   results?: Array<{ dirigeants?: Dirigeant[] }>;
-}
-
-async function fetchWithRetry(url: string): Promise<Response> {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(url);
-      if (response.ok || !RETRYABLE_STATUS.has(response.status)) {
-        return response;
-      }
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `Annuaire Entreprises — HTTP ${response.status}, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    } catch (err) {
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `Annuaire Entreprises — erreur réseau, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        throw err;
-      }
-    }
-  }
-  return fetch(url);
 }
 
 function formatDirigeants(dirigeants: Dirigeant[]): string {

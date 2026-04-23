@@ -1,42 +1,7 @@
+import { fetchWithRetry } from "./http";
+
 // Places API (New) — https://developers.google.com/maps/documentation/places/web-service/text-search
 const PLACES_NEW_BASE_URL = "https://places.googleapis.com/v1/places";
-const MAX_RETRIES = 3;
-const RETRY_BASE_DELAY = 1000;
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-
-// --- Retry HTTP ---
-
-async function fetchWithRetry(
-  url: string,
-  init?: RequestInit
-): Promise<Response> {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(url, init);
-      if (response.ok || !RETRYABLE_STATUS.has(response.status)) {
-        return response;
-      }
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `Google Maps — HTTP ${response.status}, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    } catch (err) {
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `Google Maps — erreur réseau, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        throw err;
-      }
-    }
-  }
-  return fetch(url, init);
-}
 
 // --- Types Places API (New) ---
 
@@ -66,6 +31,9 @@ async function searchPlace(
     body: JSON.stringify({ textQuery: `${nom} ${ville}` }),
   });
 
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`Google Maps — clé API invalide ou quota dépassé (HTTP ${response.status})`);
+  }
   if (!response.ok) {
     console.warn(`Google Maps Text Search — HTTP ${response.status}`);
     return null;
@@ -82,7 +50,7 @@ async function getPhoneNumber(
   apiKey: string
 ): Promise<string | null> {
   const response = await fetchWithRetry(
-    `${PLACES_NEW_BASE_URL}/${encodeURIComponent(placeId)}`,
+    `${PLACES_NEW_BASE_URL}/${placeId}`,
     {
       headers: {
         "X-Goog-Api-Key": apiKey,
@@ -91,6 +59,9 @@ async function getPhoneNumber(
     }
   );
 
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`Google Maps — clé API invalide ou quota dépassé (HTTP ${response.status})`);
+  }
   if (!response.ok) {
     console.warn(`Google Maps Place Details — HTTP ${response.status}`);
     return null;
