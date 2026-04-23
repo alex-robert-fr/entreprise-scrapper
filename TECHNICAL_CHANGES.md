@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/pipeline.ts` : signature `runPipeline(source, userId, onProgress?, limit?)` — `userId` propagé à chaque `ScrapedRecord` inséré ([`3442b43`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/3442b43))
 - `src/db/scraped.ts` : `isKnownByUser(userId, siret)` remplace la déduplication globale par SIRET seul ; schéma `scraped_records` passe à une PK composite `(user_id, siret)` avec FK `user_id → user.id` et cascade delete ([#68](https://github.com/alex-robert-fr/entreprise-scrapper/pull/68))
 - `src/server.ts` : cleanup périodique de `scrapeStates` (purge toutes les 5 min les états terminés depuis > 1h, `setInterval` avec `.unref()` et désactivé en `NODE_ENV=test`) ; `finishedAt` ajouté à `ScrapeState` pour tracer la fin du scrape ; shutdown propre via `server.close()` sur SIGINT/SIGTERM ; `getScrapeState` retourne une copie de `IDLE_STATE` pour éviter toute mutation partagée ([#69](https://github.com/alex-robert-fr/entreprise-scrapper/pull/69))
+- `src/db/professions.ts` : ajout de `listActiveProfessions()` — query Drizzle filtrée sur `active = true`, ordonnée par `category` puis `libelle` ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
 
 ### Docs
 
@@ -47,5 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Variable `BETTER_AUTH_TRUSTED_ORIGINS` (CSV) pour configurer plusieurs origines autorisées en plus de `BETTER_AUTH_URL` ([`0f20ef4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0f20ef4))
 - Hook `user.create.after` : gestion d'erreur avec relance et log d'avertissement si conflit sur insert crédits ([`0f20ef4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/0f20ef4))
 - Branche par défaut basculée sur `develop` dans les skills workflow (`workflow-config`, `tech-stack`) ([`ed4eb21`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ed4eb21))
+- Migration `0004_professions_extended.sql` : colonnes `slug` (UNIQUE), `category` et `active` ajoutées à `professions` + index `professions_category_idx` ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
+- `package.json` : script `db:setup` (`npm run db:migrate && npm run db:seed`) pour initialiser la base en une commande ([#71](https://github.com/alex-robert-fr/entreprise-scrapper/pull/71))
 
 [Unreleased]: https://github.com/alex-robert-fr/entreprise-scrapper/compare/v0.1.0...HEAD
