@@ -64,10 +64,11 @@ Railway émet automatiquement le certificat Let's Encrypt une fois le DNS propag
 
 Dashboard Railway → service web → **Variables** → ajouter :
 
+> **⚠️ Ne pas définir `PORT` manuellement** — Railway l'injecte automatiquement. Le définir crée un conflit et rend l'app inaccessible.
+
 | Variable | Valeur | Notes |
 |----------|--------|-------|
 | `NODE_ENV` | `production` | |
-| `PORT` | (laisser Railway l'injecter) | Railway injecte `PORT` automatiquement |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | référence Railway |
 | `SIRENE_TOKEN` | valeur réelle | |
 | `GOOGLE_MAPS_API_KEY` | valeur réelle | |
@@ -110,7 +111,9 @@ Vérifier :
 
 Les migrations Drizzle et le seed des professions sont **automatiques au boot** (`src/db/migrate.ts` + `src/db/seeds/professions.ts` appelés dans `src/server.ts` avant `app.listen`). Aucune action manuelle requise.
 
-Si le schéma de la DB staging a été initialisé via `drizzle-kit push` (sans table `__drizzle_migrations`), bootstrapper une fois manuellement :
+> **⚠️ Scale horizontal** : le seed est idempotent (`onConflictDoNothing`) mais pas conçu pour être exécuté en parallèle sur plusieurs réplicas simultanés. Ne pas scaler à >1 réplica sans extraire migrations et seed dans un job de démarrage dédié (Railway `Pre-deploy Command`).
+
+Si le schéma de la DB staging a été initialisé via `drizzle-kit push` (sans table `__drizzle_migrations`), bootstrapper une fois manuellement via le **CLI drizzle-kit** (outil dev uniquement — pas le même mécanisme que le boot automatique) :
 
 ```bash
 railway run npm run db:migrate

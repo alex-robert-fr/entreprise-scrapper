@@ -4,7 +4,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 
-const MIGRATIONS_FOLDER = path.resolve(process.cwd(), "drizzle");
+const MIGRATIONS_FOLDER = path.resolve(__dirname, "../../drizzle");
 
 export async function runMigrations(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -12,6 +12,7 @@ export async function runMigrations(): Promise<void> {
     throw new Error("DATABASE_URL manquante — impossible d'appliquer les migrations");
   }
 
+  // Connexion dédiée et éphémère — ne pas réutiliser le pool applicatif (db/client.ts)
   const client = postgres(databaseUrl, { max: 1, prepare: false });
   const db = drizzle(client);
 

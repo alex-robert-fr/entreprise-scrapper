@@ -10,7 +10,7 @@ import { validateBody, validateQuery, getValidatedQuery } from "./middleware/val
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { listActiveProfessions, getProfessionById } from "./db/professions";
 import { sql } from "drizzle-orm";
-import { db } from "./db/client";
+import { db, closeDb } from "./db/client";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 import {
@@ -62,9 +62,7 @@ function cleanupFinishedStates(now: number = Date.now()) {
   }
 }
 
-const cleanupTimer =
-  process.env.NODE_ENV === "test" ? null : setInterval(cleanupFinishedStates, CLEANUP_INTERVAL_MS);
-cleanupTimer?.unref();
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 // Better Auth doit lire le body brut — monté AVANT express.json()
 app.all("/api/auth/*", toNodeHandler(auth));
@@ -262,13 +260,19 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     process.exit(1);
   }
 
+  cleanupTimer = process.env.NODE_ENV === "test" ? null : setInterval(cleanupFinishedStates, CLEANUP_INTERVAL_MS);
+  cleanupTimer?.unref();
+
   const server = app.listen(PORT, () => {
     console.log(`Dashboard disponible sur http://localhost:${PORT}`);
   });
 
   function shutdown() {
     if (cleanupTimer) clearInterval(cleanupTimer);
-    server.close(() => process.exit(0));
+    server.close(async () => {
+      await closeDb().catch(() => {});
+      process.exit(0);
+    });
   }
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
