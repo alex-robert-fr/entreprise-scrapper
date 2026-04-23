@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { fetchWithRetry } from "./http";
 
 // --- Constantes ---
 
@@ -25,8 +26,6 @@ const FORMES_JURIDIQUES: Record<string, string> = {
 const TRANCHE_MIN = "11";
 const TRANCHE_MAX = "53";
 const PAGE_SIZE = 100;
-const MAX_RETRIES = 3;
-const RETRY_BASE_DELAY = 1000;
 
 export const REGIONS_DEPARTEMENTS: Record<string, string[]> = {
   "auvergne-rhone-alpes": [
@@ -132,36 +131,6 @@ function buildUrl(query: string, curseur: string): string {
   return `${SIRENE_BASE_URL}?q=${encoded}&nombre=${PAGE_SIZE}&curseur=${encodeURIComponent(curseur)}`;
 }
 
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-
-async function fetchWithRetry(
-  url: string,
-  headers: Record<string, string>
-): Promise<Response> {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(url, { headers });
-      if (response.ok || !RETRYABLE_STATUS.has(response.status)) {
-        return response;
-      }
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(`SIRENE — HTTP ${response.status}, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    } catch (err) {
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(`SIRENE — erreur réseau, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`);
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        throw err;
-      }
-    }
-  }
-  return fetch(url, { headers });
-}
-
 // --- Mapping ---
 
 interface SireneAdresse {
@@ -244,7 +213,7 @@ async function* streamForNaf(
 
   while (true) {
     const url = buildUrl(query, curseur);
-    const response = await fetchWithRetry(url, headers);
+    const response = await fetchWithRetry(url, { headers });
 
     if (response.status === 404) break;
 
