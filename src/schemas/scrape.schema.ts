@@ -26,6 +26,7 @@ export const scrapeBodySchema = z
     departement: departementSchema.optional(),
     all: z.boolean().optional(),
     limit: z.number().int().min(1).max(10000).optional(),
+    professionId: z.number().int().positive().optional(),
   })
   .strict()
   .refine(
