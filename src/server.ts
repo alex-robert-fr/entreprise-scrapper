@@ -1,6 +1,8 @@
 import "dotenv/config";
 import path from "path";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
+import { runMigrations } from "./db/migrate";
+import { seedProfessions } from "./db/seeds/professions";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
@@ -8,7 +10,7 @@ import { validateBody, validateQuery, getValidatedQuery } from "./middleware/val
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
 import { listActiveProfessions, getProfessionById } from "./db/professions";
 import { sql } from "drizzle-orm";
-import { db } from "./db/client";
+import { db, closeDb } from "./db/client";
 import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
 import { runPipeline } from "./pipeline";
 import {
@@ -60,9 +62,7 @@ function cleanupFinishedStates(now: number = Date.now()) {
   }
 }
 
-const cleanupTimer =
-  process.env.NODE_ENV === "test" ? null : setInterval(cleanupFinishedStates, CLEANUP_INTERVAL_MS);
-cleanupTimer?.unref();
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 // Better Auth doit lire le body brut — monté AVANT express.json()
 app.all("/api/auth/*", toNodeHandler(auth));
@@ -250,13 +250,30 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Erreur serveur" });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Dashboard disponible sur http://localhost:${PORT}`);
-});
+(async () => {
+  try {
+    await runMigrations();
+    const { inserted, skipped } = await seedProfessions(db);
+    console.log(`[seed] professions: ${inserted} insérées, ${skipped} déjà présentes`);
+  } catch (err) {
+    console.error("[boot] échec migrations/seed :", err);
+    process.exit(1);
+  }
 
-function shutdown() {
-  if (cleanupTimer) clearInterval(cleanupTimer);
-  server.close(() => process.exit(0));
-}
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+  cleanupTimer = process.env.NODE_ENV === "test" ? null : setInterval(cleanupFinishedStates, CLEANUP_INTERVAL_MS);
+  cleanupTimer?.unref();
+
+  const server = app.listen(PORT, () => {
+    console.log(`Dashboard disponible sur http://localhost:${PORT}`);
+  });
+
+  function shutdown() {
+    if (cleanupTimer) clearInterval(cleanupTimer);
+    server.close(async () => {
+      await closeDb().catch(() => {});
+      process.exit(0);
+    });
+  }
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+})();

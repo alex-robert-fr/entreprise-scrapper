@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Chore
+
+- `src/db/migrate.ts` : runner de migration programmatique utilisant `drizzle-orm/postgres-js/migrator` — remplace le recours au CLI `drizzle-kit` (devDependency absent en prod) ; connexion dédiée `max: 1`, fermée après usage ([`4970442`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/4970442))
+- `src/server.ts` : migrations Drizzle et seed professions lancés automatiquement au boot avant `app.listen` ; `process.exit(1)` si échec ; `cleanupTimer` déplacé après validation boot ; shutdown propre avec `closeDb()` sur SIGTERM/SIGINT ([`31b876d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/31b876d), [`ea2422d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea2422d))
+
+### Docs
+
+- `DEPLOYMENT.md` : migrations en prod documentées comme automatiques au boot ; avertissement scale horizontal (>1 réplica) ; `PORT` à ne pas définir manuellement sur Railway ; distinction CLI `drizzle-kit` vs runner runtime ([`f909258`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/f909258))
+
 ### Refactor
 
 - Port de `dedup.ts` (SQLite/better-sqlite3) vers `src/db/` avec Drizzle ORM + postgres-js : `scraped.ts`, `phoneCache.ts`, `client.ts`, `index.ts`, `schema.ts` ([`33639a0`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/33639a0), [`e30efd0`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e30efd0), [`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160), [`9b0b101`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9b0b101))
