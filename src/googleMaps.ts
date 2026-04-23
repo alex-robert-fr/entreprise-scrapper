@@ -1,42 +1,7 @@
+import { fetchWithRetry } from "./http";
+
 // Places API (New) — https://developers.google.com/maps/documentation/places/web-service/text-search
 const PLACES_NEW_BASE_URL = "https://places.googleapis.com/v1/places";
-const MAX_RETRIES = 3;
-const RETRY_BASE_DELAY = 1000;
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
-
-// --- Retry HTTP ---
-
-async function fetchWithRetry(
-  url: string,
-  init?: RequestInit
-): Promise<Response> {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(url, init);
-      if (response.ok || !RETRYABLE_STATUS.has(response.status)) {
-        return response;
-      }
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `Google Maps — HTTP ${response.status}, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    } catch (err) {
-      if (attempt < MAX_RETRIES - 1) {
-        const delay = RETRY_BASE_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `Google Maps — erreur réseau, retry ${attempt + 1}/${MAX_RETRIES} dans ${delay}ms`
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        throw err;
-      }
-    }
-  }
-  return fetch(url, init);
-}
 
 // --- Types Places API (New) ---
 
