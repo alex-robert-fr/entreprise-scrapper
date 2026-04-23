@@ -115,7 +115,7 @@ app.get("/api/regions", requireAuth, (_req, res) => {
 
 app.get("/api/professions", requireAuth, asyncHandler(async (_req, res) => {
   const rows = await listActiveProfessions();
-  res.json(rows.map(({ id, slug, libelle, nafCodes, category }) => ({ id, slug, libelle, nafCodes, category })));
+  res.json(rows.map(({ id, slug, libelle, category }) => ({ id, slug, libelle, category })));
 }));
 
 app.get("/api/stats", requireAuth, asyncHandler(async (req, res) => {
@@ -146,6 +146,10 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
     const profession = await getProfessionById(professionId);
     if (!profession) {
       res.status(400).json({ error: "Profession inconnue" });
+      return;
+    }
+    if (!profession.nafCodes.length) {
+      res.status(400).json({ error: "Cette profession n'a pas de codes NAF configurés" });
       return;
     }
     nafCodes = profession.nafCodes;

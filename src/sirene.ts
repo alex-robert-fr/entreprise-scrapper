@@ -4,7 +4,7 @@ import "dotenv/config";
 
 const SIRENE_BASE_URL = "https://api.insee.fr/api-sirene/3.11/siret";
 
-export const DEFAULT_NAF_CODES = ["10.71C", "10.71D"];
+export const DEFAULT_NAF_CODES = ["1071C", "1071D"];
 
 export function normalizeNafCode(code: string): string {
   const trimmed = code.trim().toUpperCase();
@@ -281,9 +281,7 @@ export async function* streamEtablissements(
 
   const departements = getDepartements(options);
   const seen = new Set<string>();
-  const nafCodes = options.nafCodes?.length
-    ? options.nafCodes.map(normalizeNafCode)
-    : DEFAULT_NAF_CODES;
+  const nafCodes = (options.nafCodes?.length ? options.nafCodes : DEFAULT_NAF_CODES).map(normalizeNafCode);
 
   for (const nafCode of nafCodes) {
     for await (const etab of streamForNaf(nafCode, departements, headers)) {

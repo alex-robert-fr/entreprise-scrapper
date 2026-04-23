@@ -1455,18 +1455,27 @@
 
     async function fetchProfessions() {
       const sel = document.getElementById("profession");
-      let professions;
+      let professionList;
       try {
-        professions = await fetch("/api/professions").then(function(r) { return r.json(); });
+        professionList = await fetch("/api/professions").then(function(r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        });
       } catch {
         sel.innerHTML = '<option value="">Erreur de chargement</option>';
+        return;
+      }
+
+      if (!professionList.length) {
+        sel.innerHTML = '<option value="">— Aucune profession disponible —</option>';
+        document.getElementById("btnScrape").disabled = true;
         return;
       }
 
       sel.innerHTML = "";
 
       var byCategory = {};
-      professions.forEach(function(p) {
+      professionList.forEach(function(p) {
         if (!byCategory[p.category]) byCategory[p.category] = [];
         byCategory[p.category].push(p);
       });
@@ -1487,6 +1496,8 @@
       var defaultOption = sel.querySelector('option[data-slug="boulanger"]');
       if (defaultOption) {
         sel.value = defaultOption.value;
+      } else {
+        sel.selectedIndex = 0;
       }
     }
 
