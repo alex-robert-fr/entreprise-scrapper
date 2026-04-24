@@ -796,6 +796,7 @@
         <button class="nav-tab active" id="navResults"  onclick="setView('results')">Résultats</button>
         <button class="nav-tab"        id="navFilters"  onclick="setView('filters')">Filtres</button>
         <button class="nav-tab"        id="navDuplicates" onclick="setView('duplicates')">Doublons</button>
+        <button class="nav-tab"        id="navAdmin" style="display:none" onclick="window.location.href='/admin'">Admin</button>
       </div>
     </div>
 
@@ -1792,6 +1793,17 @@ function setExportScope(scope) {
       toast(labels[exportScope] || "Téléchargement du CSV…");
     }
 
+    async function revealAdminLink() {
+      try {
+        const r = await fetch("/api/me");
+        if (!r.ok) return;
+        const me = await r.json();
+        if (me && me.user && me.user.role === "admin") {
+          document.getElementById("navAdmin").style.display = "";
+        }
+      } catch (_) { /* silencieux */ }
+    }
+
     /* ── Init ── */
     fetchStats();
     fetchResults();
@@ -1800,6 +1812,7 @@ function setExportScope(scope) {
     fetchFilterOptions();
     refreshCredits();
     pollStatus();
+    revealAdminLink();
 
     /* Auto-refresh résultats toutes les 10s si idle */
     setInterval(function() {
