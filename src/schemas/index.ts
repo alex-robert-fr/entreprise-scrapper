@@ -8,3 +8,9 @@ export {
   type ExportQuery,
 } from "./filters.schema.js";
 export { polarWebhookSchema, type PolarWebhook } from "./billing.schema.js";
+export {
+  adminCreditBodySchema,
+  adminUsersQuerySchema,
+  type AdminCreditBody,
+  type AdminUsersQuery,
+} from "./admin.schema.js";
