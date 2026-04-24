@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Chore
 
+- Migration vers ESM (`"type": "module"` + `tsconfig NodeNext`) : 15 fichiers d'imports suffixés `.js`, `__dirname` remplacé par `fileURLToPath` — résout `ERR_REQUIRE_ESM` au démarrage causé par `better-auth/node` (ESM-only) ([`c522acd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c522acd))
 - `src/db/migrate.ts` : runner de migration programmatique utilisant `drizzle-orm/postgres-js/migrator` — remplace le recours au CLI `drizzle-kit` (devDependency absent en prod) ; connexion dédiée `max: 1`, fermée après usage ([`4970442`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/4970442))
 - `src/server.ts` : migrations Drizzle et seed professions lancés automatiquement au boot avant `app.listen` ; `process.exit(1)` si échec ; `cleanupTimer` déplacé après validation boot ; shutdown propre avec `closeDb()` sur SIGTERM/SIGINT ([`31b876d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/31b876d), [`ea2422d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea2422d))
 
