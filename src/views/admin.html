@@ -201,17 +201,6 @@
   <script>
     const state = { currentUserId: null, searchTimer: null };
 
-    async function bootstrap() {
-      const meRes = await fetch("/api/me");
-      if (!meRes.ok) { window.location.href = "/login"; return; }
-      const me = await meRes.json();
-      if (!me || !me.user || me.user.role !== "admin") {
-        window.location.href = "/";
-        return;
-      }
-      loadUsers();
-    }
-
     async function loadUsers(search = "") {
       const qs = search ? `?search=${encodeURIComponent(search)}` : "";
       const res = await fetch(`/api/admin/users${qs}`);
@@ -224,7 +213,7 @@
       const body = document.getElementById("usersBody");
       if (!users.length) { body.innerHTML = `<tr><td colspan="6" class="muted">Aucun user</td></tr>`; return; }
       body.innerHTML = users.map((u) => `
-        <tr onclick="openModal('${u.id}')">
+        <tr data-user-id="${escapeHtml(u.id)}">
           <td>${escapeHtml(u.email)}</td>
           <td class="${u.role === "admin" ? "role-admin" : ""}">${escapeHtml(u.role)}</td>
           <td>${u.balance}</td>
@@ -234,6 +223,12 @@
         </tr>
       `).join("");
     }
+
+    document.getElementById("usersBody").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr");
+      const userId = tr && tr.dataset.userId;
+      if (userId) openModal(userId);
+    });
 
     async function openModal(userId) {
       state.currentUserId = userId;
@@ -325,7 +320,7 @@
       setTimeout(() => el.classList.remove("show"), 2500);
     }
 
-    bootstrap();
+    loadUsers();
   </script>
 </body>
 </html>

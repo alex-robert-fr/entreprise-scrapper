@@ -89,10 +89,7 @@ app.get("/signup", alreadyAuthGuard, (_req, res) => {
 });
 
 app.get("/admin", adminDashboardGuard, (_req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-app.get("/admin.html", adminDashboardGuard, (_req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
+  res.sendFile(path.join(__dirname, "views", "admin.html"));
 });
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -162,16 +159,15 @@ app.get("/api/admin/users/:userId", requireAdminAuth, asyncHandler(async (req, r
 app.post("/api/admin/users/:userId/credits", requireAdminAuth, validateBody(adminCreditBodySchema), asyncHandler(async (req, res) => {
   const { amount, note } = req.body as AdminCreditBody;
   const targetUserId = req.params.userId;
-  const detail = await getUserDetail(targetUserId);
-  if (!detail) {
-    res.status(404).json({ error: "User introuvable" });
-    return;
-  }
   try {
     await adminGrant(targetUserId, amount, { adminId: req.user!.id, note });
   } catch (err) {
     if (err instanceof InsufficientCreditsError) {
-      res.status(409).json({ error: "Solde insuffisant pour ce débit" });
+      res.status(409).json({ error: "Débit impossible : solde insuffisant ou user sans crédits" });
+      return;
+    }
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "23503") {
+      res.status(404).json({ error: "User introuvable" });
       return;
     }
     throw err;

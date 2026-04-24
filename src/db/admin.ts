@@ -28,25 +28,6 @@ export interface ListUsersOptions {
   offset?: number;
 }
 
-const totalPurchasesSql = sql<number>`
-  COALESCE((
-    SELECT SUM(${creditTransactions.amount})
-    FROM ${creditTransactions}
-    WHERE ${creditTransactions.userId} = ${user.id}
-      AND ${creditTransactions.type} = 'purchase'
-  ), 0)
-`.mapWith(Number);
-
-const totalScrapedSql = sql<number>`
-  COALESCE((
-    SELECT COUNT(*)
-    FROM ${scrapedRecords}
-    WHERE ${scrapedRecords.userId} = ${user.id}
-  ), 0)
-`.mapWith(Number);
-
-const balanceSql = sql<number>`COALESCE(${credits.balance}, 0)`.mapWith(Number);
-
 export async function listUsers(opts: ListUsersOptions = {}): Promise<AdminUserSummary[]> {
   const limit = Math.min(opts.limit ?? 50, 100);
   const offset = opts.offset ?? 0;
@@ -57,9 +38,22 @@ export async function listUsers(opts: ListUsersOptions = {}): Promise<AdminUserS
       email: user.email,
       createdAt: user.createdAt,
       role: user.role,
-      balance: balanceSql,
-      totalPurchases: totalPurchasesSql,
-      totalScraped: totalScrapedSql,
+      balance: sql<number>`COALESCE(${credits.balance}, 0)`.mapWith(Number),
+      totalPurchases: sql<number>`
+        COALESCE((
+          SELECT SUM(${creditTransactions.amount})
+          FROM ${creditTransactions}
+          WHERE ${creditTransactions.userId} = ${user.id}
+            AND ${creditTransactions.type} = 'purchase'
+        ), 0)
+      `.mapWith(Number),
+      totalScraped: sql<number>`
+        COALESCE((
+          SELECT COUNT(*)
+          FROM ${scrapedRecords}
+          WHERE ${scrapedRecords.userId} = ${user.id}
+        ), 0)
+      `.mapWith(Number),
     })
     .from(user)
     .leftJoin(credits, eq(credits.userId, user.id));
@@ -71,16 +65,32 @@ export async function listUsers(opts: ListUsersOptions = {}): Promise<AdminUserS
   return filtered.orderBy(desc(user.createdAt)).limit(limit).offset(offset);
 }
 
-export async function getUserDetail(userId: string): Promise<AdminUserDetail | null> {
+export async function getUserDetail(
+  userId: string,
+  transactionLimit = 50,
+): Promise<AdminUserDetail | null> {
   const [summary] = await db
     .select({
       id: user.id,
       email: user.email,
       createdAt: user.createdAt,
       role: user.role,
-      balance: balanceSql,
-      totalPurchases: totalPurchasesSql,
-      totalScraped: totalScrapedSql,
+      balance: sql<number>`COALESCE(${credits.balance}, 0)`.mapWith(Number),
+      totalPurchases: sql<number>`
+        COALESCE((
+          SELECT SUM(${creditTransactions.amount})
+          FROM ${creditTransactions}
+          WHERE ${creditTransactions.userId} = ${user.id}
+            AND ${creditTransactions.type} = 'purchase'
+        ), 0)
+      `.mapWith(Number),
+      totalScraped: sql<number>`
+        COALESCE((
+          SELECT COUNT(*)
+          FROM ${scrapedRecords}
+          WHERE ${scrapedRecords.userId} = ${user.id}
+        ), 0)
+      `.mapWith(Number),
     })
     .from(user)
     .leftJoin(credits, eq(credits.userId, user.id))
@@ -94,7 +104,7 @@ export async function getUserDetail(userId: string): Promise<AdminUserDetail | n
     .from(creditTransactions)
     .where(eq(creditTransactions.userId, userId))
     .orderBy(desc(creditTransactions.createdAt))
-    .limit(50);
+    .limit(transactionLimit);
 
   return { ...summary, transactions };
 }
