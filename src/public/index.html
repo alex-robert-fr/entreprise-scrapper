@@ -1623,6 +1623,12 @@
     /* ── Scrape ── */
     async function startScrape() {
       const btn = document.getElementById("btnScrape");
+
+      if (currentBalance === 0) {
+        openNoCreditsModal();
+        return;
+      }
+
       btn.disabled = true;
       document.getElementById("resultBlock").classList.remove("visible");
 
@@ -1653,6 +1659,14 @@
 
       if (res.status === 409) {
         toast("Un scrape est déjà en cours", "warn");
+        btn.disabled = false;
+        return;
+      }
+
+      if (res.status === 402) {
+        currentBalance = 0;
+        refreshCredits();
+        openNoCreditsModal();
         btn.disabled = false;
         return;
       }
@@ -1700,6 +1714,18 @@
         document.getElementById("progressPct").textContent   = pct + "%";
         document.getElementById("progressCount").textContent = state.progress + " / " + state.total;
         document.getElementById("progressLabel").textContent = state.current || "—";
+      }
+
+      if (state.status === "stopped_no_credits") {
+        clearInterval(pollInterval); pollInterval = null;
+        document.getElementById("btnScrape").disabled = false;
+        toast("Scrape arrêté — crédits épuisés", "warn");
+        openNoCreditsModal();
+        fetchStats();
+        fetchResults();
+        setTimeout(function() {
+          document.getElementById("progressBlock").classList.remove("visible");
+        }, 4000);
       }
 
       if (state.status === "done") {
