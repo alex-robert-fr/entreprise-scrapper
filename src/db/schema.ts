@@ -91,6 +91,7 @@ export const scrapedRecords = pgTable(
     formeJuridique:  text("forme_juridique"),
     dirigeants:      text("dirigeants"),
     source:          text("source").notNull(),
+    professionId:    integer("profession_id").references(() => professions.id, { onDelete: "set null" }),
     scrapedAt:       timestamp("scraped_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -124,10 +125,14 @@ export const professions = pgTable(
 );
 
 // Solde de crédits par user (1 fiche affichée = 1 crédit consommé en #47).
-export const credits = pgTable("credits", {
-  userId:  text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
-  balance: integer("balance").notNull().default(0),
-});
+export const credits = pgTable(
+  "credits",
+  {
+    userId:  text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+    balance: integer("balance").notNull().default(0),
+  },
+  (t) => [check("credits_balance_non_negative", sql`${t.balance} >= 0`)],
+);
 
 // Historique des mouvements de crédits — achats, consommations, refunds, grants admin.
 export const creditTransactions = pgTable(
