@@ -2,7 +2,8 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins";
 import { db } from "./db/client.js";
-import { user, session, account, verification, credits } from "./db/schema.js";
+import { user, session, account, verification } from "./db/schema.js";
+import { SIGNUP_CREDITS, grantSignupBonus } from "./db/credits.js";
 
 const secret = process.env.BETTER_AUTH_SECRET;
 if (!secret) {
@@ -18,8 +19,6 @@ const trustedOrigins = [baseURL, ...extraOrigins];
 const googleClientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 const isProd = process.env.NODE_ENV === "production";
-
-const SIGNUP_CREDITS = 50;
 
 export const auth = betterAuth({
   secret,
@@ -55,16 +54,7 @@ export const auth = betterAuth({
       create: {
         after: async (createdUser) => {
           try {
-            const inserted = await db
-              .insert(credits)
-              .values({ userId: createdUser.id, balance: SIGNUP_CREDITS })
-              .onConflictDoNothing()
-              .returning({ userId: credits.userId });
-            if (inserted.length === 0) {
-              console.warn("[auth] crédit initial non appliqué (ligne existante)", {
-                userId: createdUser.id,
-              });
-            }
+            await db.transaction((tx) => grantSignupBonus(createdUser.id, SIGNUP_CREDITS, tx));
           } catch (err) {
             console.error("[auth] échec crédit initial", { userId: createdUser.id, err });
             throw err;
