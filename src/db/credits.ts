@@ -98,25 +98,44 @@ export async function consumeOne(userId: string, tx: DbOrTx): Promise<void> {
   }
 }
 
-export async function adminGrant(userId: string, amount: number): Promise<void> {
-  if (amount <= 0) {
-    throw new Error("adminGrant: amount doit être > 0");
+export interface AdminGrantOptions {
+  adminId: string;
+  note: string;
+}
+
+// Ajustement manuel admin : amount positif crédite, négatif débite.
+// En cas de débit dépassant le solde, la check constraint DB renvoie InsufficientCreditsError.
+export async function adminGrant(
+  userId: string,
+  amount: number,
+  opts: AdminGrantOptions,
+): Promise<void> {
+  if (amount === 0) {
+    throw new Error("adminGrant: amount ne peut pas être 0");
   }
 
-  await db.transaction(async (tx) => {
-    await tx
-      .insert(credits)
-      .values({ userId, balance: amount })
-      .onConflictDoUpdate({
-        target: credits.userId,
-        set: { balance: sql`${credits.balance} + ${amount}` },
-      });
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(credits)
+        .values({ userId, balance: amount })
+        .onConflictDoUpdate({
+          target: credits.userId,
+          set: { balance: sql`${credits.balance} + ${amount}` },
+        });
 
-    await tx.insert(creditTransactions).values({
-      userId,
-      type: "admin_grant",
-      amount,
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: "admin_grant",
+        amount,
+        metadata: { admin_id: opts.adminId, note: opts.note },
+      });
     });
-  });
+  } catch (err) {
+    if (isCheckViolation(err)) {
+      throw new InsufficientCreditsError(userId);
+    }
+    throw err;
+  }
 }
 
