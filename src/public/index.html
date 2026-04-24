@@ -1101,6 +1101,28 @@
     </div>
   </div>
 
+  <!-- Modal crédits épuisés -->
+  <div class="modal-overlay" id="noCreditsModal" onclick="closeNoCreditsModal(event)">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Crédits épuisés</div>
+          <div class="modal-subtitle">Rechargez votre solde pour lancer un nouveau scrape.</div>
+        </div>
+        <button class="modal-close" onclick="closeNoCreditsModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.2rem 1.5rem">
+        <p style="color:var(--muted); font-size:0.75rem; line-height:1.55; margin-bottom:1.2rem">
+          Chaque fiche enregistrée consomme 1 crédit. Ton solde est actuellement à 0 — impossible de démarrer ou de poursuivre un scrape.
+        </p>
+        <div style="display:flex; gap:0.6rem; justify-content:flex-end">
+          <button class="btn-run" style="background:var(--bg-elevated); color:var(--muted)" onclick="closeNoCreditsModal()">Annuler</button>
+          <button class="btn-run" onclick="window.location.href='/billing'">Recharger mes crédits</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -1252,6 +1274,14 @@
     function closeDupModal(e) {
       if (e && e.target !== document.getElementById("dupModal")) return;
       document.getElementById("dupModal").classList.remove("open");
+    }
+
+    function openNoCreditsModal() {
+      document.getElementById("noCreditsModal").classList.add("open");
+    }
+    function closeNoCreditsModal(e) {
+      if (e && e.target !== document.getElementById("noCreditsModal")) return;
+      document.getElementById("noCreditsModal").classList.remove("open");
     }
 
     /* ── Doublons par numéro ── */
@@ -1748,6 +1778,9 @@ function setExportScope(scope) {
     document.addEventListener("keydown", function(e) {
       if (e.key === "Enter" && e.target.closest(".sidebar") && !document.getElementById("btnScrape").disabled) {
         startScrape();
+      }
+      if (e.key === "Escape") {
+        closeNoCreditsModal();
       }
     });
   </script>
