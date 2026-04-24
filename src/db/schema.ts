@@ -8,6 +8,7 @@ import {
   index,
   check,
   primaryKey,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql, type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 
@@ -134,6 +135,13 @@ export const credits = pgTable(
   (t) => [check("credits_balance_non_negative", sql`${t.balance} >= 0`)],
 );
 
+// Payload JSONB optionnel sur credit_transactions — trace l'admin auteur et sa note
+// pour les ajustements manuels (type='admin_grant').
+export interface CreditTransactionMetadata {
+  admin_id?: string;
+  note?: string;
+}
+
 // Historique des mouvements de crédits — achats, consommations, refunds, grants admin.
 export const creditTransactions = pgTable(
   "credit_transactions",
@@ -143,6 +151,7 @@ export const creditTransactions = pgTable(
     type:           text("type").notNull(),
     amount:         integer("amount").notNull(),
     polarOrderId:   text("polar_order_id"),
+    metadata:       jsonb("metadata").$type<CreditTransactionMetadata>(),
     createdAt:      timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
