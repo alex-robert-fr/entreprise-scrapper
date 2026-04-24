@@ -1,18 +1,21 @@
 import "dotenv/config";
 import path from "path";
+import { fileURLToPath } from "url";
 import express, { type Request, type Response, type NextFunction, type RequestHandler } from "express";
-import { runMigrations } from "./db/migrate";
-import { seedProfessions } from "./db/seeds/professions";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { runMigrations } from "./db/migrate.js";
+import { seedProfessions } from "./db/seeds/professions.js";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
-import { auth } from "./auth";
-import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth";
-import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate";
-import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped";
-import { listActiveProfessions, getProfessionById } from "./db/professions";
+import { auth } from "./auth.js";
+import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth.js";
+import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate.js";
+import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped.js";
+import { listActiveProfessions, getProfessionById } from "./db/professions.js";
 import { sql } from "drizzle-orm";
-import { db, closeDb } from "./db/client";
-import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene";
-import { runPipeline } from "./pipeline";
+import { db, closeDb } from "./db/client.js";
+import { fetchEtablissements, streamEtablissements, REGIONS_DEPARTEMENTS } from "./sirene.js";
+import { runPipeline } from "./pipeline.js";
 import {
   scrapeBodySchema,
   resultsQuerySchema,
@@ -20,7 +23,7 @@ import {
   type ScrapeBody,
   type ResultsQuery,
   type ExportQuery,
-} from "./schemas";
+} from "./schemas/index.js";
 
 const asyncHandler =
   (fn: (req: Request, res: Response) => Promise<unknown>): RequestHandler =>
@@ -162,7 +165,7 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
     const baseOptions = all ? {} : { region, departement };
     const options = { ...baseOptions, ...(nafCodes ? { nafCodes } : {}) };
 
-    let source: Iterable<import("./sirene").Etablissement> | AsyncIterable<import("./sirene").Etablissement>;
+    let source: Iterable<import("./sirene.js").Etablissement> | AsyncIterable<import("./sirene.js").Etablissement>;
     if (limit !== undefined) {
       state.total = limit;
       source = streamEtablissements(options);

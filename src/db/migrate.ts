@@ -1,9 +1,11 @@
 import "dotenv/config";
 import path from "path";
+import { fileURLToPath } from "url";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_FOLDER = path.resolve(__dirname, "../../drizzle");
 
 export async function runMigrations(): Promise<void> {

@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { closeDb, db } from "../client";
-import { seedProfessions } from "./professions";
+import { closeDb, db } from "../client.js";
+import { seedProfessions } from "./professions.js";
 
 async function main(): Promise<void> {
   const { inserted, skipped } = await seedProfessions(db);

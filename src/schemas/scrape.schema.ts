@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { REGIONS_DEPARTEMENTS, normalizeRegion } from "../sirene";
+import { REGIONS_DEPARTEMENTS, normalizeRegion } from "../sirene.js";
 
 const VALID_REGION_KEYS = new Set(Object.keys(REGIONS_DEPARTEMENTS));
 const VALID_DEPARTEMENTS = new Set(Object.values(REGIONS_DEPARTEMENTS).flat());

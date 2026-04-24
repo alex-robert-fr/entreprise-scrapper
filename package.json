@@ -1,9 +1,10 @@
 {
   "name": "entreprise-scrapper",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "server": "ts-node src/server.ts",
+    "server": "node --loader ts-node/esm src/server.ts",
     "start:prod": "node dist/server.js",
     "build": "tsc && rm -rf dist/public dist/views && cp -r src/public dist/public && cp -r src/views dist/views",
     "typecheck": "tsc --noEmit",
@@ -11,7 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "ts-node src/db/seeds/run.ts",
+    "db:seed": "node --loader ts-node/esm src/db/seeds/run.ts",
     "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {

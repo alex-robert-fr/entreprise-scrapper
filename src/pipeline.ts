@@ -1,7 +1,7 @@
-import { Etablissement } from "./sirene";
-import { isKnownByUser, insert, ScrapedRecord } from "./db/scraped";
-import { findPhoneGoogle } from "./googleMaps";
-import { fetchDirigeants } from "./annuaireEntreprises";
+import { Etablissement } from "./sirene.js";
+import { isKnownByUser, insert, ScrapedRecord } from "./db/scraped.js";
+import { findPhoneGoogle } from "./googleMaps.js";
+import { fetchDirigeants } from "./annuaireEntreprises.js";
 
 export interface PipelineResult {
   newCount: number;
