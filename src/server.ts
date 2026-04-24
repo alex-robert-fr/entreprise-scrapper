@@ -36,7 +36,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 interface ScrapeState {
-  status: "idle" | "running" | "done" | "stopped_no_credits";
+  status: "idle" | "running" | "done" | "stopped_no_credits" | "error";
   progress: number;
   total: number;
   current: string;
@@ -160,8 +160,11 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
     return;
   }
 
+  // Pré-check UX uniquement — la vraie garantie d'atomicité est la contrainte
+  // CHECK Postgres (balance >= 0) appliquée dans consumeOne via insertWithCreditConsume.
   const balance = await getBalance(userId);
   if (balance <= 0) {
+    if (balance === 0) console.warn(`[billing] solde=0 pour userId=${userId} — row credits absente ou solde épuisé`);
     res.status(402).json({ error: "INSUFFICIENT_CREDITS", balance });
     return;
   }
@@ -216,7 +219,7 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
     }
     state.finishedAt = Date.now();
   })().catch((err) => {
-    state.status = "done";
+    state.status = "error";
     state.error = err instanceof Error ? err.message : String(err);
     state.finishedAt = Date.now();
   });
