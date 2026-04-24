@@ -9,10 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Refactor
 
+- `src/db/credits.ts` : `adminGrant` étendu pour accepter les débits (`amount < 0`) et tracer obligatoirement `adminId`/`note` dans la colonne `metadata` ([`48d822e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/48d822e))
+- `src/middleware/auth.ts` : factorisation de `makeAdminGuard(onUnauth, onForbidden)` pour dériver `requireAdminAuth` et `adminDashboardGuard` sans duplication ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
+- `src/db/admin.ts` : sous-requêtes SQL inlinées dans `listUsers`/`getUserDetail` ; `transactionLimit` paramétrable dans `getUserDetail` (défaut 50) ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
 - `src/server.ts` : `ScrapeState.status` étendu avec `"stopped_no_credits"` (pipeline arrêté faute de crédits) et `"error"` (exception inattendue dans le pipeline) ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 
 ### Chore
 
+- Migration `0007_peaceful_rocket_raccoon.sql` : colonne `metadata jsonb NULL` ajoutée sur `credit_transactions` pour tracer l'auteur admin et la note de chaque ajustement manuel ([`a348129`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/a348129))
+- Nouveau module `src/db/admin.ts` : `listUsers` (pagination, recherche, agrégats balance/achats/fiches) et `getUserDetail` ([`15a8083`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/15a8083))
+- Nouveau `src/schemas/admin.schema.ts` : `adminCreditBodySchema` et `adminUsersQuerySchema` (Zod) pour valider les inputs des routes admin ([`42936d3`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/42936d3))
+- `src/views/admin.html` déplacé hors de `public/` pour ne pas être exposé par `express.static` ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
 - `src/server.ts` : commentaire explicite que le pré-check `getBalance` est UX uniquement — la garantie atomique reste la contrainte CHECK Postgres dans `consumeOne` ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 - `src/server.ts` : `console.warn` émis si `balance <= 0` pour signaler les cas de row `credits` absente (bug de provisioning) vs solde réellement épuisé ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 - Nouveau module `src/db/credits.ts` : services `getBalance`, `getRecentTransactions`, `grantSignupBonus`, `consumeOne`, `adminGrant` + `InsufficientCreditsError` ([`12a7fbf`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/12a7fbf))
