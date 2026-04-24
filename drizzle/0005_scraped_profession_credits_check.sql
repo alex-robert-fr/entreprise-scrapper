@@ -1,7 +1,3 @@
--- scraped_records : lien vers la profession utilisée lors du scrape.
--- Nullable car les fiches existantes n'ont pas de profession associée.
-ALTER TABLE "scraped_records" ADD COLUMN "profession_id" integer REFERENCES "professions"("id") ON DELETE SET NULL;--> statement-breakpoint
-CREATE INDEX "scraped_records_profession_id_idx" ON "scraped_records" USING btree ("profession_id");--> statement-breakpoint
-
--- credits : empêcher un solde négatif au niveau DB (protection contre les race conditions).
-ALTER TABLE "credits" ADD CONSTRAINT "credits_balance_non_negative" CHECK ("balance" >= 0);
+ALTER TABLE "scraped_records" ADD COLUMN "profession_id" integer;--> statement-breakpoint
+ALTER TABLE "scraped_records" ADD CONSTRAINT "scraped_records_profession_id_professions_id_fk" FOREIGN KEY ("profession_id") REFERENCES "public"."professions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "credits" ADD CONSTRAINT "credits_balance_non_negative" CHECK ("credits"."balance" >= 0);
