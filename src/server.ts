@@ -160,6 +160,12 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
     return;
   }
 
+  const balance = await getBalance(userId);
+  if (balance <= 0) {
+    res.status(402).json({ error: "INSUFFICIENT_CREDITS", balance });
+    return;
+  }
+
   const { region, departement, all, limit, professionId } = req.body as ScrapeBody;
 
   let nafCodes: string[] | undefined;
