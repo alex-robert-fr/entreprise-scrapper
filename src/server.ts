@@ -8,10 +8,11 @@ import { runMigrations } from "./db/migrate.js";
 import { seedProfessions } from "./db/seeds/professions.js";
 import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { auth } from "./auth.js";
-import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth.js";
+import { requireAuth, dashboardGuard, alreadyAuthGuard, adminDashboardGuard, requireAdminAuth } from "./middleware/auth.js";
 import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate.js";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped.js";
-import { getBalance, getRecentTransactions } from "./db/credits.js";
+import { getBalance, getRecentTransactions, adminGrant, InsufficientCreditsError } from "./db/credits.js";
+import { listUsers, getUserDetail } from "./db/admin.js";
 import { listActiveProfessions, getProfessionById } from "./db/professions.js";
 import { sql } from "drizzle-orm";
 import { db, closeDb } from "./db/client.js";
@@ -21,9 +22,13 @@ import {
   scrapeBodySchema,
   resultsQuerySchema,
   exportQuerySchema,
+  adminCreditBodySchema,
+  adminUsersQuerySchema,
   type ScrapeBody,
   type ResultsQuery,
   type ExportQuery,
+  type AdminCreditBody,
+  type AdminUsersQuery,
 } from "./schemas/index.js";
 
 const asyncHandler =
@@ -83,6 +88,10 @@ app.get("/signup", alreadyAuthGuard, (_req, res) => {
   res.sendFile(path.join(__dirname, "views", "signup.html"));
 });
 
+app.get("/admin", adminDashboardGuard, (_req, res) => {
+  res.sendFile(path.join(__dirname, "views", "admin.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
@@ -105,6 +114,66 @@ app.get("/api/credits", requireAuth, asyncHandler(async (req, res) => {
       createdAt: t.createdAt.toISOString(),
     })),
   });
+}));
+
+app.get("/api/admin/users", requireAdminAuth, validateQuery(adminUsersQuerySchema), asyncHandler(async (_req, res) => {
+  const query = getValidatedQuery<AdminUsersQuery>(res);
+  const users = await listUsers(query);
+  res.json({
+    users: users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      createdAt: u.createdAt.toISOString(),
+      role: u.role,
+      balance: u.balance,
+      totalPurchases: u.totalPurchases,
+      totalScraped: u.totalScraped,
+    })),
+  });
+}));
+
+app.get("/api/admin/users/:userId", requireAdminAuth, asyncHandler(async (req, res) => {
+  const detail = await getUserDetail(req.params.userId);
+  if (!detail) {
+    res.status(404).json({ error: "User introuvable" });
+    return;
+  }
+  res.json({
+    id: detail.id,
+    email: detail.email,
+    createdAt: detail.createdAt.toISOString(),
+    role: detail.role,
+    balance: detail.balance,
+    totalPurchases: detail.totalPurchases,
+    totalScraped: detail.totalScraped,
+    transactions: detail.transactions.map((t) => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount,
+      metadata: t.metadata,
+      createdAt: t.createdAt.toISOString(),
+    })),
+  });
+}));
+
+app.post("/api/admin/users/:userId/credits", requireAdminAuth, validateBody(adminCreditBodySchema), asyncHandler(async (req, res) => {
+  const { amount, note } = req.body as AdminCreditBody;
+  const targetUserId = req.params.userId;
+  try {
+    await adminGrant(targetUserId, amount, { adminId: req.user!.id, note });
+  } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      res.status(409).json({ error: "Débit impossible : solde insuffisant ou user sans crédits" });
+      return;
+    }
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "23503") {
+      res.status(404).json({ error: "User introuvable" });
+      return;
+    }
+    throw err;
+  }
+  const balance = await getBalance(targetUserId);
+  res.json({ balance });
 }));
 
 function pickFilters(query: ResultsQuery | ExportQuery): ResultFilters {

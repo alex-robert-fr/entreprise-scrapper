@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Panel `/admin` accessible aux utilisateurs avec le rôle `admin` : liste paginée des users (email, balance, achats, fiches scrapées), recherche par email et modal de gestion manuelle des crédits ([`c180a3b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c180a3b))
+- `GET /api/admin/users` — liste des users avec leurs stats (balance, total achats en crédits, total fiches scrapées) ; filtrable par email via `search`, paginable avec `limit` (max 100) et `offset` ([`c07fa71`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c07fa71))
+- `GET /api/admin/users/:userId` — détail d'un user et ses 50 dernières transactions de crédits (type, montant, note) ([`c07fa71`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c07fa71))
+- `POST /api/admin/users/:userId/credits` — body `{ amount, note }` : ajuste manuellement le solde (`amount` positif = crédit, négatif = débit) ; retourne `409` si le débit dépasserait le solde existant ([`c07fa71`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c07fa71))
+- Lien "Admin" affiché dans la navbar du dashboard uniquement si l'utilisateur connecté a le rôle `admin` ([`9b92edd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9b92edd))
 - `POST /api/scrape` retourne `402 Payment Required` si le solde est à 0 avant le lancement du scrape, avec body `{ error: "INSUFFICIENT_CREDITS", balance: 0 }` ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 - Solde de crédits affiché dans le dashboard : badge dans la sidebar (orange ≤10 crédits, rouge à 0), actualisé en temps réel pendant le scrape ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 - Popup "Crédits épuisés" avec CTA de recharge : affichée au clic si solde nul, sur réponse 402, ou quand le pipeline s'arrête en cours de route faute de crédits ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
@@ -39,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Faille XSS corrigée sur la page admin : les ids utilisateurs ne sont plus interpolés dans les attributs `onclick` HTML mais stockés dans des attributs `data-user-id` ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
 - Routes API protégées par authentification : toutes les routes `/api/*` (sauf `/api/auth/*` et `/api/health`) retournent `401 Unauthorized` si la session est absente ; le dashboard `/` redirige vers `/login` (302) si non authentifié ([`874cd46`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/874cd46))
 - `GET /api/me` désormais protégé par le middleware d'authentification, cohérent avec le reste des routes ([`59f9104`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/59f9104))
 - Les routes `POST /api/scrape`, `GET /api/results` et `GET /api/export` valident désormais tous les inputs : une valeur invalide (région inconnue, département mal formé, limite hors plage, filtre non reconnu) retourne `400` avec le champ fautif et un message explicite, au lieu d'un comportement imprévisible ([`6601e52`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/6601e52))

@@ -50,6 +50,13 @@
       "when": 1777021811712,
       "tag": "0006_credit_tx_signup_bonus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777034754999,
+      "tag": "0007_peaceful_rocket_raccoon",
+      "breakpoints": true
     }
   ]
 }

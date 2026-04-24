@@ -62,25 +62,37 @@ export const alreadyAuthGuard: RequestHandler = (req, res, next) => {
     .catch(next);
 };
 
-export const requireAdminAuth: RequestHandler = (req, res, next) => {
-  auth.api
-    .getSession({ headers: fromNodeHeaders(req.headers) })
-    .then((result) => {
-      if (!result) {
-        res.status(401).json({ error: "Unauthorized" });
-        return;
-      }
-      const role = toUserRole(result.user.role);
-      if (role !== "admin") {
-        res.status(403).json({ error: "Forbidden" });
-        return;
-      }
-      req.user = {
-        id: result.user.id,
-        email: result.user.email,
-        role,
-      };
-      next();
-    })
-    .catch(next);
-};
+export function makeAdminGuard(
+  onUnauth: RequestHandler,
+  onForbidden: RequestHandler,
+): RequestHandler {
+  return (req, res, next) => {
+    auth.api
+      .getSession({ headers: fromNodeHeaders(req.headers) })
+      .then((result) => {
+        if (!result) {
+          onUnauth(req, res, next);
+          return;
+        }
+        const role = toUserRole(result.user.role);
+        if (role !== "admin") {
+          req.user = { id: result.user.id, email: result.user.email, role };
+          onForbidden(req, res, next);
+          return;
+        }
+        req.user = { id: result.user.id, email: result.user.email, role };
+        next();
+      })
+      .catch(next);
+  };
+}
+
+export const adminDashboardGuard = makeAdminGuard(
+  (_req, res) => { res.redirect(302, "/login"); },
+  (_req, res) => { res.status(403).send("Accès refusé"); },
+);
+
+export const requireAdminAuth = makeAdminGuard(
+  (_req, res) => { res.status(401).json({ error: "Unauthorized" }); },
+  (_req, res) => { res.status(403).json({ error: "Forbidden" }); },
+);
