@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Les 50 crédits offerts à l'inscription sont désormais tracés dans l'historique et visibles via `GET /api/credits` (transaction `signup_bonus`) ([`12a7fbf`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/12a7fbf))
+- Chaque fiche insérée lors d'un scrape consomme automatiquement 1 crédit ; le pipeline s'arrête si le solde atteint 0 et `GET /api/status` retourne un message explicite ([`f371473`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/f371473))
+- `GET /api/credits` — retourne le solde actuel et les 20 dernières transactions (type, montant, date) ([`8c561d0`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8c561d0))
 - Authentification par email/password et Google OAuth disponible sur `/api/auth/*` : signup, signin, signout avec cookie de session `HttpOnly` (secure en production) ; 50 crédits offerts automatiquement à l'inscription ([`8613e41`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8613e41))
 - `GET /api/me` — retourne la session courante de l'utilisateur connecté ; `401 Unauthorized` si non authentifié ([`8613e41`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8613e41))
 - Pages `/login` et `/signup` disponibles : formulaire email/password + bouton Google OAuth, redirection vers `/` après authentification réussie ; un utilisateur déjà connecté accédant à ces pages est automatiquement redirigé vers `/` ([`9abac3e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9abac3e))
@@ -22,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- L'insertion d'une fiche et le décrément du crédit s'effectuent dans la même transaction Postgres : un crash ne peut ni débiter sans insérer, ni insérer sans débiter ([`bc3deb9`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/bc3deb9))
 - Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))
 - `GET /api/export` streame désormais le CSV ligne par ligne via un curseur Postgres : plus de timeout HTTP ni de saturation mémoire sur de grands volumes ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
 - `POST /api/scrape` : retourne `400` avec message explicite si `professionId` est inconnu ou si la profession n'a pas de codes NAF configurés, au lieu d'un fallback silencieux sur les codes boulanger/pâtissier ([`66c39a2`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/66c39a2))
