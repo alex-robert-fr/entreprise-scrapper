@@ -62,6 +62,29 @@ export const alreadyAuthGuard: RequestHandler = (req, res, next) => {
     .catch(next);
 };
 
+export const adminDashboardGuard: RequestHandler = (req, res, next) => {
+  auth.api
+    .getSession({ headers: fromNodeHeaders(req.headers) })
+    .then((result) => {
+      if (!result) {
+        res.redirect(302, "/login");
+        return;
+      }
+      const role = toUserRole(result.user.role);
+      if (role !== "admin") {
+        res.status(403).send("Accès refusé");
+        return;
+      }
+      req.user = {
+        id: result.user.id,
+        email: result.user.email,
+        role,
+      };
+      next();
+    })
+    .catch(next);
+};
+
 export const requireAdminAuth: RequestHandler = (req, res, next) => {
   auth.api
     .getSession({ headers: fromNodeHeaders(req.headers) })
