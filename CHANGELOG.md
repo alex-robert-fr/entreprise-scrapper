@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `POST /api/scrape` retourne `402 Payment Required` si le solde est à 0 avant le lancement du scrape, avec body `{ error: "INSUFFICIENT_CREDITS", balance: 0 }` ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
+- Solde de crédits affiché dans le dashboard : badge dans la sidebar (orange ≤10 crédits, rouge à 0), actualisé en temps réel pendant le scrape ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
+- Popup "Crédits épuisés" avec CTA de recharge : affichée au clic si solde nul, sur réponse 402, ou quand le pipeline s'arrête en cours de route faute de crédits ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
+- `GET /api/status` retourne désormais `status: "error"` quand le pipeline rencontre une erreur inattendue ; le dashboard affiche un toast explicite au lieu d'un résumé vide ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
+
 - Les 50 crédits offerts à l'inscription sont désormais tracés dans l'historique et visibles via `GET /api/credits` (transaction `signup_bonus`) ([`12a7fbf`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/12a7fbf))
 - Chaque fiche insérée lors d'un scrape consomme automatiquement 1 crédit ; le pipeline s'arrête si le solde atteint 0 et `GET /api/status` retourne un message explicite ([`f371473`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/f371473))
 - `GET /api/credits` — retourne le solde actuel et les 20 dernières transactions (type, montant, date) ([`8c561d0`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8c561d0))
@@ -25,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- La popup "Crédits épuisés" s'affiche correctement si le solde n'était pas encore chargé au moment du premier clic (race condition au chargement de la page) ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 - L'insertion d'une fiche et le décrément du crédit s'effectuent dans la même transaction Postgres : un crash ne peut ni débiter sans insérer, ni insérer sans débiter ([`bc3deb9`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/bc3deb9))
 - Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))
 - `GET /api/export` streame désormais le CSV ligne par ligne via un curseur Postgres : plus de timeout HTTP ni de saturation mémoire sur de grands volumes ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
