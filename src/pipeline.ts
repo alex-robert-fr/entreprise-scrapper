@@ -1,5 +1,6 @@
 import { Etablissement } from "./sirene.js";
-import { isKnownByUser, insert, ScrapedRecord } from "./db/scraped.js";
+import { isKnownByUser, insertWithCreditConsume, ScrapedRecord } from "./db/scraped.js";
+import { InsufficientCreditsError } from "./db/credits.js";
 import { findPhoneGoogle } from "./googleMaps.js";
 import { fetchDirigeants } from "./annuaireEntreprises.js";
 
@@ -8,6 +9,7 @@ export interface PipelineResult {
   alreadyKnown: number;
   notFoundCount: number;
   prospects: ScrapedRecord[];
+  stoppedForCredits?: boolean;
 }
 
 export type ProgressCallback = (current: number, nom: string) => void;
@@ -22,6 +24,7 @@ export async function runPipeline(
   let alreadyKnown = 0;
   let notFoundCount = 0;
   const prospects: ScrapedRecord[] = [];
+  let stoppedForCredits = false;
   let i = 0;
 
   for await (const etab of source) {
@@ -40,12 +43,6 @@ export async function runPipeline(
       await new Promise((r) => setTimeout(r, 200));
       const scrapeSource = phone !== null ? "google" : "non_trouvé";
 
-      if (phone === null) {
-        notFoundCount++;
-      } else {
-        newCount++;
-      }
-
       const record: ScrapedRecord = {
         siret: etab.siret,
         userId,
@@ -61,12 +58,27 @@ export async function runPipeline(
         scrapedAt: new Date().toISOString(),
       };
 
-      await insert(record);
+      try {
+        const inserted = await insertWithCreditConsume(record, userId);
+        if (!inserted) {
+          alreadyKnown++;
+          continue;
+        }
+      } catch (err) {
+        if (err instanceof InsufficientCreditsError) {
+          stoppedForCredits = true;
+          break;
+        }
+        throw err;
+      }
 
-      if (scrapeSource !== "non_trouvé") {
+      if (phone === null) {
+        notFoundCount++;
+      } else {
+        newCount++;
         prospects.push(record);
       }
   }
 
-  return { newCount, alreadyKnown, notFoundCount, prospects };
+  return { newCount, alreadyKnown, notFoundCount, prospects, stoppedForCredits };
 }

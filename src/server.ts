@@ -11,6 +11,7 @@ import { auth } from "./auth.js";
 import { requireAuth, dashboardGuard, alreadyAuthGuard } from "./middleware/auth.js";
 import { validateBody, validateQuery, getValidatedQuery } from "./middleware/validate.js";
 import { getStats, streamAll, getPaginated, getFilterOptions, getPhoneDuplicates, cleanPhoneDuplicates, getNameDuplicates, cleanNameDuplicates, getExcludedCount, ResultFilters } from "./db/scraped.js";
+import { getBalance, getRecentTransactions } from "./db/credits.js";
 import { listActiveProfessions, getProfessionById } from "./db/professions.js";
 import { sql } from "drizzle-orm";
 import { db, closeDb } from "./db/client.js";
@@ -40,7 +41,7 @@ interface ScrapeState {
   total: number;
   current: string;
   error?: string;
-  result?: { newCount: number; alreadyKnown: number; notFoundCount: number };
+  result?: { newCount: number; alreadyKnown: number; notFoundCount: number; stoppedForCredits?: boolean };
   finishedAt?: number;
 }
 
@@ -87,6 +88,23 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
   const result = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   res.json(result);
+}));
+
+app.get("/api/credits", requireAuth, asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const [balance, recentTransactions] = await Promise.all([
+    getBalance(userId),
+    getRecentTransactions(userId),
+  ]);
+  res.json({
+    balance,
+    recentTransactions: recentTransactions.map((t) => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount,
+      createdAt: t.createdAt.toISOString(),
+    })),
+  });
 }));
 
 function pickFilters(query: ResultsQuery | ExportQuery): ResultFilters {
@@ -185,7 +203,11 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
       newCount: result.newCount,
       alreadyKnown: result.alreadyKnown,
       notFoundCount: result.notFoundCount,
+      stoppedForCredits: result.stoppedForCredits,
     };
+    if (result.stoppedForCredits) {
+      state.error = "Crédits insuffisants — scrape arrêté avant la fin";
+    }
     state.finishedAt = Date.now();
   })().catch((err) => {
     state.status = "done";

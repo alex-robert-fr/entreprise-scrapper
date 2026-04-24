@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactor
+
+- `src/auth.ts` : hook signup délégué à `grantSignupBonus(tx)` — idempotence basée sur la présence d'une transaction `signup_bonus` plutôt que la ligne `credits` (résistant aux crashs partiels) ([`6f79a24`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/6f79a24))
+- `src/db/scraped.ts` : nouvelle fonction `insertWithCreditConsume` — transaction atomique insert + `consumeOne` avec guard `userId mismatch` en entrée ([`bc3deb9`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/bc3deb9))
+
 ### Chore
 
+- Nouveau module `src/db/credits.ts` : services `getBalance`, `getRecentTransactions`, `grantSignupBonus`, `consumeOne`, `adminGrant` + `InsufficientCreditsError` ([`12a7fbf`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/12a7fbf))
+- Migration `0006_credit_tx_signup_bonus.sql` : ajout de `signup_bonus` dans le CHECK `credit_tx_type_check` de `credit_transactions` ([`eef50cd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/eef50cd))
 - Migration vers ESM (`"type": "module"` + `tsconfig NodeNext`) : 15 fichiers d'imports suffixés `.js`, `__dirname` remplacé par `fileURLToPath` — résout `ERR_REQUIRE_ESM` au démarrage causé par `better-auth/node` (ESM-only) ([`c522acd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c522acd))
 - `src/db/migrate.ts` : runner de migration programmatique utilisant `drizzle-orm/postgres-js/migrator` — remplace le recours au CLI `drizzle-kit` (devDependency absent en prod) ; connexion dédiée `max: 1`, fermée après usage ([`4970442`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/4970442))
 - `src/server.ts` : migrations Drizzle et seed professions lancés automatiquement au boot avant `app.listen` ; `process.exit(1)` si échec ; `cleanupTimer` déplacé après validation boot ; shutdown propre avec `closeDb()` sur SIGTERM/SIGINT ([`31b876d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/31b876d), [`ea2422d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea2422d))

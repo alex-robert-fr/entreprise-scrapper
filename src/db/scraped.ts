@@ -1,6 +1,7 @@
 import { and, desc, eq, ilike, inArray, like, sql, type SQL } from "drizzle-orm";
 import { db, pgClient } from "./client.js";
 import { scrapedRecords, excluded } from "./schema.js";
+import { consumeOne } from "./credits.js";
 import { phoneTypeCondition } from "../phoneUtils.js";
 // Les filtres consommes par la couche DB — formes miroir du schema Zod
 // cote HTTP, mais avec "sourceFilter" comme nom interne (le param HTTP
@@ -155,6 +156,46 @@ export async function insert(record: ScrapedRecord): Promise<void> {
       scrapedAt: new Date(record.scrapedAt),
     })
     .onConflictDoNothing({ target: [scrapedRecords.userId, scrapedRecords.siret] });
+}
+
+// Insert une fiche + consomme 1 crédit atomiquement. Si la fiche existe déjà
+// (conflit sur la PK (user_id, siret)), on skip sans débiter. Propage
+// InsufficientCreditsError si le user est à sec — le caller doit l'attraper.
+// Les fiches source='non_trouvé' coûtent aussi 1 crédit (1 établissement traité = 1 crédit, intentionnel).
+export async function insertWithCreditConsume(
+  record: ScrapedRecord,
+  userId: string,
+): Promise<boolean> {
+  if (record.userId !== userId) {
+    throw new Error(`userId mismatch: record.userId=${record.userId} userId=${userId}`);
+  }
+  return db.transaction(async (tx) => {
+    const insertedRows = await tx
+      .insert(scrapedRecords)
+      .values({
+        siret: record.siret,
+        userId: record.userId,
+        nom: record.nom,
+        adresse: record.adresse,
+        ville: record.ville,
+        codePostal: record.codePostal,
+        telephone: record.telephone,
+        effectifTranche: record.effectifTranche,
+        formeJuridique: record.formeJuridique,
+        dirigeants: record.dirigeants,
+        source: record.source,
+        scrapedAt: new Date(record.scrapedAt),
+      })
+      .onConflictDoNothing({ target: [scrapedRecords.userId, scrapedRecords.siret] })
+      .returning({ siret: scrapedRecords.siret });
+
+    if (insertedRows.length === 0) {
+      return false;
+    }
+
+    await consumeOne(userId, tx);
+    return true;
+  });
 }
 
 export async function getStats(userId: string): Promise<ScrapedStats> {
