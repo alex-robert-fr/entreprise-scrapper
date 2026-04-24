@@ -36,7 +36,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 interface ScrapeState {
-  status: "idle" | "running" | "done";
+  status: "idle" | "running" | "done" | "stopped_no_credits";
   progress: number;
   total: number;
   current: string;
@@ -204,7 +204,7 @@ app.post("/api/scrape", requireAuth, validateBody(scrapeBodySchema), asyncHandle
       state.current = nom;
     }, limit);
 
-    state.status = "done";
+    state.status = result.stoppedForCredits ? "stopped_no_credits" : "done";
     state.result = {
       newCount: result.newCount,
       alreadyKnown: result.alreadyKnown,
