@@ -1,9 +1,10 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, type Db } from "./client.js";
 import { credits, creditTransactions, type CreditTransactionRow } from "./schema.js";
 
 export const SIGNUP_CREDITS = 50;
 
+// Introspection interne — vérifier à chaque bump majeur de drizzle-orm
 export type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 export class InsufficientCreditsError extends Error {
@@ -48,14 +49,20 @@ export async function grantSignupBonus(
   amount: number,
   tx: DbOrTx,
 ): Promise<void> {
-  const inserted = await tx
+  await tx
     .insert(credits)
     .values({ userId, balance: amount })
-    .onConflictDoNothing({ target: credits.userId })
-    .returning({ userId: credits.userId });
+    .onConflictDoNothing({ target: credits.userId });
 
-  if (inserted.length === 0) {
-    console.warn("[credits] signup bonus ignoré — ligne credits déjà présente", { userId });
+  // Vérifie si la transaction signup_bonus existe déjà (idempotence sur crash partiel)
+  const existingTx = await tx
+    .select({ id: creditTransactions.id })
+    .from(creditTransactions)
+    .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.type, "signup_bonus")))
+    .limit(1);
+
+  if (existingTx.length > 0) {
+    console.warn("[credits] signup bonus déjà tracé", { userId });
     return;
   }
 
@@ -75,7 +82,7 @@ export async function consumeOne(userId: string, tx: DbOrTx): Promise<void> {
       .returning({ userId: credits.userId });
 
     if (updated.length === 0) {
-      throw new InsufficientCreditsError(userId);
+      throw new Error(`credits row manquante pour userId=${userId}`);
     }
 
     await tx.insert(creditTransactions).values({
@@ -97,15 +104,13 @@ export async function adminGrant(userId: string, amount: number): Promise<void> 
   }
 
   await db.transaction(async (tx) => {
-    const updated = await tx
-      .update(credits)
-      .set({ balance: sql`${credits.balance} + ${amount}` })
-      .where(eq(credits.userId, userId))
-      .returning({ userId: credits.userId });
-
-    if (updated.length === 0) {
-      await tx.insert(credits).values({ userId, balance: amount });
-    }
+    await tx
+      .insert(credits)
+      .values({ userId, balance: amount })
+      .onConflictDoUpdate({
+        target: credits.userId,
+        set: { balance: sql`${credits.balance} + ${amount}` },
+      });
 
     await tx.insert(creditTransactions).values({
       userId,

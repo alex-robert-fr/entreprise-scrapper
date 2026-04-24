@@ -57,6 +57,9 @@ export const auth = betterAuth({
             await db.transaction((tx) => grantSignupBonus(createdUser.id, SIGNUP_CREDITS, tx));
           } catch (err) {
             console.error("[auth] échec crédit initial", { userId: createdUser.id, err });
+            // throw intentionnel : on préfère bloquer le signup plutôt que laisser
+            // un user sans crédits. Si la DB credits est indisponible, Better Auth
+            // annule la réponse et l'utilisateur peut retenter l'inscription.
             throw err;
           }
         },

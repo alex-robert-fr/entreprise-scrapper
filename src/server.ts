@@ -102,7 +102,6 @@ app.get("/api/credits", requireAuth, asyncHandler(async (req, res) => {
       id: t.id,
       type: t.type,
       amount: t.amount,
-      polarOrderId: t.polarOrderId,
       createdAt: t.createdAt.toISOString(),
     })),
   });

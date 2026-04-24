@@ -161,10 +161,14 @@ export async function insert(record: ScrapedRecord): Promise<void> {
 // Insert une fiche + consomme 1 crédit atomiquement. Si la fiche existe déjà
 // (conflit sur la PK (user_id, siret)), on skip sans débiter. Propage
 // InsufficientCreditsError si le user est à sec — le caller doit l'attraper.
+// Les fiches source='non_trouvé' coûtent aussi 1 crédit (1 établissement traité = 1 crédit, intentionnel).
 export async function insertWithCreditConsume(
   record: ScrapedRecord,
   userId: string,
 ): Promise<boolean> {
+  if (record.userId !== userId) {
+    throw new Error(`userId mismatch: record.userId=${record.userId} userId=${userId}`);
+  }
   return db.transaction(async (tx) => {
     const insertedRows = await tx
       .insert(scrapedRecords)
