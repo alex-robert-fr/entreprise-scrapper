@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../auth";
+import { auth } from "../auth.js";
 
 export type UserRole = "user" | "admin";
 

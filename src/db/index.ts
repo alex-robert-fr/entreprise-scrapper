@@ -1,3 +1,3 @@
-export * from "./schema";
-export * from "./scraped";
-export * from "./professions";
+export * from "./schema.js";
+export * from "./scraped.js";
+export * from "./professions.js";

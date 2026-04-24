@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
-import { db } from "./client";
-import { professions, type ProfessionRow } from "./schema";
+import { db } from "./client.js";
+import { professions, type ProfessionRow } from "./schema.js";
 
 export function listActiveProfessions(): Promise<ProfessionRow[]> {
   return db

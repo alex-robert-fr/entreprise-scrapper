@@ -1,8 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins";
-import { db } from "./db/client";
-import { user, session, account, verification, credits } from "./db/schema";
+import { db } from "./db/client.js";
+import { user, session, account, verification, credits } from "./db/schema.js";
 
 const secret = process.env.BETTER_AUTH_SECRET;
 if (!secret) {

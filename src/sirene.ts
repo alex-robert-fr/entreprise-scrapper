@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { fetchWithRetry } from "./http";
+import { fetchWithRetry } from "./http.js";
 
 // --- Constantes ---
 

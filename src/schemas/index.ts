@@ -1,4 +1,4 @@
-export { scrapeBodySchema, type ScrapeBody } from "./scrape.schema";
+export { scrapeBodySchema, type ScrapeBody } from "./scrape.schema.js";
 export {
   resultFiltersSchema,
   resultsQuerySchema,
@@ -6,5 +6,5 @@ export {
   type ResultFiltersInput,
   type ResultsQuery,
   type ExportQuery,
-} from "./filters.schema";
-export { polarWebhookSchema, type PolarWebhook } from "./billing.schema";
+} from "./filters.schema.js";
+export { polarWebhookSchema, type PolarWebhook } from "./billing.schema.js";

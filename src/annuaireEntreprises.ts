@@ -1,4 +1,4 @@
-import { fetchWithRetry } from "./http";
+import { fetchWithRetry } from "./http.js";
 
 const BASE_URL = "https://recherche-entreprises.api.gouv.fr/search";
 
