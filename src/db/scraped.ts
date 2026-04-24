@@ -1,7 +1,7 @@
 import { and, desc, eq, ilike, inArray, like, sql, type SQL } from "drizzle-orm";
-import { db, pgClient } from "./client";
-import { scrapedRecords, excluded } from "./schema";
-import { phoneTypeCondition } from "../phoneUtils";
+import { db, pgClient } from "./client.js";
+import { scrapedRecords, excluded } from "./schema.js";
+import { phoneTypeCondition } from "../phoneUtils.js";
 // Les filtres consommes par la couche DB — formes miroir du schema Zod
 // cote HTTP, mais avec "sourceFilter" comme nom interne (le param HTTP
 // s'appelle "source").

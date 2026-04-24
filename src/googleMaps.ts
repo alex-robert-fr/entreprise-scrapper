@@ -1,4 +1,4 @@
-import { fetchWithRetry } from "./http";
+import { fetchWithRetry } from "./http.js";
 
 // Places API (New) — https://developers.google.com/maps/documentation/places/web-service/text-search
 const PLACES_NEW_BASE_URL = "https://places.googleapis.com/v1/places";

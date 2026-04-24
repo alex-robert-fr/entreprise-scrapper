@@ -1,5 +1,5 @@
-import type { Db } from "../client";
-import { professions, type NewProfession } from "../schema";
+import type { Db } from "../client.js";
+import { professions, type NewProfession } from "../schema.js";
 
 // Codes NAF stockés sans point pour matcher directement SIRENE (ex: "1071C", pas "10.71C").
 export const PROFESSIONS_SEED: NewProfession[] = [
