@@ -43,6 +43,13 @@
       "when": 1777019914831,
       "tag": "0005_scraped_profession_credits_check",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777021811712,
+      "tag": "0006_credit_tx_signup_bonus",
+      "breakpoints": true
     }
   ]
 }

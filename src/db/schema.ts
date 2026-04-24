@@ -149,7 +149,7 @@ export const creditTransactions = pgTable(
     index("credit_tx_user_created_idx").on(t.userId, t.createdAt),
     check(
       "credit_tx_type_check",
-      sql`${t.type} IN ('purchase', 'consume', 'refund', 'admin_grant')`,
+      sql`${t.type} IN ('purchase', 'consume', 'refund', 'admin_grant', 'signup_bonus')`,
     ),
   ],
 );
