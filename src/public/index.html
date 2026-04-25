@@ -3,1075 +3,2274 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scraper — Dashboard</title>
+  <title>Atelier · Prospects</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=JetBrains+Mono:wght@300..600&family=Fraunces:opsz,wght@9..144,300..700&display=swap" rel="stylesheet">
   <style>
+    /* ══════════════════════════════════════════════════════════
+       DESIGN TOKENS — palette « sobre tech » : charcoal + bleu acier
+       ══════════════════════════════════════════════════════════ */
     :root {
-      --bg:           #080a0f;
-      --bg-card:      #0d1018;
-      --bg-elevated:  #12151e;
-      --border:       rgba(255,255,255,0.06);
-      --border-hover: rgba(255,255,255,0.11);
-      --text:         #e8e2d9;
-      --muted:        #4e5668;
-      --dim:          #303744;
-      --accent:       #e8622a;
-      --accent-glow:  rgba(232,98,42,0.18);
-      --accent-dim:   rgba(232,98,42,0.08);
-      --success:      #22c55e;
-      --success-dim:  rgba(34,197,94,0.1);
-      --warn:         #f59e0b;
-      --warn-dim:     rgba(245,158,11,0.1);
-      --danger:       #ef4444;
-      --danger-dim:   rgba(239,68,68,0.12);
-      --mono: 'JetBrains Mono', 'Courier New', monospace;
+      /* Surfaces */
+      --ink:        #08080a;
+      --canvas:     #0d0d10;
+      --vault:      #131317;
+      --riser:      #18181d;
+      --peak:       #1e1e24;
+
+      /* Lines — neutres, légèrement plus frais */
+      --line:       rgba(255, 255, 255, 0.055);
+      --line-hi:    rgba(255, 255, 255, 0.115);
+      --line-ember: rgba(110, 168, 254, 0.28);
+
+      /* Text */
+      --ivory:      #edeef2;
+      --bone:       #c3c5cc;
+      --sand:       #85878f;
+      --dune:       #55575f;
+      --shadow:     #33343a;
+
+      /* Accent principal (bleu acier) */
+      --ember:      #6ea8fe;
+      --ember-hi:   #9dc4ff;
+      --ember-deep: #3c7ee0;
+      --ember-dim:  rgba(110, 168, 254, 0.10);
+      --ember-glow: rgba(110, 168, 254, 0.28);
+
+      /* Accent secondaire — ambre doux (réservé aux crédits) */
+      --brass:      #e0c27d;
+      --brass-dim:  rgba(224, 194, 125, 0.10);
+
+      /* Feedback */
+      --sage:       #4ade80;
+      --sage-dim:   rgba(74, 222, 128, 0.12);
+
+      --indigo:     #a78bfa;
+      --indigo-dim: rgba(167, 139, 250, 0.14);
+
+      --rust:       #f87171;
+      --rust-dim:   rgba(248, 113, 113, 0.12);
+
+      /* Typography */
+      --sans:    'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono:    'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+      --display: 'Fraunces', Georgia, serif;
+      --serif:   var(--display);
+
+      /* Geometry */
+      --r-sm: 4px;
+      --r-md: 8px;
+      --r-lg: 14px;
+      --r-xl: 20px;
+
+      /* Shadows (warm tints) */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px var(--line);
+      --shadow-lg: 0 20px 50px -15px rgba(0,0,0,0.75), 0 0 0 1px var(--line-hi);
+      --shadow-ember: 0 8px 32px -8px var(--ember-glow);
+
+      /* Layout */
+      --topbar-h: 56px;
+      --atelier-w: 332px;
+      --atelier-collapsed: 0px;
     }
 
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    /* ══════════════════════════════════════════════════════════ RESET */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body { height: 100%; overflow: hidden; }
+    html, body {
+      height: 100%;
+      font-size: 15px;
+      background: var(--ink);
+      color: var(--ivory);
+      font-family: var(--sans);
+      font-weight: 400;
+      font-feature-settings: 'ss01', 'ss02', 'cv11';
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
 
     body {
-      font-family: var(--mono);
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      background-image: radial-gradient(ellipse 900px 500px at 60% -60px, rgba(232,98,42,0.04) 0%, transparent 70%);
+      display: grid;
+      grid-template-rows: var(--topbar-h) auto 1fr;
+      min-height: 100vh;
     }
 
-    ::-webkit-scrollbar { width: 4px; }
+    button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+    input, select, textarea { font: inherit; color: inherit; background: none; border: none; outline: none; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, h4 { font-weight: 400; line-height: 1.1; letter-spacing: -0.01em; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.06); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.14); }
 
-    /* ── SIDEBAR ── */
-    .sidebar {
-      width: 256px;
-      min-width: 256px;
-      background: var(--bg-card);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow-y: auto;
+    ::selection { background: var(--ember-dim); color: var(--ember-hi); }
+
+    /* ══════════════════════════════════════════════════════════ ATMOSPHERE */
+    .atmo {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
     }
+    .atmo__mesh {
+      position: absolute;
+      inset: -20%;
+      background:
+        radial-gradient(ellipse 900px 700px at 82% -20%, rgba(110, 168, 254, 0.04), transparent 55%),
+        radial-gradient(ellipse 700px 500px at -5% 35%, rgba(255, 255, 255, 0.015), transparent 60%);
+      filter: blur(40px);
+    }
+    .atmo__grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.025;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ══════════════════════════════════════════════════════════ TOP BAR */
+    .topbar {
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: var(--atelier-w) 1fr auto;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background: rgba(13, 13, 16, 0.72);
+      backdrop-filter: blur(20px) saturate(1.05);
+      -webkit-backdrop-filter: blur(20px) saturate(1.05);
+      position: relative;
+      z-index: 10;
+      transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body.atelier-collapsed .topbar { grid-template-columns: 0px 1fr auto; }
 
     .brand {
-      padding: 1.25rem 1.25rem 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .brand-title {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: 0.02em;
-    }
-
-    .brand-title span { color: var(--accent); }
-
-    .status-chip {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 0.4rem;
-      margin-top: 0.7rem;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-hover);
-      border-radius: 100px;
-      padding: 0.25rem 0.6rem;
-      font-size: 0.58rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
+      gap: 0.65rem;
+      padding: 0 1.25rem;
+      height: 100%;
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+      transition: padding 0.3s;
+    }
+    body.atelier-collapsed .brand { padding: 0; border-right: none; }
+
+    .brand__mark {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      position: relative;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--ember) 0%, var(--ember-deep) 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(110, 168, 254, 0.18);
+    }
+    .brand__mark::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 2px;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.55) 0 2px,
+        transparent 2px 4px
+      );
+      opacity: 0.75;
     }
 
-    .status-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--muted);
+    .brand__title {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      color: var(--ivory);
+      white-space: nowrap;
+    }
+    .brand__title em {
+      font-family: var(--display);
+      font-style: italic;
+      font-weight: 400;
+      color: var(--brass);
+      letter-spacing: -0.01em;
+      padding-left: 2px;
+    }
+
+    .topbar-center {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0 1.25rem;
+      min-width: 0;
+    }
+
+    .views-nav {
+      display: flex;
+      gap: 0.15rem;
+      padding: 4px;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: 100px;
       flex-shrink: 0;
     }
-    .status-dot.running { background: var(--warn); box-shadow: 0 0 6px var(--warn); animation: blink 1.4s ease-in-out infinite; }
-    .status-dot.done    { background: var(--success); box-shadow: 0 0 6px var(--success); }
-    .status-dot.stopped_no_credits { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+    .view-pill {
+      padding: 0.4rem 0.95rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.005em;
+      color: var(--sand);
+      border-radius: 100px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .view-pill:hover { color: var(--bone); }
+    .view-pill.active {
+      background: linear-gradient(180deg, var(--peak), var(--riser));
+      color: var(--ivory);
+      box-shadow: inset 0 1px 0 var(--line-hi), 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .view-pill.hidden { display: none; }
+    .view-pill--admin.active { color: var(--brass); }
+
+    .search-global {
+      flex: 1;
+      max-width: 440px;
+      position: relative;
+    }
+    .search-global__icon {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--dune);
+      pointer-events: none;
+    }
+    .search-global input {
+      width: 100%;
+      padding: 0.5rem 2.5rem 0.5rem 2.2rem;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      color: var(--ivory);
+      font-size: 0.82rem;
+      transition: all 0.15s;
+    }
+    .search-global input::placeholder { color: var(--dune); }
+    .search-global input:focus {
+      border-color: var(--line-ember);
+      box-shadow: 0 0 0 3px var(--ember-dim);
+      background: var(--riser);
+    }
+    .search-global__kbd {
+      position: absolute;
+      right: 0.55rem;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 2px 6px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--dune);
+      background: var(--riser);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    .search-global input:focus ~ .search-global__kbd { display: none; }
+
+    .topbar-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0 0.9rem 0 0.5rem;
+    }
+
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.38rem 0.75rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--sand);
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--dune);
+      flex-shrink: 0;
+    }
+    .status-dot.running { background: var(--brass); box-shadow: 0 0 10px var(--brass); animation: pulse-dot 1.3s ease-in-out infinite; }
+    .status-dot.done    { background: var(--sage);  box-shadow: 0 0 10px var(--sage); }
+    .status-dot.error   { background: var(--rust);  box-shadow: 0 0 10px var(--rust); }
+    .status-dot.stopped_no_credits { background: var(--rust); box-shadow: 0 0 10px var(--rust); }
+    .status-chip.running { color: var(--brass); border-color: var(--brass-dim); }
+    .status-chip.done    { color: var(--sage); }
+    .status-chip.error, .status-chip.stopped_no_credits { color: var(--rust); }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
 
     .credit-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      margin-top: 0.5rem;
-      padding: 0.28rem 0.6rem;
-      border-radius: 100px;
-      font-size: 0.6rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-hover);
-      color: var(--text);
-    }
-    .credit-chip .credit-value { font-weight: 700; color: var(--accent); }
-    .credit-chip.low { border-color: var(--warn); }
-    .credit-chip.low .credit-value { color: var(--warn); }
-    .credit-chip.empty { border-color: var(--danger); background: var(--danger-dim); }
-    .credit-chip.empty .credit-value { color: var(--danger); }
-
-    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-
-    .s-section {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .s-label {
-      font-size: 0.56rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.8rem;
-    }
-
-    /* Radio group */
-    .radio-group {
       display: flex;
-      gap: 0;
-      border: 1px solid var(--border-hover);
-      border-radius: 5px;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.38rem 0.75rem;
+      font-size: 0.72rem;
+      color: var(--bone);
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .credit-chip::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: linear-gradient(135deg, var(--brass), #f5d291);
+      box-shadow: inset 0 -1px 2px rgba(0,0,0,0.3);
+    }
+    .credit-chip .credit-value {
+      font-weight: 600;
+      color: var(--brass);
+      font-family: var(--mono);
+    }
+    .credit-chip .credit-label { color: var(--dune); font-size: 0.68rem; }
+    .credit-chip.low  { border-color: var(--brass-dim); }
+    .credit-chip.low  .credit-value { color: var(--ember-hi); }
+    .credit-chip.empty { border-color: rgba(193, 87, 74, 0.4); background: var(--rust-dim); }
+    .credit-chip.empty .credit-value { color: var(--rust); }
+
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      color: var(--sand);
+      border: 1px solid transparent;
+      border-radius: var(--r-sm);
+      transition: all 0.15s;
+    }
+    .icon-btn:hover { color: var(--ivory); background: var(--vault); border-color: var(--line); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    /* ══════════════════════════════════════════════════════════ SHELL */
+    .shell {
+      grid-row: 3;
+      display: grid;
+      grid-template-columns: var(--atelier-w) 1fr;
+      min-height: 0;
       overflow: hidden;
-      margin-bottom: 0.85rem;
+      transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body.atelier-collapsed .shell { grid-template-columns: 0px 1fr; }
+
+    /* ══════════════════════════════════════════════════════════ ATELIER (sidebar) */
+    .atelier {
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--canvas) 0%, var(--ink) 100%);
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      min-width: 0;
+    }
+    body.atelier-collapsed .atelier { border-right: none; opacity: 0; pointer-events: none; }
+
+    .atelier__inner {
+      padding: 1.4rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.6rem;
+      width: var(--atelier-w);
     }
 
-    .radio-group label {
-      flex: 1;
+    .atelier__group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .atelier__label {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dune);
+    }
+    .atelier__label::before {
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 0.68rem;
+      color: var(--ember);
+      letter-spacing: 0.05em;
+      margin-right: 0.15rem;
+    }
+    .atelier__label--1::before { content: '01'; }
+    .atelier__label--2::before { content: '02'; }
+    .atelier__label--3::before { content: '03'; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.32rem;
+    }
+    .field > label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--sand);
+      letter-spacing: 0.01em;
+    }
+
+    select, input[type="text"], input[type="number"], input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 0.58rem 0.75rem;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      color: var(--ivory);
+      font-size: 0.85rem;
+      font-family: var(--sans);
+      transition: all 0.15s;
+    }
+    select:hover, input:hover { border-color: var(--line-hi); }
+    select:focus, input:focus {
+      border-color: var(--ember);
+      background: var(--riser);
+      box-shadow: 0 0 0 3px var(--ember-dim);
+    }
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239e9076' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.85rem center;
+      padding-right: 2.2rem;
+      cursor: pointer;
+    }
+    select optgroup {
+      font-family: var(--sans);
+      font-weight: 400;
+      color: var(--ember-hi);
+      background: var(--ink);
+    }
+    select option {
+      font-family: var(--sans);
+      font-style: normal;
+      color: var(--ivory);
+      background: var(--canvas);
+    }
+    select:disabled, input:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { appearance: none; margin: 0; }
+    input[type="number"] { appearance: textfield; }
+
+    /* Scope toggle (region/dep/france) */
+    .scope-toggle {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 3px;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      gap: 2px;
+    }
+    .scope-toggle label {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.4rem 0;
-      font-size: 0.62rem;
-      color: var(--muted);
+      gap: 0.3rem;
+      padding: 0.45rem 0;
+      font-size: 0.73rem;
+      font-weight: 500;
+      color: var(--sand);
+      border-radius: 6px;
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      border-right: 1px solid var(--border-hover);
+      transition: all 0.15s;
       user-select: none;
     }
-
-    .radio-group label:last-child { border-right: none; }
-    .radio-group input[type="radio"] { display: none; }
-
-    .radio-group input[type="radio"]:checked + span {
-      /* handled via JS class */
-    }
-
-    .radio-group label.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .field { margin-bottom: 0.7rem; }
-
-    .field label {
-      display: block;
-      font-size: 0.58rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.3rem;
-    }
-
-    select, input[type="text"], input[type="number"] {
-      width: 100%;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-hover);
-      color: var(--text);
-      padding: 0.45rem 0.6rem;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 0.74rem;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%234e5668'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.6rem center;
-      padding-right: 1.8rem;
-      cursor: pointer;
-    }
-
-    select:focus, input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-dim);
-    }
-
-    select:disabled, input:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    .btn-run {
-      width: 100%;
-      margin-top: 0.6rem;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 0.58rem 1rem;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 0.7rem;
+    .scope-toggle label:hover { color: var(--ivory); }
+    .scope-toggle label.active {
+      background: var(--ember);
+      color: #0b1220;
       font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      box-shadow: 0 2px 6px var(--ember-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    .scope-toggle input { display: none; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      font-family: var(--sans);
+      font-size: 0.83rem;
+      font-weight: 500;
+      letter-spacing: 0.005em;
+      border-radius: var(--r-md);
       cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    .btn--primary {
+      background: var(--ember);
+      color: #0b1220;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+        0 2px 10px var(--ember-glow),
+        0 1px 2px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn--primary:hover:not(:disabled) {
+      background: var(--ember-hi);
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 6px 18px var(--ember-glow),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .btn--primary:active { transform: translateY(0); }
+
+    .btn--ghost {
+      color: var(--bone);
+      background: var(--vault);
+      border: 1px solid var(--line);
+    }
+    .btn--ghost:hover:not(:disabled) {
+      color: var(--ivory);
+      background: var(--riser);
+      border-color: var(--line-hi);
     }
 
-    .btn-run:hover { background: #d0551f; box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-1px); }
-    .btn-run:active { transform: translateY(0); }
-    .btn-run:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn--danger {
+      color: var(--rust);
+      background: var(--rust-dim);
+      border: 1px solid rgba(248, 113, 113, 0.22);
+    }
+    .btn--danger:hover:not(:disabled) {
+      background: rgba(248, 113, 113, 0.18);
+      border-color: var(--rust);
+      color: #fca5a5;
+    }
+
+    .btn--small { padding: 0.42rem 0.8rem; font-size: 0.76rem; }
+    .btn--big   { padding: 0.75rem 1.2rem; font-size: 0.9rem; font-weight: 500; }
+    .btn--block { width: 100%; }
+
+    .btn--scrape {
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 0.9rem;
+      letter-spacing: 0.005em;
+      padding: 0.85rem 1rem;
+    }
+    .btn--scrape::after {
+      content: '→';
+      font-style: normal;
+      font-weight: 600;
+      margin-left: 0.1rem;
+      transition: transform 0.2s;
+    }
+    .btn--scrape:hover:not(:disabled)::after { transform: translateX(3px); }
 
     /* Progress */
-    .progress-block { display: none; }
-    .progress-block.visible { display: block; }
+    .progress {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.85rem;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+    }
+    .progress.visible { display: flex; }
 
-    .progress-meta {
+    .progress__meta {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 0.4rem;
+      align-items: baseline;
+    }
+    .progress__count {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--sand);
+      font-variant-numeric: tabular-nums;
+    }
+    .progress__pct {
+      font-family: var(--sans);
+      font-size: 1.1rem;
+      color: var(--ember-hi);
+      font-variant-numeric: tabular-nums;
     }
 
-    .progress-count { font-size: 0.62rem; color: var(--muted); }
-    .progress-pct   { font-size: 0.62rem; color: var(--accent); font-weight: 600; }
-
-    .track {
-      height: 3px;
-      background: var(--bg-elevated);
-      border-radius: 3px;
+    .progress__track {
+      height: 4px;
+      background: var(--ink);
+      border-radius: 2px;
       overflow: hidden;
-      margin-bottom: 0.4rem;
+      border: 1px solid var(--line);
+      position: relative;
     }
-
-    .fill {
+    .progress__fill {
       height: 100%;
       width: 0%;
-      border-radius: 3px;
-      background: linear-gradient(90deg, var(--accent) 0%, #ff8f56 100%);
-      box-shadow: 0 0 10px var(--accent-glow);
-      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+      background: linear-gradient(90deg, var(--ember-deep) 0%, var(--ember) 50%, var(--ember-hi) 100%);
+      box-shadow: 0 0 10px var(--ember-glow);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .progress__fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 220, 180, 0.4), transparent);
+      animation: shimmer 1.8s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
     }
 
-    .progress-label {
-      font-size: 0.62rem;
-      color: var(--muted);
+    .progress__label {
+      font-size: 0.72rem;
+      color: var(--dune);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     /* Result summary */
-    .result-block {
+    .result {
       display: none;
-      margin-top: 0.8rem;
-      padding: 0.7rem 0.8rem;
-      border-radius: 5px;
-      border-left: 2px solid var(--success);
-      background: linear-gradient(90deg, rgba(34,197,94,0.04) 0%, transparent 100%);
+      padding: 0.85rem 1rem;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, var(--sage-dim), transparent);
+      border: 1px solid rgba(149, 176, 140, 0.22);
+      position: relative;
+      overflow: hidden;
     }
-    .result-block.visible { display: block; }
-
-    .result-row {
+    .result.visible { display: block; }
+    .result::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--sage);
+    }
+    .result__row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      padding: 0.18rem 0;
+      padding: 0.2rem 0;
     }
-
-    .result-key { font-size: 0.64rem; color: var(--muted); }
-    .result-val { font-size: 0.7rem; font-weight: 600; }
-    .result-val.new  { color: var(--success); }
-    .result-val.dupe { color: var(--dim); }
-    .result-val.nf   { color: var(--muted); }
-
-    /* Export button */
-    .sidebar-footer {
-      padding: 1rem 1.25rem;
-      margin-top: auto;
+    .result__key { font-size: 0.72rem; color: var(--sand); }
+    .result__val {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
     }
+    .result__val.new  { color: var(--sage); }
+    .result__val.dupe { color: var(--dune); }
+    .result__val.nf   { color: var(--sand); }
 
+    /* Export scope */
     .export-scope {
-      display: flex;
-      gap: 0;
-      border: 1px solid var(--border-hover);
-      border-radius: 5px;
-      overflow: hidden;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 3px;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      gap: 2px;
       margin-bottom: 0.5rem;
     }
-
     .export-scope button {
-      flex: 1;
-      background: transparent;
-      border: none;
-      border-right: 1px solid var(--border-hover);
-      color: var(--muted);
-      padding: 0.35rem 0;
-      font-family: var(--mono);
-      font-size: 0.6rem;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      user-select: none;
-    }
-
-    .export-scope button:last-child { border-right: none; }
-    .export-scope button:hover { background: var(--bg-elevated); color: var(--text); }
-    .export-scope button.active { background: var(--accent); color: #fff; }
-
-    .btn-export {
-      width: 100%;
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border-hover);
-      padding: 0.45rem 1rem;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 0.68rem;
-      letter-spacing: 0.06em;
-      cursor: pointer;
+      padding: 0.4rem 0;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--sand);
+      border-radius: 6px;
       transition: all 0.15s;
     }
-
-    .btn-export:hover { color: var(--text); border-color: var(--muted); }
-
-    /* ── MAIN ── */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      height: 100vh;
+    .export-scope button:hover { color: var(--ivory); }
+    .export-scope button.active {
+      background: var(--riser);
+      color: var(--brass);
+      box-shadow: inset 0 1px 0 var(--line-hi);
     }
 
-    /* Stats bar */
-    .stats-bar {
-      display: flex;
-      border-bottom: 1px solid var(--border);
+    /* Running banner — dans le flow, row 2 du grid body */
+    .running-banner {
+      grid-row: 2;
+      display: none;
+      padding: 0.55rem 1.5rem;
+      background: linear-gradient(90deg, var(--ember-dim) 0%, transparent 80%);
+      border-bottom: 1px solid var(--line-ember);
+      font-size: 0.78rem;
+      color: var(--ember-hi);
+      align-items: center;
+      gap: 0.75rem;
+    }
+    /* Visible seulement si atelier collapsed (sinon redondant avec l'atelier) */
+    body.atelier-collapsed .running-banner.visible { display: flex; }
+    .running-banner__track {
+      flex: 1;
+      height: 3px;
+      max-width: 240px;
+      background: var(--vault);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .running-banner__fill {
+      height: 100%;
+      width: 0%;
+      background: var(--ember);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .running-banner__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ember-hi);
+      box-shadow: 0 0 12px var(--ember);
+      animation: pulse-dot 1.3s ease-in-out infinite;
       flex-shrink: 0;
     }
 
-    .stat {
-      flex: 1;
-      padding: 1rem 1.25rem;
-      position: relative;
-      border-right: 1px solid var(--border);
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.15s;
+    /* ══════════════════════════════════════════════════════════ WORKSPACE (main) */
+    .workspace {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
 
-    .stat:last-child { border-right: none; }
-    .stat:hover { background: var(--bg-card); }
-    .stat.active { background: var(--bg-card); }
+    .view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .view.active { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-    .stat::after {
+    /* ══════════════════════════════════════════════════════════ HERO (stat cards) */
+    .hero {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 0;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .stat-card {
+      position: relative;
+      padding: 1.25rem 1.35rem;
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+      border-right: 1px solid var(--line);
+      transition: background 0.15s;
+    }
+    .stat-card:last-child { border-right: none; }
+    .stat-card::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
+      top: 0;
+      left: 0;
+      right: 0;
       height: 2px;
       background: transparent;
       transition: background 0.2s;
     }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: radial-gradient(ellipse 300px 150px at 80% 0%, var(--card-glow, transparent), transparent 70%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .stat-card:hover { background: rgba(255, 255, 255, 0.02); }
+    .stat-card:hover::after { opacity: 1; }
+    .stat-card.active { background: rgba(255, 255, 255, 0.035); }
+    .stat-card.active::after { opacity: 1; }
+    .stat-card.active::before {
+      background: var(--card-accent, var(--ember));
+      box-shadow: 0 0 12px var(--card-accent, var(--ember));
+    }
 
-    .stat.active::after { background: linear-gradient(90deg, var(--accent) 0%, transparent 100%); }
+    .stat-card--all    { --card-accent: var(--ember); --card-glow: var(--ember-dim); }
+    .stat-card--found  { --card-accent: var(--sage); --card-glow: var(--sage-dim); }
+    .stat-card--mobile { --card-accent: var(--indigo); --card-glow: var(--indigo-dim); }
+    .stat-card--nf     { --card-accent: var(--dune); --card-glow: rgba(107, 98, 83, 0.1); }
 
-    .stat-label {
-      font-size: 0.56rem;
+    .stat-card__label {
+      font-size: 0.68rem;
+      font-weight: 500;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.3rem;
+      color: var(--sand);
+      margin-bottom: 0.45rem;
     }
 
-    .stat-value {
-      font-size: 1.5rem;
-      font-weight: 600;
-      line-height: 1;
-      color: var(--text);
+    .stat-card__value {
+      font-family: var(--sans);
+      font-weight: 300;
+      font-size: 2.5rem;
+      line-height: 0.95;
+      letter-spacing: -0.035em;
+      color: var(--ivory);
       font-variant-numeric: tabular-nums;
+      margin-bottom: 0.4rem;
+    }
+    .stat-card--found  .stat-card__value { color: var(--sage); }
+    .stat-card--mobile .stat-card__value { color: var(--indigo); }
+    .stat-card--nf     .stat-card__value { color: var(--sand); }
+    .stat-card--all.active .stat-card__value { color: var(--ember-hi); }
+
+    .stat-card__sub {
+      font-size: 0.72rem;
+      color: var(--dune);
+      font-family: var(--sans);
+      font-weight: 300;
     }
 
-    .stat#tab-all .stat-value  { color: var(--accent); }
-
-    /* Toolbar */
+    /* ══════════════════════════════════════════════════════════ TOOLBAR */
     .toolbar {
-      flex-shrink: 0;
-      padding: 0.65rem 1.5rem;
-      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
-    .search-wrap {
-      position: relative;
-      flex: 2;
-    }
-
-    .search-wrap.ville { flex: 1; }
-
-    .search-icon {
-      position: absolute;
-      left: 0.6rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--muted);
-      font-size: 0.75rem;
-      pointer-events: none;
-    }
-
-    .search-input {
-      width: 100%;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.4rem 0.6rem 0.4rem 2rem;
-      border-radius: 5px;
+    .toolbar__filter-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      margin-left: 0.35rem;
+      font-size: 0.62rem;
+      font-weight: 600;
       font-family: var(--mono);
-      font-size: 0.74rem;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      color: #0b1220;
+      background: var(--ember);
+      border-radius: 100px;
+      line-height: 1;
+    }
+    .toolbar__filter-badge:empty { display: none; }
+
+    .toolbar__filter-label {
+      font-size: 0.75rem;
+      color: var(--ember-hi);
+      padding: 0.3rem 0.65rem;
+      background: var(--ember-dim);
+      border: 1px solid var(--line-ember);
+      border-radius: 100px;
+      font-family: var(--sans);
+      font-weight: 400;
+    }
+    .toolbar__filter-label:empty { display: none; }
+
+    .toolbar__spacer { flex: 1; }
+
+    /* Active filter chips */
+    .chips-bar {
+      display: none;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--canvas);
+    }
+    .chips-bar.visible { display: flex; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.28rem 0.35rem 0.28rem 0.7rem;
+      font-size: 0.73rem;
+      color: var(--bone);
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      font-variant-numeric: tabular-nums;
+    }
+    .chip__key {
+      font-size: 0.62rem;
+      color: var(--dune);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+    .chip__val { color: var(--brass); font-weight: 500; }
+    .chip__close {
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      color: var(--dune);
+      transition: all 0.12s;
+      font-size: 0.7rem;
+      line-height: 1;
+    }
+    .chip__close:hover {
+      background: var(--rust-dim);
+      color: var(--rust);
     }
 
-    .search-input:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-dim);
+    /* Filter panel */
+    .filters-panel {
+      display: none;
+      padding: 1.1rem 1.25rem 0.95rem;
+      background: var(--canvas);
+      border-bottom: 1px solid var(--line);
+      animation: panelSlide 0.22s ease-out;
+    }
+    .filters-panel.visible { display: block; }
+    @keyframes panelSlide {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .search-input::placeholder { color: var(--muted); }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.75rem;
+    }
 
-    .filter-label {
-      font-size: 0.6rem;
-      color: var(--dim);
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .filter-field label {
+      font-size: 0.64rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sand);
+    }
+
+    .filters-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+    }
+    .filters-footer__actions { display: flex; gap: 0.5rem; }
+    .filter-count {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      color: var(--sand);
+      font-variant-numeric: tabular-nums;
+    }
+    .filter-count strong {
+      color: var(--ember-hi);
+      font-weight: 500;
+      font-size: 1.02rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════ TABLE */
+    .table-wrap {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
+    .prospects-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .prospects-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--canvas);
+    }
+
+    .prospects-table thead th {
+      padding: 0.7rem 1rem;
+      font-size: 0.64rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sand);
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      background: var(--canvas);
+      user-select: none;
       white-space: nowrap;
     }
+    .prospects-table thead th:first-child { padding-left: 1.25rem; }
+    .prospects-table thead th:last-child { padding-right: 1.25rem; }
 
-    /* Table area */
-    .table-area {
-      flex: 1;
-      overflow-y: auto;
+    .sortable {
+      cursor: pointer;
+      transition: color 0.15s;
+      position: relative;
+    }
+    .sortable:hover { color: var(--ivory); }
+    .sortable::after {
+      content: '↕';
+      margin-left: 0.35rem;
+      color: var(--shadow);
+      font-size: 0.8em;
+      transition: color 0.15s;
+    }
+    .sortable:hover::after { color: var(--sand); }
+    .sortable.sort-asc::after  { content: '↑'; color: var(--ember); }
+    .sortable.sort-desc::after { content: '↓'; color: var(--ember); }
+
+    .prospects-table tbody tr {
+      transition: background 0.12s;
+      animation: rowIn 0.3s ease-out both;
+    }
+    .prospects-table tbody tr:nth-child(1)  { animation-delay: 0.00s; }
+    .prospects-table tbody tr:nth-child(2)  { animation-delay: 0.02s; }
+    .prospects-table tbody tr:nth-child(3)  { animation-delay: 0.04s; }
+    .prospects-table tbody tr:nth-child(4)  { animation-delay: 0.06s; }
+    .prospects-table tbody tr:nth-child(5)  { animation-delay: 0.08s; }
+    .prospects-table tbody tr:nth-child(6)  { animation-delay: 0.10s; }
+    .prospects-table tbody tr:nth-child(7)  { animation-delay: 0.12s; }
+    .prospects-table tbody tr:nth-child(8)  { animation-delay: 0.14s; }
+    .prospects-table tbody tr:nth-child(9)  { animation-delay: 0.16s; }
+    .prospects-table tbody tr:nth-child(10) { animation-delay: 0.18s; }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    table { width: 100%; border-collapse: collapse; }
+    .prospects-table tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+    .prospects-table tbody tr.selected { background: var(--ember-dim); }
+    .prospects-table tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--ember); }
 
-    thead { position: sticky; top: 0; z-index: 5; }
-
-    thead th {
-      padding: 0.6rem 1.25rem;
-      font-size: 0.56rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: left;
-      font-weight: 400;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
-    }
-
-    tbody tr:hover { background: var(--bg-card); }
-
-    tbody td {
-      padding: 0.6rem 1.25rem;
-      font-size: 0.75rem;
+    .prospects-table tbody td {
+      padding: 0.8rem 1rem;
+      font-size: 0.85rem;
+      color: var(--bone);
+      border-bottom: 1px solid var(--line);
       vertical-align: middle;
     }
+    .prospects-table tbody td:first-child { padding-left: 1.25rem; }
+    .prospects-table tbody td:last-child  { padding-right: 1.25rem; }
+    .prospects-table tbody tr:last-child td { border-bottom: none; }
 
-    td.col-nom   { color: var(--text); font-weight: 500; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    td.col-ville { color: var(--muted); }
-    td.col-tel {
-      letter-spacing: 0.04em;
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
-      transition: color 0.12s;
-    }
-
-    td.col-tel:hover { color: var(--accent); }
-    td.col-tel.copied { color: var(--success); }
-    td.col-tel span { border-bottom: 1px dashed var(--dim); }
-
-    .empty {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: var(--muted);
-      font-size: 0.74rem;
-      line-height: 2;
-    }
-
-    .empty strong {
-      display: block;
-      font-size: 1.1rem;
-      color: var(--dim);
-      margin-bottom: 0.4rem;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 0.16rem 0.45rem;
+    .col-check { width: 36px; }
+    .col-check input {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--line-hi);
       border-radius: 3px;
-      font-size: 0.6rem;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      border: 1px solid transparent;
+      background: var(--vault);
+      cursor: pointer;
+      transition: all 0.12s;
+      display: grid;
+      place-items: center;
+    }
+    .col-check input:hover { border-color: var(--ember); }
+    .col-check input:checked {
+      background: var(--ember);
+      border-color: var(--ember);
+    }
+    .col-check input:checked::after {
+      content: '';
+      width: 8px;
+      height: 5px;
+      border-left: 2px solid #0b1220;
+      border-bottom: 2px solid #0b1220;
+      transform: rotate(-45deg) translate(1px, -1px);
     }
 
-    .b-google { background: var(--success-dim); color: var(--success); border-color: rgba(34,197,94,0.18); }
-    .b-non    { background: var(--bg-elevated); color: var(--muted);   border-color: var(--border); }
+    .col-nom {
+      font-weight: 500;
+      color: var(--ivory);
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .col-nom__sub {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--dune);
+      font-family: var(--mono);
+      margin-top: 2px;
+    }
+
+    .col-ville {
+      color: var(--sand);
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .col-cp { color: var(--dune); font-family: var(--mono); font-size: 0.78rem; }
+    .col-eff {
+      color: var(--sand);
+      font-size: 0.78rem;
+      white-space: nowrap;
+      line-height: 1.25;
+    }
+    .col-eff > span { display: block; }
+    .col-eff__fj {
+      font-size: 0.66rem;
+      color: var(--dune);
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-tel {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      color: var(--ivory);
+      white-space: nowrap;
+    }
+    .col-tel__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.18rem 0.55rem;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--ivory);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .col-tel__btn:hover {
+      border-color: var(--ember);
+      background: var(--ember-dim);
+      color: var(--ember-hi);
+    }
+    .col-tel__btn.copied {
+      border-color: var(--sage);
+      background: var(--sage-dim);
+      color: var(--sage);
+    }
 
     .phone-tag {
       display: inline-block;
-      padding: 0.1rem 0.35rem;
-      border-radius: 3px;
-      font-size: 0.52rem;
+      padding: 0.08rem 0.4rem;
+      font-size: 0.6rem;
       font-weight: 500;
-      letter-spacing: 0.04em;
-      margin-left: 0.4rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: 3px;
+      font-family: var(--sans);
+      margin-left: 0.45rem;
       vertical-align: middle;
     }
+    .phone-tag.mobile { color: var(--indigo); background: var(--indigo-dim); border: 1px solid rgba(148, 163, 212, 0.22); }
+    .phone-tag.fixe   { color: var(--dune); background: var(--vault); border: 1px solid var(--line); }
 
-    .phone-tag.mobile { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
-    .phone-tag.fixe   { background: var(--bg-elevated); color: var(--dim); border: 1px solid var(--border); }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.18rem 0.5rem;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .badge::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .b-google { color: var(--sage); background: var(--sage-dim); border-color: rgba(149, 176, 140, 0.22); }
+    .b-non    { color: var(--dune); background: var(--vault); border-color: var(--line); }
+    .b-non::before { background: var(--shadow); }
 
-    .stat#tab-mobile .stat-value { color: #818cf8; }
-    .stat#tab-mobile.active::after { background: linear-gradient(90deg, #818cf8 0%, transparent 100%); }
+    .col-actions {
+      width: 1px;
+      white-space: nowrap;
+      text-align: right;
+    }
+    .row-actions {
+      display: inline-flex;
+      gap: 0.25rem;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .prospects-table tbody tr:hover .row-actions { opacity: 1; }
+    .prospects-table tbody tr.selected .row-actions { opacity: 1; }
 
-    /* ── TOAST ── */
-    .toast-container {
+    .row-action {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      color: var(--sand);
+      border: 1px solid transparent;
+      border-radius: var(--r-sm);
+      transition: all 0.12s;
+    }
+    .row-action svg { width: 14px; height: 14px; }
+    .row-action:hover {
+      color: var(--ember-hi);
+      background: var(--vault);
+      border-color: var(--line-hi);
+    }
+    .row-action.disabled { opacity: 0.25; pointer-events: none; }
+
+    /* Empty states */
+    .empty {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--dune);
+    }
+    .empty__art {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      position: relative;
+      opacity: 0.65;
+    }
+    .empty__art::before,
+    .empty__art::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid var(--line-hi);
+    }
+    .empty__art::after {
+      inset: 18px;
+      border-color: var(--line-ember);
+      border-style: dashed;
+    }
+    .empty__art svg {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 32px;
+      height: 32px;
+      color: var(--ember);
+    }
+
+    .empty__title {
+      font-family: var(--sans);
+      font-size: 1.4rem;
+      color: var(--bone);
+      margin-bottom: 0.4rem;
+      font-weight: 400;
+    }
+    .empty__text {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      max-width: 420px;
+      margin: 0 auto;
+      color: var(--sand);
+    }
+    .empty__cta {
+      margin-top: 1.5rem;
+      display: inline-flex;
+      gap: 0.5rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════ DUPLICATES VIEW */
+    .duplicates {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .dup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dup-header h2 {
+      font-family: var(--sans);
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--ivory);
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.02em;
+    }
+    .dup-header p {
+      font-size: 0.88rem;
+      color: var(--sand);
+      max-width: 540px;
+      line-height: 1.5;
+    }
+
+    .dup-stat {
+      text-align: right;
+      padding: 0.9rem 1.2rem;
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      min-width: 160px;
+    }
+    .dup-stat__label {
+      font-size: 0.64rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sand);
+      margin-bottom: 0.35rem;
+    }
+    .dup-stat__value {
+      font-family: var(--sans);
+      font-weight: 400;
+      font-size: 1.65rem;
+      color: var(--brass);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .dup-section {
+      background: var(--canvas);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .dup-section__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--vault);
+    }
+    .dup-section__head h3 {
+      font-family: var(--sans);
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: var(--ivory);
+      margin-bottom: 0.2rem;
+    }
+    .dup-section__head p {
+      font-size: 0.78rem;
+      color: var(--sand);
+    }
+    .dup-section__actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .dup-section__body {
+      max-height: 45vh;
+      overflow-y: auto;
+    }
+
+    .dup-section__body table { width: 100%; border-collapse: collapse; }
+    .dup-section__body thead th {
+      padding: 0.6rem 1rem;
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sand);
+      text-align: left;
+      background: var(--canvas);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .dup-section__body tbody td {
+      padding: 0.65rem 1rem;
+      font-size: 0.82rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .dup-section__body tbody tr.dup-row { cursor: pointer; transition: background 0.12s; }
+    .dup-section__body tbody tr.dup-row:hover { background: rgba(255, 255, 255, 0.025); }
+
+    .dup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 4px;
+    }
+    .dup-badge::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .dup-badge.kept     { color: var(--sage); background: var(--sage-dim); border: 1px solid rgba(149, 176, 140, 0.22); }
+    .dup-badge.archived { color: var(--dune); background: var(--vault); border: 1px solid var(--line); }
+
+    /* ══════════════════════════════════════════════════════════ BULK BAR */
+    .bulk-bar {
+      position: fixed;
+      left: 50%;
+      bottom: 1.5rem;
+      transform: translateX(-50%) translateY(calc(100% + 2rem));
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.7rem 1rem;
+      background: var(--peak);
+      border: 1px solid var(--line-hi);
+      border-radius: 100px;
+      box-shadow: var(--shadow-lg), 0 15px 40px rgba(0,0,0,0.6);
+      z-index: 50;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .bulk-bar.visible { transform: translateX(-50%) translateY(0); }
+    .bulk-bar__count {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      color: var(--ember-hi);
+      padding: 0 0.5rem 0 0.75rem;
+      border-right: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .bulk-bar__count strong { font-weight: 400; }
+
+    /* ══════════════════════════════════════════════════════════ MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 9, 7, 0.78);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--canvas);
+      border: 1px solid var(--line-hi);
+      border-radius: var(--r-lg);
+      width: min(920px, 92vw);
+      max-height: 82vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 1.2rem 1.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-title {
+      font-family: var(--sans);
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--ivory);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .modal-subtitle {
+      margin-top: 0.35rem;
+      font-size: 0.82rem;
+      color: var(--sand);
+    }
+    .modal-close {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      color: var(--sand);
+      border-radius: var(--r-sm);
+      transition: all 0.12s;
+    }
+    .modal-close:hover { color: var(--ivory); background: var(--vault); }
+
+    .modal-body { overflow-y: auto; flex: 1; }
+    .modal-body table { width: 100%; border-collapse: collapse; }
+    .modal-body thead th {
+      position: sticky;
+      top: 0;
+      padding: 0.65rem 1rem;
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sand);
+      background: var(--canvas);
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-body tbody td {
+      padding: 0.65rem 1rem;
+      font-size: 0.8rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--bone);
+      vertical-align: middle;
+    }
+    .modal-body tbody tr:last-child td { border-bottom: none; }
+
+    /* Credit modal specific */
+    .modal--sm { max-width: 480px; }
+    .modal--sm .modal-body { padding: 1.4rem 1.4rem 1.2rem; }
+    .modal--sm .modal-body p {
+      color: var(--sand);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin-bottom: 1.3rem;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: flex-end;
+      padding: 1rem 1.4rem 1.4rem;
+    }
+
+    /* ══════════════════════════════════════════════════════════ TOAST */
+    .toasts {
       position: fixed;
       bottom: 1.25rem;
       right: 1.25rem;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    .toast {
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-hover);
-      color: var(--text);
-      padding: 0.55rem 0.9rem;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 0.2s, transform 0.2s;
-    }
-
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .toast.success { border-color: rgba(34,197,94,0.3); color: var(--success); }
-    .toast.warn    { border-color: rgba(245,158,11,0.3); color: var(--warn); }
-    .toast.error   { border-color: rgba(239,68,68,0.3); color: #f87171; }
-
-    /* ── MODAL ── */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
       z-index: 200;
+      pointer-events: none;
+    }
+    .toast {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.7rem 1rem;
+      background: var(--peak);
+      border: 1px solid var(--line-hi);
+      border-radius: var(--r-md);
+      color: var(--ivory);
+      font-size: 0.82rem;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.22s, transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      max-width: 380px;
+    }
+    .toast.show { opacity: 1; transform: translateX(0); }
+    .toast::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      border-radius: 2px;
+      background: var(--ember);
+      flex-shrink: 0;
+    }
+    .toast.success::before { background: var(--sage); }
+    .toast.warn::before    { background: var(--brass); }
+    .toast.error::before   { background: var(--rust); }
+    .toast.success { color: var(--sage); }
+    .toast.warn    { color: var(--brass); }
+    .toast.error   { color: var(--rust); }
+
+    /* ══════════════════════════════════════════════════════════ CHEATSHEET */
+    .cheatsheet {
+      position: fixed;
+      bottom: 4.2rem;
+      left: 1.25rem;
+      padding: 0.9rem 1rem;
+      background: var(--canvas);
+      border: 1px solid var(--line-hi);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 60;
+      display: none;
+      min-width: 260px;
+    }
+    .cheatsheet.visible { display: block; animation: fadeIn 0.2s ease-out; }
+    .cheatsheet__title {
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      color: var(--ivory);
+      margin-bottom: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cheatsheet__close {
+      font-size: 0.72rem;
+      color: var(--dune);
+      cursor: pointer;
+    }
+    .cheatsheet__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.25rem 0;
+      font-size: 0.78rem;
+      color: var(--sand);
+    }
+    kbd {
+      display: inline-block;
+      padding: 1px 6px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--bone);
+      background: var(--vault);
+      border: 1px solid var(--line-hi);
+      border-radius: 4px;
+      box-shadow: 0 1px 0 var(--ink);
+      margin: 0 1px;
+    }
+
+    /* ══════════════════════════════════════════════════════════ USER MENU */
+    .user-menu { position: relative; }
+    .user-menu__btn {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--riser), var(--peak));
+      border: 1px solid var(--line-hi);
+      color: var(--bone);
+      transition: all 0.15s;
+      overflow: hidden;
+    }
+    .user-menu__btn:hover {
+      border-color: var(--ember);
+      color: var(--ember-hi);
+    }
+    .user-menu__avatar {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+    }
+    .user-menu__panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 220px;
+      background: var(--peak);
+      border: 1px solid var(--line-hi);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-lg);
+      padding: 0.4rem;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.18s;
+      transform: translateY(-4px);
+      transition: all 0.15s;
+      z-index: 70;
     }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
-
-    .modal {
-      background: var(--bg-card);
-      border: 1px solid var(--border-hover);
-      border-radius: 8px;
-      width: min(860px, 92vw);
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
+    .user-menu.open .user-menu__panel {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .user-menu__head {
+      padding: 0.55rem 0.7rem 0.6rem;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 0.35rem;
+    }
+    .user-menu__email {
+      font-size: 0.8rem;
+      color: var(--ivory);
+      font-weight: 500;
       overflow: hidden;
-      transform: translateY(12px);
-      transition: transform 0.18s;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .modal-overlay.open .modal { transform: translateY(0); }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 1.1rem;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .modal-title {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      color: var(--text);
-    }
-    .modal-subtitle {
-      font-size: 0.62rem;
-      color: var(--muted);
-      margin-top: 0.15rem;
-    }
-    .modal-close {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 1rem;
-      cursor: pointer;
-      line-height: 1;
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      transition: color 0.15s, background 0.15s;
-    }
-    .modal-close:hover { color: var(--text); background: var(--bg-elevated); }
-
-    .modal-body {
-      overflow-y: auto;
-      flex: 1;
-    }
-    .modal-body table { width: 100%; border-collapse: collapse; }
-    .modal-body thead th {
-      position: sticky;
-      top: 0;
-      background: var(--bg-card);
-      padding: 0.55rem 0.9rem;
-      font-size: 0.6rem;
+    .user-menu__role {
+      font-size: 0.66rem;
+      color: var(--dune);
+      text-transform: uppercase;
       letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: left;
-      border-bottom: 1px solid var(--border);
+      margin-top: 2px;
+      font-weight: 500;
     }
-    .modal-body tbody td {
-      padding: 0.55rem 0.9rem;
-      font-size: 0.72rem;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    .modal-body tbody tr:last-child td { border-bottom: none; }
-
-    .dup-badge {
-      display: inline-block;
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-      font-size: 0.6rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .dup-badge.kept     { background: var(--success-dim); color: var(--success); }
-    .dup-badge.archived { background: var(--bg-elevated);  color: var(--muted); }
-
-    tr.dup-row { cursor: pointer; }
-    tr.dup-row:hover td { background: var(--bg-elevated); }
-
-    /* ── NAVIGATION VUES ── */
-    .nav-tabs {
+    .user-menu__item {
       display: flex;
-      gap: 0;
-      border: 1px solid var(--border-hover);
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    .nav-tab {
-      flex: 1;
-      background: transparent;
-      border: none;
-      border-right: 1px solid var(--border-hover);
-      color: var(--muted);
-      padding: 0.45rem 0;
-      font-family: var(--mono);
-      font-size: 0.62rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      user-select: none;
-    }
-
-    .nav-tab:last-child { border-right: none; }
-    .nav-tab.active { background: var(--accent); color: #fff; }
-    .nav-tab:hover:not(.active) { background: var(--bg-elevated); color: var(--text); }
-
-    /* ── VUES ── */
-    .view { display: none; flex: 1; flex-direction: column; overflow: hidden; height: 100%; }
-    .view.active { display: flex; }
-
-    /* ── FILTRES AVANCÉS ── */
-    .filter-bar {
-      flex-shrink: 0;
-      padding: 0.75rem 1.5rem 0.6rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-    }
-
-    .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      align-items: flex-end;
-    }
-
-    .filter-field {
-      display: flex;
-      flex-direction: column;
-      gap: 0.28rem;
-      min-width: 110px;
-    }
-
-    .filter-field--wide { min-width: 180px; flex: 1; }
-    .filter-field--btn  { justify-content: flex-end; }
-
-    .filter-field > label {
-      font-size: 0.56rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .filter-footer {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-top: 0.5rem;
-      padding-top: 0.45rem;
-      border-top: 1px solid var(--border);
+      gap: 0.55rem;
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      border-radius: var(--r-sm);
+      color: var(--bone);
+      font-size: 0.82rem;
+      transition: all 0.12s;
+      text-align: left;
+    }
+    .user-menu__item:hover {
+      background: var(--riser);
+      color: var(--rust);
     }
 
-    .filter-count {
-      font-size: 0.64rem;
-      color: var(--muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .filter-count strong { color: var(--text); }
-
-    .btn-reset {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border-hover);
-      padding: 0.38rem 0.75rem;
-      border-radius: 5px;
-      font-family: var(--mono);
-      font-size: 0.62rem;
+    /* Help bubble bottom-left (évite les toasts qui sont bottom-right) */
+    .help-bubble {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      font-family: var(--sans);
+      font-weight: 500;
+      font-size: 0.88rem;
+      color: var(--dune);
+      background: var(--canvas);
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      z-index: 55;
       cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
+      transition: all 0.15s;
+    }
+    .help-bubble:hover {
+      color: var(--ember-hi);
+      border-color: var(--line-ember);
+      background: var(--ember-dim);
+      transform: translateY(-2px);
     }
 
-    .btn-reset:hover { color: var(--text); border-color: var(--muted); }
+    /* Loading skeleton rows */
+    .skeleton-row td {
+      padding: 0.9rem 1rem !important;
+    }
+    .skeleton {
+      display: inline-block;
+      width: 100%;
+      height: 12px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--vault), var(--riser), var(--vault));
+      background-size: 200% 100%;
+      animation: skeleton 1.4s ease-in-out infinite;
+    }
+    .skeleton.w-80 { width: 80%; }
+    .skeleton.w-60 { width: 60%; }
+    .skeleton.w-40 { width: 40%; }
+    @keyframes skeleton {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .hero { grid-template-columns: repeat(2, 1fr); }
+      .stat-card:nth-child(1), .stat-card:nth-child(2) { border-bottom: 1px solid var(--line); }
+      .stat-card:nth-child(2), .stat-card:nth-child(4) { border-right: none; }
+      .stat-card:nth-child(3), .stat-card:nth-child(4) { border-bottom: none; }
+    }
+    @media (max-width: 900px) {
+      :root { --atelier-w: 280px; }
+      .topbar { grid-template-columns: var(--atelier-w) 1fr auto; }
+      .search-global { max-width: 260px; }
+      .topbar-meta .status-chip { display: none; }
+    }
+    /* ══════ Mobile : atelier devient un drawer overlay ══════ */
+    @media (max-width: 720px) {
+      body { overflow: auto; }
+      .topbar { grid-template-columns: 1fr auto; }
+      .brand { padding: 0 1rem; border-right: none; }
+      .topbar-center { padding: 0 0.5rem; gap: 0.5rem; }
+      .topbar-center .views-nav { display: none; }
+      .topbar-center .search-global { max-width: none; }
+      .shell { grid-template-columns: 1fr; }
+      body.atelier-collapsed .shell { grid-template-columns: 1fr; }
+
+      .atelier {
+        position: fixed;
+        top: var(--topbar-h);
+        left: 0;
+        bottom: 0;
+        width: 300px;
+        max-width: 85vw;
+        z-index: 30;
+        border-right: 1px solid var(--line-hi);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.55);
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      /* Sur mobile on inverse la sémantique : pas de classe = ouvert, collapsed = fermé */
+      body:not(.atelier-collapsed) .atelier { transform: translateX(0); }
+      body.atelier-collapsed .atelier { transform: translateX(-100%); }
+
+      /* Backdrop quand ouvert */
+      body:not(.atelier-collapsed)::before {
+        content: '';
+        position: fixed;
+        inset: var(--topbar-h) 0 0 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 25;
+        backdrop-filter: blur(2px);
+      }
+
+      /* Mobile nav drawer : ajouter des pills dans l'atelier */
+      .atelier-mobile-nav { display: flex !important; }
+    }
+    .atelier-mobile-nav { display: none; }
   </style>
 </head>
 <body>
 
-  <!-- ── SIDEBAR ── -->
-  <aside class="sidebar">
+  <!-- Atmosphere -->
+  <div class="atmo" aria-hidden="true">
+    <div class="atmo__mesh"></div>
+    <div class="atmo__grain"></div>
+  </div>
 
-    <div class="brand">
-      <div class="brand-title">Scraper <span>Prospects</span></div>
-      <div class="status-chip">
+  <!-- ────────── TOPBAR ────────── -->
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__title">Atelier <em>Prospects</em></span>
+    </a>
+
+    <div class="topbar-center">
+      <nav class="views-nav">
+        <button class="view-pill active" id="navResults"    onclick="setView('results')">Prospects</button>
+        <button class="view-pill"        id="navDuplicates" onclick="setView('duplicates')">Doublons</button>
+        <button class="view-pill view-pill--admin hidden" id="navAdmin" onclick="window.location.href='/admin'">Admin</button>
+      </nav>
+      <div class="search-global">
+        <svg class="search-global__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="globalSearch" placeholder="Rechercher dans les établissements, villes, numéros…" autocomplete="off">
+        <span class="search-global__kbd">/</span>
+      </div>
+    </div>
+
+    <div class="topbar-meta">
+      <div class="status-chip" id="statusChip">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">En attente</span>
       </div>
       <div class="credit-chip" id="creditChip" title="Crédits disponibles">
         <span class="credit-value" id="creditBalance">—</span>
-        <span>crédits</span>
+        <span class="credit-label">crédits</span>
       </div>
-    </div>
-
-    <!-- Navigation vues -->
-    <div class="s-section">
-      <div class="nav-tabs">
-        <button class="nav-tab active" id="navResults"  onclick="setView('results')">Résultats</button>
-        <button class="nav-tab"        id="navFilters"  onclick="setView('filters')">Filtres</button>
-        <button class="nav-tab"        id="navDuplicates" onclick="setView('duplicates')">Doublons</button>
-        <button class="nav-tab"        id="navAdmin" style="display:none" onclick="window.location.href='/admin'">Admin</button>
-      </div>
-    </div>
-
-    <!-- Formulaire périmètre -->
-    <div class="s-section">
-      <div class="s-label">Périmètre</div>
-
-      <div class="field" id="field-profession">
-        <label>Profession</label>
-        <select id="profession">
-          <option value="">— Chargement… —</option>
-        </select>
-      </div>
-
-      <div class="radio-group" id="scopeToggle">
-        <label id="lbl-region" class="active" onclick="setScope('region')">
-          <input type="radio" name="scope" value="region" checked>
-          <span>Région</span>
-        </label>
-        <label id="lbl-dep" onclick="setScope('dep')">
-          <input type="radio" name="scope" value="dep">
-          <span>Dépt.</span>
-        </label>
-        <label id="lbl-all" onclick="setScope('all')">
-          <input type="radio" name="scope" value="all">
-          <span>France</span>
-        </label>
-      </div>
-
-      <div class="field" id="field-region">
-        <label>Région</label>
-        <select id="region">
-          <option value="">— Choisir une région —</option>
-        </select>
-      </div>
-
-      <div class="field" id="field-dep" style="display:none">
-        <label>Numéro de département</label>
-        <input type="text" id="departement" placeholder="ex : 29, 75, 69…">
-      </div>
-
-      <div class="field">
-        <label>Limite (vide = tout)</label>
-        <input type="number" id="limit" placeholder="ex : 100" min="1">
-      </div>
-
-      <button class="btn-run" id="btnScrape" onclick="startScrape()">
-        → Lancer le scrape
+      <button class="icon-btn" id="btnToggleAtelier" title="Masquer l'atelier (Ctrl+B)" onclick="toggleAtelier()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       </button>
 
-      <div class="progress-block" id="progressBlock" style="margin-top:0.85rem">
-        <div class="progress-meta">
-          <span class="progress-count" id="progressCount">0 / 0</span>
-          <span class="progress-pct" id="progressPct">0%</span>
+      <!-- Menu utilisateur -->
+      <div class="user-menu" id="userMenu">
+        <button class="user-menu__btn" onclick="toggleUserMenu()" title="Compte">
+          <span class="user-menu__avatar" id="userMenuAvatar">·</span>
+        </button>
+        <div class="user-menu__panel" id="userMenuPanel">
+          <div class="user-menu__head">
+            <div class="user-menu__email" id="userMenuEmail">—</div>
+            <div class="user-menu__role" id="userMenuRole">Utilisateur</div>
+          </div>
+          <button class="user-menu__item" onclick="signOut()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Se déconnecter
+          </button>
         </div>
-        <div class="track"><div class="fill" id="progressFill"></div></div>
-        <div class="progress-label" id="progressLabel">—</div>
-      </div>
-
-      <div class="result-block" id="resultBlock">
-        <div id="resultRows"></div>
       </div>
     </div>
+  </header>
 
+  <!-- Running banner (visible pendant un scrape si l'atelier est replié) -->
+  <div class="running-banner" id="runningBanner">
+    <span class="running-banner__dot"></span>
+    <span id="runningBannerText">Capture en cours…</span>
+    <div class="running-banner__track" style="margin-left:auto"><div class="running-banner__fill" id="runningBannerFill"></div></div>
+    <span style="font-family:var(--mono);color:var(--sand);font-size:0.72rem" id="runningBannerCount"></span>
+  </div>
 
-<div class="sidebar-footer">
-      <div class="export-scope" id="exportScopeToggle">
-        <button id="exportScopeAll"    class="active" onclick="setExportScope('all')">Tout</button>
-        <button id="exportScopeMobile"            onclick="setExportScope('mobile')">Mobile</button>
-        <button id="exportScopeFixe"              onclick="setExportScope('fixe')">Fixe</button>
+  <!-- ────────── SHELL ────────── -->
+  <div class="shell">
+
+    <!-- Atelier (sidebar) -->
+    <aside class="atelier" id="atelier">
+      <div class="atelier__inner">
+
+        <!-- Mini nav (mobile uniquement : on cache celle de la topbar) -->
+        <nav class="atelier-mobile-nav" style="gap:0.15rem;padding:4px;background:var(--vault);border:1px solid var(--line);border-radius:100px;margin-bottom:0.25rem;">
+          <button class="view-pill active" onclick="setView('results');toggleAtelier(true)" data-mobile-nav="results">Prospects</button>
+          <button class="view-pill" onclick="setView('duplicates');toggleAtelier(true)" data-mobile-nav="duplicates">Doublons</button>
+        </nav>
+
+        <section class="atelier__group">
+          <h3 class="atelier__label atelier__label--1">Périmètre</h3>
+
+          <div class="field" id="field-profession">
+            <label for="profession">Profession</label>
+            <select id="profession">
+              <option value="">— Chargement… —</option>
+            </select>
+          </div>
+
+          <div class="scope-toggle" id="scopeToggle">
+            <label id="lbl-region" class="active" onclick="setScope('region')">
+              <input type="radio" name="scope" value="region" checked>
+              <span>Région</span>
+            </label>
+            <label id="lbl-dep" onclick="setScope('dep')">
+              <input type="radio" name="scope" value="dep">
+              <span>Dép.</span>
+            </label>
+            <label id="lbl-all" onclick="setScope('all')">
+              <input type="radio" name="scope" value="all">
+              <span>France</span>
+            </label>
+          </div>
+
+          <div class="field" id="field-region">
+            <label for="region">Région</label>
+            <select id="region">
+              <option value="">— Choisir —</option>
+            </select>
+          </div>
+
+          <div class="field" id="field-dep" style="display:none">
+            <label for="departement">N° de département</label>
+            <input type="text" id="departement" placeholder="ex : 29, 75, 69…" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label for="limit">Limite <span style="color:var(--dune);font-weight:400">· laisser vide pour tout</span></label>
+            <input type="number" id="limit" placeholder="ex : 100" min="1" autocomplete="off">
+          </div>
+        </section>
+
+        <section class="atelier__group">
+          <button class="btn btn--primary btn--block btn--scrape" id="btnScrape" onclick="startScrape()">
+            Lancer la capture
+          </button>
+
+          <div class="progress" id="progressBlock">
+            <div class="progress__meta">
+              <span class="progress__count" id="progressCount">0 / 0</span>
+              <span class="progress__pct" id="progressPct">0%</span>
+            </div>
+            <div class="progress__track"><div class="progress__fill" id="progressFill"></div></div>
+            <div class="progress__label" id="progressLabel">—</div>
+          </div>
+
+          <div class="result" id="resultBlock">
+            <div id="resultRows"></div>
+          </div>
+        </section>
+
+        <section class="atelier__group">
+          <h3 class="atelier__label atelier__label--2">Export</h3>
+          <div class="export-scope" id="exportScopeToggle">
+            <button id="exportScopeAll"    class="active" onclick="setExportScope('all')">Tout</button>
+            <button id="exportScopeMobile"            onclick="setExportScope('mobile')">Mobile</button>
+            <button id="exportScopeFixe"              onclick="setExportScope('fixe')">Fixe</button>
+          </div>
+          <button class="btn btn--ghost btn--block" onclick="exportCsv()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger CSV
+          </button>
+        </section>
+
       </div>
-      <button class="btn-export" onclick="exportCsv()">↓ &nbsp;Exporter CSV</button>
-    </div>
+    </aside>
 
-  </aside>
+    <!-- Main workspace -->
+    <main class="workspace">
 
-  <!-- ── MAIN ── -->
-  <main class="main">
+      <!-- ══════ VUE PROSPECTS ══════ -->
+      <section class="view active" id="view-results">
 
-  <!-- Vue Résultats -->
-  <div class="view active" id="view-results">
-
-    <div class="stats-bar">
-      <div class="stat active" id="tab-all" onclick="setFilter('all')">
-        <div class="stat-label">Total</div>
-        <div class="stat-value" id="statTotal">0</div>
-      </div>
-      <div class="stat" id="tab-found" onclick="setFilter('found')">
-        <div class="stat-label">Avec téléphone</div>
-        <div class="stat-value" id="statFound">0</div>
-      </div>
-      <div class="stat" id="tab-mobile" onclick="setFilter('mobile')">
-        <div class="stat-label">Mobile</div>
-        <div class="stat-value" id="statMobile">0</div>
-      </div>
-      <div class="stat" id="tab-notfound" onclick="setFilter('notfound')">
-        <div class="stat-label">Non trouvés</div>
-        <div class="stat-value" id="statNotFound">0</div>
-      </div>
-    </div>
-
-    <div class="toolbar">
-      <span class="filter-label" id="filterLabel"></span>
-    </div>
-
-    <div class="table-area">
-      <table>
-        <thead>
-          <tr>
-            <th>Établissement</th>
-            <th>Ville</th>
-            <th title="Cliquer pour copier">Téléphone</th>
-            <th>Source</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-
-  </div><!-- /view-results -->
-
-  <!-- Vue Filtres avancés -->
-  <div class="view" id="view-filters">
-
-    <div class="filter-bar">
-      <div class="filter-row">
-
-        <div class="filter-field filter-field--wide">
-          <label>Nom</label>
-          <div class="search-wrap" style="flex:none;width:100%">
-            <span class="search-icon">⌕</span>
-            <input type="text" class="search-input" id="fNom" placeholder="Nom de l'établissement…" oninput="onAdvFilter()">
+        <!-- Hero : stat cards (cliquables = filtres rapides) -->
+        <div class="hero">
+          <div class="stat-card stat-card--all active" id="tab-all" onclick="setFilter('all')">
+            <div class="stat-card__label">Total</div>
+            <div class="stat-card__value" id="statTotal">0</div>
+            <div class="stat-card__sub">enregistrements captés</div>
+          </div>
+          <div class="stat-card stat-card--found" id="tab-found" onclick="setFilter('found')">
+            <div class="stat-card__label">Avec téléphone</div>
+            <div class="stat-card__value" id="statFound">0</div>
+            <div class="stat-card__sub">fiches exploitables</div>
+          </div>
+          <div class="stat-card stat-card--mobile" id="tab-mobile" onclick="setFilter('mobile')">
+            <div class="stat-card__label">Ligne mobile</div>
+            <div class="stat-card__value" id="statMobile">0</div>
+            <div class="stat-card__sub">06 · 07</div>
+          </div>
+          <div class="stat-card stat-card--nf" id="tab-notfound" onclick="setFilter('notfound')">
+            <div class="stat-card__label">Non trouvés</div>
+            <div class="stat-card__value" id="statNotFound">0</div>
+            <div class="stat-card__sub">hors couverture</div>
           </div>
         </div>
 
-        <div class="filter-field">
-          <label>Ville</label>
-          <select id="fVille" onchange="onAdvFilter()">
-            <option value="">Toutes</option>
-          </select>
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <span class="toolbar__filter-label" id="filterLabel"></span>
+          <span class="toolbar__spacer"></span>
+          <button class="btn btn--ghost btn--small" id="btnFiltersToggle" onclick="toggleFilters()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filtres<span class="toolbar__filter-badge" id="filterCountBadge"></span>
+          </button>
+          <button class="btn btn--ghost btn--small" onclick="exportFromContext()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exporter
+          </button>
         </div>
 
-        <div class="filter-field">
-          <label>Département</label>
-          <select id="fDep" onchange="onAdvFilter()">
-            <option value="">Tous</option>
-          </select>
+        <!-- Active filter chips -->
+        <div class="chips-bar" id="chipsBar"></div>
+
+        <!-- Advanced filters panel -->
+        <div class="filters-panel" id="filtersPanel">
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label>Nom d'établissement</label>
+              <input type="text" id="fNom" placeholder="Chercher dans les noms…" oninput="onAdvFilter()" autocomplete="off">
+            </div>
+            <div class="filter-field">
+              <label>Ville</label>
+              <select id="fVille" onchange="onAdvFilter()">
+                <option value="">Toutes</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Département</label>
+              <select id="fDep" onchange="onAdvFilter()">
+                <option value="">Tous</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Source</label>
+              <select id="fSource" onchange="onAdvFilter()">
+                <option value="">Toutes</option>
+                <option value="google">Google</option>
+                <option value="non_trouvé">Non trouvé</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Effectif</label>
+              <select id="fEffectif" onchange="onAdvFilter()">
+                <option value="">Tous</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Forme juridique</label>
+              <select id="fFormeJuridique" onchange="onAdvFilter()">
+                <option value="">Toutes</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label>Type de téléphone</label>
+              <select id="fPhoneType" onchange="onAdvFilter()">
+                <option value="">Tous</option>
+                <option value="mobile">Mobile (06/07)</option>
+                <option value="fixe">Fixe</option>
+              </select>
+            </div>
+          </div>
+          <div class="filters-footer">
+            <span class="filter-count" id="advFilterCount">—</span>
+            <div class="filters-footer__actions">
+              <button class="btn btn--ghost btn--small" onclick="resetAdvFilters()">Réinitialiser</button>
+              <button class="btn btn--primary btn--small" onclick="exportAdvCsv()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exporter le résultat
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="filter-field">
-          <label>Source</label>
-          <select id="fSource" onchange="onAdvFilter()">
-            <option value="">Toutes</option>
-            <option value="google">Google</option>
-            <option value="non_trouvé">Non trouvé</option>
-          </select>
+        <!-- Table -->
+        <div class="table-wrap">
+          <table class="prospects-table">
+            <thead>
+              <tr>
+                <th class="col-check"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()" title="Tout sélectionner"></th>
+                <th class="sortable" data-sort="nom">Établissement</th>
+                <th class="sortable" data-sort="ville">Ville</th>
+                <th class="sortable" data-sort="codePostal">CP</th>
+                <th class="sortable" data-sort="effectifTranche">Effectif</th>
+                <th class="sortable" data-sort="telephone">Téléphone</th>
+                <th class="sortable" data-sort="source">Source</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
         </div>
 
-        <div class="filter-field">
-          <label>Effectif</label>
-          <select id="fEffectif" onchange="onAdvFilter()">
-            <option value="">Tous</option>
-          </select>
+      </section>
+
+      <!-- ══════ VUE HYGIÈNE (Doublons) ══════ -->
+      <section class="view" id="view-duplicates">
+        <div class="duplicates">
+
+          <div class="dup-header">
+            <div>
+              <h2>Hygiène de la base</h2>
+              <p>Détection et archivage des doublons par numéro et par raison sociale. Les SIRET archivés sont mémorisés et ne seront plus re-scrapés.</p>
+            </div>
+            <div class="dup-stat">
+              <div class="dup-stat__label">SIRET archivés</div>
+              <div class="dup-stat__value" id="excludedCount">—</div>
+            </div>
+          </div>
+
+          <!-- Doublons téléphone -->
+          <div class="dup-section">
+            <div class="dup-section__head">
+              <div>
+                <h3>Même numéro de téléphone</h3>
+                <p id="dupPhoneSummary">Cliquez sur Analyser.</p>
+              </div>
+              <div class="dup-section__actions">
+                <button class="btn btn--ghost btn--small" onclick="fetchPhoneDuplicates()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  Analyser
+                </button>
+                <button class="btn btn--danger btn--small" id="btnCleanPhone" style="display:none" onclick="cleanPhoneDups()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14H7L5 6"/></svg>
+                  Archiver les doublons
+                </button>
+              </div>
+            </div>
+            <div class="dup-section__body">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Numéro</th>
+                    <th style="width:60px">×</th>
+                    <th>Entrées — <span style="color:var(--sage)">conservée</span> / <span style="color:var(--dune)">archivée</span></th>
+                  </tr>
+                </thead>
+                <tbody id="dupPhoneBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Doublons nom -->
+          <div class="dup-section">
+            <div class="dup-section__head">
+              <div>
+                <h3>Même raison sociale</h3>
+                <p id="dupNameSummary">Cliquez sur Analyser.</p>
+              </div>
+              <div class="dup-section__actions">
+                <button class="btn btn--ghost btn--small" onclick="fetchNameDuplicates()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  Analyser
+                </button>
+                <button class="btn btn--danger btn--small" id="btnCleanName" style="display:none" onclick="cleanNameDups()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14H7L5 6"/></svg>
+                  Archiver les sans tél.
+                </button>
+              </div>
+            </div>
+            <div class="dup-section__body">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th style="width:60px">×</th>
+                    <th>Entrées — <span style="color:var(--sage)">avec tél. = conservée</span> / <span style="color:var(--dune)">sans tél. = archivée</span></th>
+                  </tr>
+                </thead>
+                <tbody id="dupNameBody"></tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
+      </section>
 
-        <div class="filter-field">
-          <label>Forme jur.</label>
-          <select id="fFormeJuridique" onchange="onAdvFilter()">
-            <option value="">Toutes</option>
-          </select>
-        </div>
+    </main>
+  </div>
 
-        <div class="filter-field">
-          <label>Téléphone</label>
-          <select id="fPhoneType" onchange="onAdvFilter()">
-            <option value="">Tous</option>
-            <option value="mobile">Mobile (06/07)</option>
-            <option value="fixe">Fixe</option>
-          </select>
-        </div>
-
-        <div class="filter-field filter-field--btn">
-          <button class="btn-reset" onclick="resetAdvFilters()">✕ Réinitialiser</button>
-        </div>
-
-      </div>
-
-      <div class="filter-footer">
-        <span class="filter-count" id="advFilterCount">—</span>
-        <button class="btn-export" onclick="exportAdvCsv()">↓ &nbsp;Exporter CSV</button>
-      </div>
+  <!-- Bulk selection bar -->
+  <div class="bulk-bar" id="bulkBar">
+    <div class="bulk-bar__count">
+      <strong id="bulkCount">0</strong> sélectionné<span id="bulkPlural">s</span>
     </div>
-
-    <div class="table-area">
-      <table>
-        <thead>
-          <tr>
-            <th>Établissement</th>
-            <th>Ville</th>
-            <th>CP</th>
-            <th>Effectif</th>
-            <th>Forme jur.</th>
-            <th>Dirigeants</th>
-            <th title="Cliquer pour copier">Téléphone</th>
-            <th>Source</th>
-          </tr>
-        </thead>
-        <tbody id="advResultsBody"></tbody>
-      </table>
-    </div>
-
-  </div><!-- /view-filters -->
-
-  <!-- Vue Doublons -->
-  <div class="view" id="view-duplicates">
-
-    <!-- Bandeau archivés -->
-    <div style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 1.2rem;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-size:0.67rem;color:var(--muted)">
-      <span>SIRET archivés (ne seront pas re-scrapés) :</span>
-      <strong id="excludedCount" style="color:var(--text)">—</strong>
-    </div>
-
-    <!-- Section : doublons par numéro -->
-    <div class="filter-bar" style="align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border);margin-bottom:0">
-      <div style="flex:1">
-        <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Même numéro de téléphone</div>
-        <div class="filter-count" id="dupPhoneSummary">Cliquez sur Analyser.</div>
-      </div>
-      <div style="display:flex;gap:0.5rem;flex-shrink:0">
-        <button class="btn-export" onclick="fetchPhoneDuplicates()">⟳ &nbsp;Analyser</button>
-        <button class="btn-export" id="btnCleanPhone" style="background:var(--accent);color:#fff;display:none" onclick="cleanPhoneDups()">✕ &nbsp;Archiver les doublons</button>
-      </div>
-    </div>
-
-    <div class="table-area" style="max-height:35vh">
-      <table>
-        <thead>
-          <tr>
-            <th>Numéro</th>
-            <th>×</th>
-            <th>Établissements — <span style="color:var(--success)">conservé</span> / <span style="color:var(--muted)">archivé</span></th>
-          </tr>
-        </thead>
-        <tbody id="dupPhoneBody"></tbody>
-      </table>
-    </div>
-
-    <!-- Section : doublons par nom -->
-    <div class="filter-bar" style="align-items:flex-start;gap:1rem;border-top:1px solid var(--border);margin-top:0">
-      <div style="flex:1">
-        <div style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Même nom d'entreprise (sans téléphone, avec doublon qui en a un)</div>
-        <div class="filter-count" id="dupNameSummary">Cliquez sur Analyser.</div>
-      </div>
-      <div style="display:flex;gap:0.5rem;flex-shrink:0">
-        <button class="btn-export" onclick="fetchNameDuplicates()">⟳ &nbsp;Analyser</button>
-        <button class="btn-export" id="btnCleanName" style="background:var(--accent);color:#fff;display:none" onclick="cleanNameDups()">✕ &nbsp;Archiver les sans tél.</button>
-      </div>
-    </div>
-
-    <div class="table-area" style="max-height:35vh">
-      <table>
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>×</th>
-            <th>Entrées — <span style="color:var(--success)">avec tél. = conservé</span> / <span style="color:var(--muted)">sans tél. = archivé</span></th>
-          </tr>
-        </thead>
-        <tbody id="dupNameBody"></tbody>
-      </table>
-    </div>
-
-  </div><!-- /view-duplicates -->
-
-  </main>
+    <button class="btn btn--ghost btn--small" onclick="bulkCopyPhones()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copier les téléphones
+    </button>
+    <button class="btn btn--ghost btn--small" onclick="bulkClear()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Vider
+    </button>
+  </div>
 
   <!-- Modal doublons -->
   <div class="modal-overlay" id="dupModal" onclick="closeDupModal(event)">
@@ -1081,7 +2280,9 @@
           <div class="modal-title" id="modalTitle">Détail du groupe</div>
           <div class="modal-subtitle" id="modalSubtitle"></div>
         </div>
-        <button class="modal-close" onclick="closeDupModal()">✕</button>
+        <button class="modal-close" onclick="closeDupModal()" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       <div class="modal-body">
         <table>
@@ -1104,167 +2305,343 @@
 
   <!-- Modal crédits épuisés -->
   <div class="modal-overlay" id="noCreditsModal" onclick="closeNoCreditsModal(event)">
-    <div class="modal" style="max-width:420px">
+    <div class="modal modal--sm">
       <div class="modal-header">
         <div>
           <div class="modal-title">Crédits épuisés</div>
-          <div class="modal-subtitle">Rechargez votre solde pour lancer un nouveau scrape.</div>
+          <div class="modal-subtitle">Rechargez votre solde pour lancer une nouvelle capture.</div>
         </div>
-        <button class="modal-close" onclick="closeNoCreditsModal()">✕</button>
+        <button class="modal-close" onclick="closeNoCreditsModal()" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <div class="modal-body" style="padding:1.2rem 1.5rem">
-        <p style="color:var(--muted); font-size:0.75rem; line-height:1.55; margin-bottom:1.2rem">
-          Chaque fiche enregistrée consomme 1 crédit. Ton solde est actuellement à 0 — impossible de démarrer ou de poursuivre un scrape.
-        </p>
-        <div style="display:flex; gap:0.6rem; justify-content:flex-end">
-          <button class="btn-run" style="background:var(--bg-elevated); color:var(--muted)" onclick="closeNoCreditsModal()">Annuler</button>
-          <button class="btn-run" onclick="window.location.href='/billing'">Recharger mes crédits</button>
-        </div>
+      <div class="modal-body">
+        <p>Chaque fiche enregistrée consomme 1 crédit. Ton solde est actuellement à zéro — impossible de démarrer ou de poursuivre une capture.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn--ghost" onclick="closeNoCreditsModal()">Annuler</button>
+        <button class="btn btn--primary" onclick="window.location.href='/billing'">Recharger mes crédits</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast container -->
-  <div class="toast-container" id="toastContainer"></div>
+  <!-- Cheatsheet -->
+  <div class="cheatsheet" id="cheatsheet">
+    <div class="cheatsheet__title">
+      Raccourcis
+      <span class="cheatsheet__close" onclick="toggleCheatsheet(false)">✕</span>
+    </div>
+    <div class="cheatsheet__row"><span>Rechercher</span><span><kbd>/</kbd></span></div>
+    <div class="cheatsheet__row"><span>Masquer l'atelier</span><span><kbd>Ctrl</kbd>+<kbd>B</kbd></span></div>
+    <div class="cheatsheet__row"><span>Lancer la capture</span><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
+    <div class="cheatsheet__row"><span>Aide</span><span><kbd>?</kbd></span></div>
+    <div class="cheatsheet__row"><span>Fermer / annuler</span><span><kbd>Esc</kbd></span></div>
+  </div>
+
+  <button class="help-bubble" onclick="toggleCheatsheet()" title="Raccourcis clavier">?</button>
+
+  <!-- Toasts -->
+  <div class="toasts" id="toastContainer"></div>
 
   <script>
-    /* ── State ── */
-    let pollInterval      = null;
-    let activeFilter      = "all";
-    let exportScope       = "all";
-    let activeView        = "results";
-    let advFilterTimeout  = null;
+    /* ═══════════════════════════════════════════════════════════
+       STATE
+       ═══════════════════════════════════════════════════════════ */
+    let pollInterval     = null;
+    let activeFilter     = "all";       // all | found | mobile | notfound
+    let exportScope      = "all";
+    let activeView       = "results";
+    let activeScope      = "region";
+    let advFilterTimeout = null;
+    let globalSearchTimeout = null;
+    let globalQuery      = "";
+    let sortState        = { col: null, dir: "asc" };
+    let allRecords       = [];          // cache pour recherche globale + tri
+    let selected         = new Set();   // SIRET sélectionnés
+    let currentBalance   = null;
 
-    const EFFECTIF_LABELS = { "11":"10-19 sal.","12":"20-49 sal.","21":"50-99 sal.","22":"100-199 sal.","31":"200-249 sal.","32":"250-499 sal." };
-    let activeScope       = "region";
+    const EFFECTIF_LABELS = {
+      "11": "10–19 sal.",
+      "12": "20–49 sal.",
+      "21": "50–99 sal.",
+      "22": "100–199 sal.",
+      "31": "200–249 sal.",
+      "32": "250–499 sal."
+    };
+    const EFFECTIF_ORDER = { "11": 1, "12": 2, "21": 3, "22": 4, "31": 5, "32": 6 };
 
-    /* ── Toast ── */
+    /* ═══════════════════════════════════════════════════════════
+       TOAST
+       ═══════════════════════════════════════════════════════════ */
     function toast(msg, type = "") {
       const c = document.getElementById("toastContainer");
       const t = document.createElement("div");
       t.className = "toast" + (type ? " " + type : "");
       t.textContent = msg;
       c.appendChild(t);
-      requestAnimationFrame(() => { t.classList.add("show"); });
+      requestAnimationFrame(() => t.classList.add("show"));
       setTimeout(() => {
         t.classList.remove("show");
-        setTimeout(() => t.remove(), 220);
-      }, 2400);
+        setTimeout(() => t.remove(), 240);
+      }, 2600);
     }
 
-    /* ── Animated counter ── */
+    /* ═══════════════════════════════════════════════════════════
+       ANIMATED COUNTER
+       ═══════════════════════════════════════════════════════════ */
     function counter(el, target) {
-      const from = parseInt(el.textContent) || 0;
-      if (from === target) return;
-      const dur = 500;
+      const from = parseInt(el.textContent.replace(/[^\d-]/g, "")) || 0;
+      if (from === target) { el.textContent = target.toLocaleString("fr-FR"); return; }
+      const dur = 650;
       const t0  = performance.now();
       (function tick(now) {
         const p = Math.min((now - t0) / dur, 1);
         const e = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.round(from + (target - from) * e);
+        el.textContent = Math.round(from + (target - from) * e).toLocaleString("fr-FR");
         if (p < 1) requestAnimationFrame(tick);
       })(t0);
     }
 
-    /* ── Scope (radio) ── */
+    /* ═══════════════════════════════════════════════════════════
+       SCOPE & VIEW
+       ═══════════════════════════════════════════════════════════ */
     function setScope(s) {
       activeScope = s;
-      ["region","dep","all"].forEach(function(id) {
+      ["region", "dep", "all"].forEach(id => {
         document.getElementById("lbl-" + id).classList.toggle("active", id === s);
       });
       document.getElementById("field-region").style.display = s === "region" ? "" : "none";
       document.getElementById("field-dep").style.display    = s === "dep"    ? "" : "none";
     }
 
-    /* ── Navigation vues ── */
     function setView(view) {
       activeView = view;
-      document.getElementById("view-results").classList.toggle("active", view === "results");
-      document.getElementById("view-filters").classList.toggle("active", view === "filters");
+      document.getElementById("view-results").classList.toggle("active",    view === "results");
       document.getElementById("view-duplicates").classList.toggle("active", view === "duplicates");
-      document.getElementById("navResults").classList.toggle("active", view === "results");
-      document.getElementById("navFilters").classList.toggle("active", view === "filters");
-      document.getElementById("navDuplicates").classList.toggle("active", view === "duplicates");
-      if (view === "filters") fetchAdvResults();
-      if (view === "duplicates") { fetchExcludedCount(); fetchPhoneDuplicates(); fetchNameDuplicates(); }
+      document.getElementById("navResults").classList.toggle("active",      view === "results");
+      document.getElementById("navDuplicates").classList.toggle("active",   view === "duplicates");
+      // Sync de la nav mobile (dans l'atelier)
+      document.querySelectorAll('[data-mobile-nav]').forEach(b => {
+        b.classList.toggle("active", b.dataset.mobileNav === view);
+      });
+      if (view === "duplicates") {
+        fetchExcludedCount();
+        fetchPhoneDuplicates();
+        fetchNameDuplicates();
+      }
     }
 
-    /* ── Doublons helpers ── */
+    /* ═══════════════════════════════════════════════════════════
+       ATELIER (sidebar toggle) — sur mobile = drawer overlay
+       ═══════════════════════════════════════════════════════════ */
+    function isMobileViewport() {
+      return window.matchMedia("(max-width: 720px)").matches;
+    }
+    function toggleAtelier(force) {
+      const body = document.body;
+      const should = force !== undefined ? force : !body.classList.contains("atelier-collapsed");
+      body.classList.toggle("atelier-collapsed", should);
+      // On ne persiste que le comportement desktop (sur mobile, c'est un drawer éphémère)
+      if (!isMobileViewport()) {
+        try { localStorage.setItem("atelier-collapsed", should ? "1" : "0"); } catch {}
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FILTERS PANEL
+       ═══════════════════════════════════════════════════════════ */
+    function toggleFilters(force) {
+      const panel = document.getElementById("filtersPanel");
+      const visible = force !== undefined ? force : !panel.classList.contains("visible");
+      panel.classList.toggle("visible", visible);
+    }
+
+    function buildAdvParams() {
+      const params = [];
+      const nom    = (document.getElementById("fNom").value || "").trim();
+      const ville  = document.getElementById("fVille").value;
+      const dep    = document.getElementById("fDep").value;
+      const src    = document.getElementById("fSource").value;
+      const eff    = document.getElementById("fEffectif").value;
+      const fj     = document.getElementById("fFormeJuridique").value;
+      const phone  = document.getElementById("fPhoneType").value;
+      if (nom)   params.push("nom="            + encodeURIComponent(nom));
+      if (ville) params.push("ville="          + encodeURIComponent(ville));
+      if (dep)   params.push("departement="    + encodeURIComponent(dep));
+      if (src)   params.push("sourceExact="    + encodeURIComponent(src));
+      if (eff)   params.push("effectif="       + encodeURIComponent(eff));
+      if (fj)    params.push("formeJuridique=" + encodeURIComponent(fj));
+      if (phone) params.push("phoneType="      + encodeURIComponent(phone));
+      return params;
+    }
+
+    function activeAdvFilters() {
+      return {
+        nom:            (document.getElementById("fNom").value || "").trim(),
+        ville:          document.getElementById("fVille").value,
+        departement:    document.getElementById("fDep").value,
+        sourceExact:    document.getElementById("fSource").value,
+        effectif:       document.getElementById("fEffectif").value,
+        formeJuridique: document.getElementById("fFormeJuridique").value,
+        phoneType:      document.getElementById("fPhoneType").value,
+      };
+    }
+
+    function countActiveAdvFilters() {
+      return Object.values(activeAdvFilters()).filter(Boolean).length;
+    }
+
+    function renderChips() {
+      const bar = document.getElementById("chipsBar");
+      const filters = activeAdvFilters();
+      const labels = {
+        nom:            "Nom",
+        ville:          "Ville",
+        departement:    "Dép.",
+        sourceExact:    "Source",
+        effectif:       "Effectif",
+        formeJuridique: "Forme",
+        phoneType:      "Tél.",
+      };
+      const decoders = {
+        effectif: v => EFFECTIF_LABELS[v] || v,
+        phoneType: v => v === "mobile" ? "Mobile (06/07)" : "Fixe",
+        sourceExact: v => v === "non_trouvé" ? "Non trouvé" : v,
+      };
+
+      const chips = [];
+      Object.entries(filters).forEach(([key, val]) => {
+        if (!val) return;
+        const display = decoders[key] ? decoders[key](val) : val;
+        const li = document.createElement("span");
+        li.className = "chip";
+        const k = document.createElement("span"); k.className = "chip__key"; k.textContent = labels[key];
+        const v = document.createElement("span"); v.className = "chip__val"; v.textContent = display;
+        const c = document.createElement("button"); c.className = "chip__close"; c.textContent = "✕";
+        c.title = "Retirer";
+        c.addEventListener("click", () => clearAdvFilter(key));
+        li.append(k, v, c);
+        chips.push(li);
+      });
+
+      if (globalQuery) {
+        const li = document.createElement("span");
+        li.className = "chip";
+        const k = document.createElement("span"); k.className = "chip__key"; k.textContent = "Recherche";
+        const v = document.createElement("span"); v.className = "chip__val"; v.textContent = "« " + globalQuery + " »";
+        const c = document.createElement("button"); c.className = "chip__close"; c.textContent = "✕";
+        c.addEventListener("click", () => {
+          document.getElementById("globalSearch").value = "";
+          globalQuery = "";
+          renderChips();
+          renderTable();
+        });
+        li.append(k, v, c);
+        chips.push(li);
+      }
+
+      bar.innerHTML = "";
+      chips.forEach(c => bar.appendChild(c));
+      bar.classList.toggle("visible", chips.length > 0);
+
+      // Badge count
+      const badge = document.getElementById("filterCountBadge");
+      const count = countActiveAdvFilters();
+      badge.textContent = count ? String(count) : "";
+    }
+
+    function clearAdvFilter(key) {
+      const map = {
+        nom: "fNom", ville: "fVille", departement: "fDep",
+        sourceExact: "fSource", effectif: "fEffectif",
+        formeJuridique: "fFormeJuridique", phoneType: "fPhoneType",
+      };
+      const el = document.getElementById(map[key]);
+      if (el) el.value = "";
+      fetchCurrentResults();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       DUPLICATES
+       ═══════════════════════════════════════════════════════════ */
     function fetchExcludedCount() {
       fetch("/api/duplicates/excluded-count")
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          document.getElementById("excludedCount").textContent = data.count;
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById("excludedCount").textContent = data.count.toLocaleString("fr-FR");
         });
     }
 
     function renderDupGroups(groups, tbody, keyField, isKeptFn) {
       tbody.innerHTML = "";
-      groups.forEach(function(g) {
-        var tr = document.createElement("tr");
+      groups.forEach(g => {
+        const tr = document.createElement("tr");
         tr.className = "dup-row";
 
-        var tdKey = document.createElement("td");
-        tdKey.className = "col-tel";
+        const tdKey = document.createElement("td");
+        tdKey.style.fontFamily = "var(--mono)";
+        tdKey.style.color = "var(--ivory)";
         tdKey.textContent = g[keyField];
         tdKey.title = g[keyField];
 
-        var tdCount = document.createElement("td");
+        const tdCount = document.createElement("td");
+        tdCount.style.fontFamily = "var(--mono)";
+        tdCount.style.fontStyle = "italic";
+        tdCount.style.color = "var(--ember-hi)";
         tdCount.textContent = "×" + g.count;
 
-        var tdEntries = document.createElement("td");
-        tdEntries.className = "col-nom";
-        g.records.forEach(function(r, idx) {
-          var kept = isKeptFn(r, idx);
-          var span = document.createElement("span");
-          var tel = r.telephone ? " [" + r.telephone + "]" : " [sans tél.]";
+        const tdEntries = document.createElement("td");
+        tdEntries.style.color = "var(--bone)";
+        g.records.forEach((r, idx) => {
+          const kept = isKeptFn(r, idx);
+          const span = document.createElement("span");
+          const tel = r.telephone ? " · " + r.telephone : " · (sans tél.)";
           span.textContent = r.nom + " (" + (r.ville || "?") + ")" + tel;
-          span.style.color = kept ? "var(--success)" : "var(--muted)";
-          if (idx > 0) { var sep = document.createTextNode("  |  "); tdEntries.appendChild(sep); }
+          span.style.color = kept ? "var(--sage)" : "var(--dune)";
+          if (idx > 0) tdEntries.appendChild(document.createTextNode(" | "));
           tdEntries.appendChild(span);
         });
 
-        var hint = document.createElement("span");
-        hint.style.cssText = "margin-left:0.6rem;font-size:0.6rem;color:var(--dim)";
+        const hint = document.createElement("span");
+        hint.style.cssText = "margin-left:0.7rem;font-size:0.7rem;color:var(--dune)";
         hint.textContent = "↗ détail";
         tdEntries.appendChild(hint);
 
         tr.append(tdKey, tdCount, tdEntries);
-        tr.addEventListener("click", function() { openDupModal(g, keyField, isKeptFn); });
+        tr.addEventListener("click", () => openDupModal(g, keyField, isKeptFn));
         tbody.appendChild(tr);
       });
     }
 
-    /* ── Modal ── */
     function openDupModal(group, keyField, isKeptFn) {
-      var keyVal = group[keyField];
+      const keyVal = group[keyField];
       document.getElementById("modalTitle").textContent = keyField === "telephone"
-        ? "Numéro : " + keyVal
+        ? "Numéro · " + keyVal
         : keyVal;
       document.getElementById("modalSubtitle").textContent =
         group.count + " enregistrement(s) — cliquer en dehors pour fermer";
 
-      var tbody = document.getElementById("modalBody");
+      const tbody = document.getElementById("modalBody");
       tbody.innerHTML = "";
 
-      group.records.forEach(function(r, idx) {
-        var kept = isKeptFn(r, idx);
-        var tr = document.createElement("tr");
+      group.records.forEach((r, idx) => {
+        const kept = isKeptFn(r, idx);
+        const tr = document.createElement("tr");
 
-        var tdStatus = document.createElement("td");
-        var badge = document.createElement("span");
+        const tdStatus = document.createElement("td");
+        const badge = document.createElement("span");
         badge.className = "dup-badge " + (kept ? "kept" : "archived");
-        badge.textContent = kept ? "conservé" : "archivé";
+        badge.textContent = kept ? "conservée" : "archivée";
         tdStatus.appendChild(badge);
 
-        var tdNom    = document.createElement("td"); tdNom.textContent = r.nom;
-        var tdVille  = document.createElement("td"); tdVille.textContent = r.ville || "—";
-        var tdSiret  = document.createElement("td"); tdSiret.style.fontFamily = "var(--mono)"; tdSiret.textContent = r.siret;
-        var tdTel    = document.createElement("td"); tdTel.textContent = r.telephone || "—";
-        var tdSource = document.createElement("td"); tdSource.textContent = r.source;
-        var tdDate   = document.createElement("td"); tdDate.textContent = r.scrapedAt ? r.scrapedAt.slice(0, 10) : "—";
+        const tdNom    = document.createElement("td"); tdNom.textContent = r.nom; tdNom.style.color = "var(--ivory)"; tdNom.style.fontWeight = "500";
+        const tdVille  = document.createElement("td"); tdVille.textContent = r.ville || "—"; tdVille.style.color = "var(--sand)";
+        const tdSiret  = document.createElement("td"); tdSiret.style.fontFamily = "var(--mono)"; tdSiret.style.fontSize = "0.76rem"; tdSiret.style.color = "var(--dune)"; tdSiret.textContent = r.siret;
+        const tdTel    = document.createElement("td"); tdTel.style.fontFamily = "var(--mono)"; tdTel.textContent = r.telephone || "—";
+        const tdSource = document.createElement("td"); tdSource.textContent = r.source; tdSource.style.color = "var(--sand)";
+        const tdDate   = document.createElement("td"); tdDate.textContent = r.scrapedAt ? r.scrapedAt.slice(0, 10) : "—"; tdDate.style.fontFamily = "var(--mono)"; tdDate.style.fontSize = "0.76rem"; tdDate.style.color = "var(--dune)";
 
-        tr.style.opacity = kept ? "1" : "0.5";
+        tr.style.opacity = kept ? "1" : "0.55";
         tr.append(tdStatus, tdNom, tdVille, tdSiret, tdTel, tdSource, tdDate);
         tbody.appendChild(tr);
       });
@@ -1277,245 +2654,471 @@
       document.getElementById("dupModal").classList.remove("open");
     }
 
-    function openNoCreditsModal() {
-      document.getElementById("noCreditsModal").classList.add("open");
-    }
+    function openNoCreditsModal()  { document.getElementById("noCreditsModal").classList.add("open"); }
     function closeNoCreditsModal(e) {
       if (e && e.target !== document.getElementById("noCreditsModal")) return;
       document.getElementById("noCreditsModal").classList.remove("open");
     }
 
-    /* ── Doublons par numéro ── */
     function fetchPhoneDuplicates() {
       fetch("/api/duplicates/phone")
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          var summary = document.getElementById("dupPhoneSummary");
-          var btnClean = document.getElementById("btnCleanPhone");
-          var tbody = document.getElementById("dupPhoneBody");
+        .then(r => r.json())
+        .then(data => {
+          const summary  = document.getElementById("dupPhoneSummary");
+          const btnClean = document.getElementById("btnCleanPhone");
+          const tbody    = document.getElementById("dupPhoneBody");
 
           if (data.totalDuplicateGroups === 0) {
-            summary.textContent = "Aucun doublon de numéro détecté.";
+            summary.textContent = "Aucun doublon de numéro détecté — base propre.";
             btnClean.style.display = "none";
-            tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty" style="padding:2rem"><div class="empty__title">Tout est nickel</div></div></td></tr>';
             return;
           }
-          summary.textContent = data.totalDuplicateGroups + " numéro(s) en double — " + data.totalToDelete + " à archiver (SIRET mémorisé, non re-scrapé)";
+          summary.textContent = data.totalDuplicateGroups + " numéro(s) en double — " + data.totalToDelete + " à archiver (SIRET mémorisé, non re-scrapé).";
           btnClean.style.display = "";
-          // conservé = index 0 (source confirmée > plus récent)
-          renderDupGroups(data.groups, tbody, "telephone", function(_r, idx) { return idx === 0; });
+          renderDupGroups(data.groups, tbody, "telephone", (_r, idx) => idx === 0);
         })
-        .catch(function() { toast("Erreur lors de l'analyse des doublons de numéros"); });
+        .catch(() => toast("Erreur lors de l'analyse des doublons de numéros", "error"));
     }
 
     function cleanPhoneDups() {
       if (!confirm("Archiver les doublons de numéros ?\n\nL'entrée avec téléphone confirmé (Google) est conservée, sinon la plus récente.\nLes autres sont retirées de la base mais leurs SIRET sont mémorisés : ils ne seront pas re-scrapés.")) return;
       fetch("/api/duplicates/phone/clean", { method: "POST" })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          toast(data.deleted + " enregistrement(s) archivé(s)");
+        .then(r => r.json())
+        .then(data => {
+          toast(data.deleted + " enregistrement(s) archivé(s)", "success");
           fetchExcludedCount();
           fetchPhoneDuplicates();
           fetchStats();
         })
-        .catch(function() { toast("Erreur lors de l'archivage"); });
+        .catch(() => toast("Erreur lors de l'archivage", "error"));
     }
 
-    /* ── Doublons par nom ── */
     function fetchNameDuplicates() {
       fetch("/api/duplicates/name")
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          var summary = document.getElementById("dupNameSummary");
-          var btnClean = document.getElementById("btnCleanName");
-          var tbody = document.getElementById("dupNameBody");
+        .then(r => r.json())
+        .then(data => {
+          const summary  = document.getElementById("dupNameSummary");
+          const btnClean = document.getElementById("btnCleanName");
+          const tbody    = document.getElementById("dupNameBody");
 
           if (data.totalDuplicateGroups === 0) {
             summary.textContent = "Aucun doublon de nom détecté (avec et sans tél.).";
             btnClean.style.display = "none";
-            tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><strong>Base propre</strong></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty" style="padding:2rem"><div class="empty__title">Tout est nickel</div></div></td></tr>';
             return;
           }
-          summary.textContent = data.totalDuplicateGroups + " nom(s) concerné(s) — " + data.totalToDelete + " entrée(s) sans tél. à archiver (celles avec tél. différents sont conservées)";
+          summary.textContent = data.totalDuplicateGroups + " nom(s) concerné(s) — " + data.totalToDelete + " sans tél. à archiver (les entrées avec tél. différents sont conservées).";
           btnClean.style.display = "";
-          // conservé = a un téléphone (index 0 dans l'ordre trié)
-          renderDupGroups(data.groups, tbody, "nom", function(r) { return !!(r.telephone); });
+          renderDupGroups(data.groups, tbody, "nom", r => !!r.telephone);
         })
-        .catch(function() { toast("Erreur lors de l'analyse des doublons de noms"); });
+        .catch(() => toast("Erreur lors de l'analyse des doublons de noms", "error"));
     }
 
     function cleanNameDups() {
       if (!confirm("Archiver les entrées sans téléphone ?\n\nSeules les entrées SANS numéro sont archivées, uniquement si le même nom existe avec un téléphone.\nLes entrées avec des numéros différents ne sont pas touchées.\nLes SIRET archivés ne seront pas re-scrapés.")) return;
       fetch("/api/duplicates/name/clean", { method: "POST" })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          toast(data.deleted + " enregistrement(s) archivé(s)");
+        .then(r => r.json())
+        .then(data => {
+          toast(data.deleted + " enregistrement(s) archivé(s)", "success");
           fetchExcludedCount();
           fetchNameDuplicates();
           fetchStats();
         })
-        .catch(function() { toast("Erreur lors du nettoyage"); });
+        .catch(() => toast("Erreur lors du nettoyage", "error"));
     }
 
-    /* ── Filtres avancés ── */
-    function buildAdvParams() {
-      var params = [];
-      var nom    = document.getElementById("fNom").value.trim();
-      var ville  = document.getElementById("fVille").value;
-      var dep    = document.getElementById("fDep").value;
-      var src    = document.getElementById("fSource").value;
-      var eff    = document.getElementById("fEffectif").value;
-      var fj     = document.getElementById("fFormeJuridique").value;
-      var phone  = document.getElementById("fPhoneType").value;
-      if (nom)   params.push("nom="            + encodeURIComponent(nom));
-      if (ville) params.push("ville="          + encodeURIComponent(ville));
-      if (dep)   params.push("departement="    + encodeURIComponent(dep));
-      if (src)   params.push("sourceExact="    + encodeURIComponent(src));
-      if (eff)   params.push("effectif="       + encodeURIComponent(eff));
-      if (fj)    params.push("formeJuridique=" + encodeURIComponent(fj));
-      if (phone) params.push("phoneType="      + encodeURIComponent(phone));
-      return params;
-    }
-
-    async function fetchAdvResults() {
-      var params = buildAdvParams();
-      var url = "/api/results?page=1&limit=5000" + (params.length ? "&" + params.join("&") : "");
-      var data = await fetch(url).then(function(r) { return r.json(); });
-
-      var count = data.total;
-      document.getElementById("advFilterCount").innerHTML =
-        "<strong>" + count.toLocaleString("fr-FR") + "</strong> résultat" + (count !== 1 ? "s" : "");
-
-      var tbody = document.getElementById("advResultsBody");
-      tbody.innerHTML = "";
-
-      if (!data.data.length) {
-        tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><strong>Aucun résultat</strong>Modifiez les filtres pour afficher des résultats.</div></td></tr>';
-        return;
-      }
-
-      data.data.forEach(function(r) {
-        var bc = r.source === "google" ? "b-google" : "b-non";
-        var sl = r.source === "non_trouvé" ? "non trouvé" : r.source;
-
-        var tdNom  = document.createElement("td"); tdNom.className  = "col-nom";   tdNom.textContent  = r.nom;   tdNom.title = r.nom;
-        var tdVille = document.createElement("td"); tdVille.className = "col-ville"; tdVille.textContent = r.ville || "—";
-        var tdCp   = document.createElement("td"); tdCp.className   = "col-ville"; tdCp.textContent   = r.codePostal || "—";
-        var tdEff  = document.createElement("td"); tdEff.className  = "col-ville"; tdEff.textContent  = EFFECTIF_LABELS[r.effectifTranche] || r.effectifTranche || "—";
-        var tdFj   = document.createElement("td"); tdFj.className   = "col-ville"; tdFj.textContent   = r.formeJuridique || "—";
-        var tdDir  = document.createElement("td"); tdDir.className  = "col-nom";   tdDir.textContent  = r.dirigeants || "—"; tdDir.title = r.dirigeants || "";
-
-        var phone = r.telephone || "—";
-        var tdTel = document.createElement("td"); tdTel.className = "col-tel";
-        if (r.telephone) {
-          var sp = document.createElement("span"); sp.textContent = phone; tdTel.appendChild(sp);
-          var tag = document.createElement("span");
-          var mob = isMobile(r.telephone);
-          tag.className = "phone-tag " + (mob ? "mobile" : "fixe");
-          tag.textContent = mob ? "mobile" : "fixe";
-          tdTel.appendChild(tag);
-          tdTel.title = "Cliquer pour copier";
-          (function(t, p) { t.addEventListener("click", function() { copyPhone(t, p); }); })(tdTel, phone);
-        } else { tdTel.textContent = "—"; }
-
-        var badge = document.createElement("span"); badge.className = "badge " + bc; badge.textContent = sl;
-        var tdSrc = document.createElement("td"); tdSrc.appendChild(badge);
-
-        var tr = document.createElement("tr");
-        tr.append(tdNom, tdVille, tdCp, tdEff, tdFj, tdDir, tdTel, tdSrc);
-        tbody.appendChild(tr);
+    /* ═══════════════════════════════════════════════════════════
+       FILTERS (prospects view)
+       ═══════════════════════════════════════════════════════════ */
+    function setFilter(f) {
+      activeFilter = f;
+      ["all", "found", "mobile", "notfound"].forEach(id => {
+        document.getElementById("tab-" + id).classList.toggle("active", id === f);
       });
+      const labels = { all: "", found: "· Avec téléphone", mobile: "· Mobile uniquement", notfound: "· Non trouvés" };
+      document.getElementById("filterLabel").textContent = labels[f] || "";
+      fetchCurrentResults();
     }
 
     function onAdvFilter() {
       clearTimeout(advFilterTimeout);
-      advFilterTimeout = setTimeout(fetchAdvResults, 280);
+      advFilterTimeout = setTimeout(() => {
+        fetchCurrentResults();
+      }, 260);
     }
 
     function resetAdvFilters() {
-      ["fNom","fVille","fDep","fSource","fEffectif","fFormeJuridique","fPhoneType"].forEach(function(id) {
+      ["fNom", "fVille", "fDep", "fSource", "fEffectif", "fFormeJuridique", "fPhoneType"].forEach(id => {
         document.getElementById(id).value = "";
       });
-      fetchAdvResults();
+      fetchCurrentResults();
     }
 
-    function exportAdvCsv() {
-      var params = buildAdvParams();
-      var url = "/api/export" + (params.length ? "?" + params.join("&") : "");
-      window.location = url;
-      toast("Téléchargement du CSV…");
-    }
-
-    async function fetchFilterOptions() {
-      var opts = await fetch("/api/filters").then(function(r) { return r.json(); });
-
-      var selVille = document.getElementById("fVille");
-      opts.villes.forEach(function(v) {
-        var o = document.createElement("option"); o.value = v; o.textContent = v; selVille.appendChild(o);
-      });
-
-      var selDep = document.getElementById("fDep");
-      opts.departements.forEach(function(d) {
-        var o = document.createElement("option"); o.value = d; o.textContent = "Dép. " + d; selDep.appendChild(o);
-      });
-
-      var selEff = document.getElementById("fEffectif");
-      opts.effectifs.forEach(function(e) {
-        var o = document.createElement("option"); o.value = e.value; o.textContent = e.label; selEff.appendChild(o);
-      });
-
-      var selFj = document.getElementById("fFormeJuridique");
-      opts.formesJuridiques.forEach(function(f) {
-        var o = document.createElement("option"); o.value = f; o.textContent = f; selFj.appendChild(o);
+    /* ═══════════════════════════════════════════════════════════
+       SORT
+       ═══════════════════════════════════════════════════════════ */
+    function setupSortableHeaders() {
+      document.querySelectorAll(".sortable").forEach(th => {
+        th.addEventListener("click", () => sortBy(th.dataset.sort));
       });
     }
 
-    /* ── Filter ── */
-    function setFilter(f) {
-      activeFilter = f;
-      ["all","found","mobile","notfound"].forEach(function(id) {
-        document.getElementById("tab-" + id).classList.toggle("active", id === f);
+    function sortBy(col) {
+      if (sortState.col === col) {
+        sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+      } else {
+        sortState.col = col;
+        sortState.dir = "asc";
+      }
+      document.querySelectorAll(".sortable").forEach(th => {
+        th.classList.remove("sort-asc", "sort-desc");
+        if (th.dataset.sort === col) {
+          th.classList.add(sortState.dir === "asc" ? "sort-asc" : "sort-desc");
+        }
       });
-      const labels = { all: "", found: "Avec téléphone", mobile: "Mobile", notfound: "Non trouvés" };
-      document.getElementById("filterLabel").textContent = labels[f] || "";
-      fetchResults();
+      renderTable();
     }
 
-    /* ── Phone type ── */
+    function sortRecords(rows) {
+      if (!sortState.col) return rows;
+      const col = sortState.col;
+      const dir = sortState.dir === "asc" ? 1 : -1;
+      return [...rows].sort((a, b) => {
+        let va = a[col] || "";
+        let vb = b[col] || "";
+        if (col === "effectifTranche") {
+          va = EFFECTIF_ORDER[va] || 99;
+          vb = EFFECTIF_ORDER[vb] || 99;
+          return (va - vb) * dir;
+        }
+        return va.toString().localeCompare(vb.toString(), "fr", { numeric: true }) * dir;
+      });
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PHONE / COPY
+       ═══════════════════════════════════════════════════════════ */
     function isMobile(phone) {
       if (!phone) return false;
-      var cleaned = phone.replace(/[\s.+()-]/g, "");
-      var norm = cleaned.startsWith("33") && cleaned.length === 11 ? "0" + cleaned.slice(2) : cleaned;
+      const cleaned = phone.replace(/[\s.+()-]/g, "");
+      const norm = cleaned.startsWith("33") && cleaned.length === 11 ? "0" + cleaned.slice(2) : cleaned;
       return /^0[67]/.test(norm);
     }
 
-
-    /* ── Copy phone ── */
-    function copyPhone(td, phone) {
+    function copyPhone(btn, phone) {
       if (!phone || phone === "—") return;
-      navigator.clipboard.writeText(phone).then(function() {
-        td.classList.add("copied");
-        toast("Téléphone copié", "success");
-        setTimeout(function() { td.classList.remove("copied"); }, 1800);
-      }).catch(function() {
-        toast("Impossible de copier", "error");
+      navigator.clipboard.writeText(phone).then(() => {
+        btn.classList.add("copied");
+        toast("Numéro copié · " + phone, "success");
+        setTimeout(() => btn.classList.remove("copied"), 2000);
+      }).catch(() => toast("Impossible de copier", "error"));
+    }
+
+    function callPhone(phone) {
+      if (!phone) return;
+      window.location.href = "tel:" + phone.replace(/\s/g, "");
+    }
+
+    function openMap(r) {
+      const q = encodeURIComponent([r.nom, r.adresse, r.ville, r.codePostal].filter(Boolean).join(" "));
+      window.open("https://www.google.com/maps/search/?api=1&query=" + q, "_blank", "noopener");
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SELECTION
+       ═══════════════════════════════════════════════════════════ */
+    function toggleSelect(siret, checked) {
+      if (checked) selected.add(siret);
+      else selected.delete(siret);
+      updateBulkBar();
+      // update row UI
+      const tr = document.querySelector('tr[data-siret="' + CSS.escape(siret) + '"]');
+      if (tr) tr.classList.toggle("selected", checked);
+    }
+
+    function toggleSelectAll() {
+      const master = document.getElementById("selectAll");
+      const visibleRecords = visibleRecordsFromState();
+      if (master.checked) {
+        visibleRecords.forEach(r => selected.add(r.siret));
+      } else {
+        visibleRecords.forEach(r => selected.delete(r.siret));
+      }
+      renderTable();
+    }
+
+    function updateBulkBar() {
+      const bar = document.getElementById("bulkBar");
+      const count = selected.size;
+      document.getElementById("bulkCount").textContent = count.toString();
+      document.getElementById("bulkPlural").textContent = count > 1 ? "s" : "";
+      bar.classList.toggle("visible", count > 0);
+    }
+
+    function bulkCopyPhones() {
+      const phones = allRecords
+        .filter(r => selected.has(r.siret) && r.telephone)
+        .map(r => r.telephone)
+        .join("\n");
+      if (!phones) { toast("Aucun téléphone dans la sélection", "warn"); return; }
+      navigator.clipboard.writeText(phones).then(() => {
+        toast(phones.split("\n").length + " numéro(s) copié(s)", "success");
       });
     }
 
-    /* ── API ── */
+    function bulkClear() {
+      selected.clear();
+      updateBulkBar();
+      renderTable();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RENDERING
+       ═══════════════════════════════════════════════════════════ */
+    function visibleRecordsFromState() {
+      let rows = allRecords;
+      if (globalQuery) {
+        const q = globalQuery.toLowerCase();
+        rows = rows.filter(r => {
+          return (r.nom || "").toLowerCase().includes(q)
+              || (r.ville || "").toLowerCase().includes(q)
+              || (r.telephone || "").toLowerCase().includes(q)
+              || (r.adresse || "").toLowerCase().includes(q)
+              || (r.codePostal || "").toLowerCase().includes(q)
+              || (r.dirigeants || "").toLowerCase().includes(q);
+        });
+      }
+      return sortRecords(rows);
+    }
+
+    function renderTable() {
+      const rows = visibleRecordsFromState();
+      const tbody = document.getElementById("resultsBody");
+      tbody.innerHTML = "";
+
+      // Sync filter-count avec la vue effective (client-side + server-side)
+      syncFilterCount(rows.length);
+
+      if (!rows.length) {
+        tbody.innerHTML = emptyStateHTML(globalQuery || countActiveAdvFilters() || activeFilter !== "all");
+        updateSelectAllState(rows);
+        return;
+      }
+
+      rows.forEach(r => tbody.appendChild(renderProspectRow(r)));
+      updateSelectAllState(rows);
+    }
+
+    function syncFilterCount(visibleCount) {
+      const el = document.getElementById("advFilterCount");
+      if (!el) return;
+      const localFiltered = !!globalQuery;
+      const plural = visibleCount !== 1 ? "s" : "";
+      if (localFiltered) {
+        el.innerHTML = "<strong>" + visibleCount.toLocaleString("fr-FR") + "</strong> résultat" + plural
+          + " <span style='color:var(--dune);font-size:0.85em'>· filtrage local actif</span>";
+      } else {
+        el.innerHTML = "<strong>" + visibleCount.toLocaleString("fr-FR") + "</strong> résultat" + plural;
+      }
+    }
+
+    function renderProspectRow(r) {
+      const tr = document.createElement("tr");
+      tr.dataset.siret = r.siret;
+      if (selected.has(r.siret)) tr.classList.add("selected");
+
+      // Checkbox
+      const tdCheck = document.createElement("td");
+      tdCheck.className = "col-check";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = selected.has(r.siret);
+      cb.addEventListener("click", e => { e.stopPropagation(); toggleSelect(r.siret, cb.checked); });
+      tdCheck.appendChild(cb);
+
+      // Nom + SIRET subline
+      const tdNom = document.createElement("td");
+      tdNom.className = "col-nom";
+      tdNom.title = r.nom;
+      const nameLine = document.createElement("span");
+      nameLine.textContent = r.nom;
+      tdNom.appendChild(nameLine);
+      if (r.siret) {
+        const sub = document.createElement("span");
+        sub.className = "col-nom__sub";
+        sub.textContent = r.siret;
+        tdNom.appendChild(sub);
+      }
+
+      // Ville
+      const tdVille = document.createElement("td");
+      tdVille.className = "col-ville";
+      tdVille.textContent = r.ville || "—";
+      tdVille.title = r.ville || "";
+
+      // CP
+      const tdCp = document.createElement("td");
+      tdCp.className = "col-cp";
+      tdCp.textContent = r.codePostal || "—";
+
+      // Effectif
+      const tdEff = document.createElement("td");
+      tdEff.className = "col-eff";
+      const effLabel = EFFECTIF_LABELS[r.effectifTranche] || r.effectifTranche || "—";
+      const effTop = document.createElement("span");
+      effTop.textContent = effLabel;
+      tdEff.appendChild(effTop);
+      if (r.formeJuridique) {
+        const fj = document.createElement("span");
+        fj.className = "col-eff__fj";
+        fj.textContent = r.formeJuridique;
+        fj.title = r.formeJuridique;
+        tdEff.appendChild(fj);
+      }
+
+      // Téléphone
+      const tdTel = document.createElement("td");
+      tdTel.className = "col-tel";
+      if (r.telephone) {
+        const btn = document.createElement("button");
+        btn.className = "col-tel__btn";
+        btn.textContent = r.telephone;
+        btn.title = "Cliquer pour copier";
+        btn.addEventListener("click", () => copyPhone(btn, r.telephone));
+        tdTel.appendChild(btn);
+        const tag = document.createElement("span");
+        const mob = isMobile(r.telephone);
+        tag.className = "phone-tag " + (mob ? "mobile" : "fixe");
+        tag.textContent = mob ? "mobile" : "fixe";
+        tdTel.appendChild(tag);
+      } else {
+        const dash = document.createElement("span");
+        dash.style.color = "var(--dune)";
+        dash.textContent = "—";
+        tdTel.appendChild(dash);
+      }
+
+      // Source badge
+      const tdSrc = document.createElement("td");
+      const badge = document.createElement("span");
+      const bc = r.source === "google" ? "b-google" : "b-non";
+      const sl = r.source === "non_trouvé" ? "non trouvé" : r.source;
+      badge.className = "badge " + bc;
+      badge.textContent = sl;
+      tdSrc.appendChild(badge);
+
+      // Row actions
+      const tdActions = document.createElement("td");
+      tdActions.className = "col-actions";
+      const actions = document.createElement("div");
+      actions.className = "row-actions";
+
+      if (r.telephone) {
+        const aCall = document.createElement("a");
+        aCall.className = "row-action";
+        aCall.href = "tel:" + r.telephone.replace(/\s/g, "");
+        aCall.title = "Appeler";
+        aCall.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+        actions.appendChild(aCall);
+
+        const bCopy = document.createElement("button");
+        bCopy.className = "row-action";
+        bCopy.title = "Copier le numéro";
+        bCopy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        bCopy.addEventListener("click", () => copyPhone(bCopy, r.telephone));
+        actions.appendChild(bCopy);
+      }
+
+      const bMap = document.createElement("button");
+      bMap.className = "row-action";
+      bMap.title = "Ouvrir dans Google Maps";
+      bMap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+      bMap.addEventListener("click", () => openMap(r));
+      actions.appendChild(bMap);
+
+      tdActions.appendChild(actions);
+
+      tr.append(tdCheck, tdNom, tdVille, tdCp, tdEff, tdTel, tdSrc, tdActions);
+      return tr;
+    }
+
+    function updateSelectAllState(rows) {
+      const master = document.getElementById("selectAll");
+      if (!rows.length) { master.checked = false; master.indeterminate = false; return; }
+      const visibleSirets = rows.map(r => r.siret);
+      const selCount = visibleSirets.filter(s => selected.has(s)).length;
+      master.checked = selCount === visibleSirets.length;
+      master.indeterminate = selCount > 0 && selCount < visibleSirets.length;
+    }
+
+    function emptyStateHTML(hasFilters) {
+      if (hasFilters) {
+        return '<tr><td colspan="8"><div class="empty">'
+          + '<div class="empty__art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>'
+          + '<div class="empty__title">Aucun résultat</div>'
+          + '<div class="empty__text">Ajuste les filtres ou vide la recherche pour voir plus d\'établissements.</div>'
+          + '<div class="empty__cta"><button class="btn btn--ghost btn--small" onclick="resetAdvFilters();document.getElementById(\'globalSearch\').value=\'\';globalQuery=\'\';renderChips();setFilter(\'all\')">Réinitialiser tous les filtres</button></div>'
+          + '</div></td></tr>';
+      }
+      return '<tr><td colspan="8"><div class="empty">'
+        + '<div class="empty__art"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 4.5v9L12 21 3 16.5v-9L12 3z"/><path d="M3 7.5l9 4.5 9-4.5"/><line x1="12" y1="12" x2="12" y2="21"/></svg></div>'
+        + '<div class="empty__title">La fournée est vide</div>'
+        + '<div class="empty__text">Choisis un périmètre dans l\'atelier à gauche puis lance une capture pour commencer la prospection.</div>'
+        + '</div></td></tr>';
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       API
+       ═══════════════════════════════════════════════════════════ */
     async function fetchStats() {
-      const s = await fetch("/api/stats").then(r => r.json());
-      counter(document.getElementById("statTotal"),    s.total);
-      counter(document.getElementById("statFound"),    s.found);
-      counter(document.getElementById("statMobile"),   s.mobile || 0);
-      counter(document.getElementById("statNotFound"), s.notFound);
+      try {
+        const s = await fetch("/api/stats").then(r => r.json());
+        counter(document.getElementById("statTotal"),    s.total);
+        counter(document.getElementById("statFound"),    s.found);
+        counter(document.getElementById("statMobile"),   s.mobile || 0);
+        counter(document.getElementById("statNotFound"), s.notFound);
+      } catch {}
+    }
+
+    async function fetchCurrentResults() {
+      const params = buildAdvParams();
+
+      // Quick filter from stat cards
+      if (activeFilter === "found")    params.push("source=found");
+      if (activeFilter === "notfound") params.push("source=non_trouv%C3%A9");
+      if (activeFilter === "mobile")   {
+        // conserver fPhoneType si défini, sinon forcer mobile
+        if (!params.some(p => p.startsWith("phoneType="))) params.push("phoneType=mobile");
+      }
+
+      const url = "/api/results?page=1&limit=5000" + (params.length ? "&" + params.join("&") : "");
+      let data;
+      try {
+        data = await fetch(url).then(r => r.json());
+      } catch {
+        toast("Erreur de chargement des résultats", "error");
+        return;
+      }
+
+      allRecords = data.data;
+
+      // Nettoyer les sélections qui ne sont plus dans le jeu de données
+      if (selected.size > 0) {
+        const alive = new Set(allRecords.map(r => r.siret));
+        selected.forEach(s => { if (!alive.has(s)) selected.delete(s); });
+        updateBulkBar();
+      }
+
+      renderChips();
+      renderTable();
     }
 
     async function fetchProfessions() {
       const sel = document.getElementById("profession");
       let professionList;
       try {
-        professionList = await fetch("/api/professions").then(function(r) {
+        professionList = await fetch("/api/professions").then(r => {
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
         });
@@ -1531,18 +3134,17 @@
       }
 
       sel.innerHTML = "";
-
-      var byCategory = {};
-      professionList.forEach(function(p) {
+      const byCategory = {};
+      professionList.forEach(p => {
         if (!byCategory[p.category]) byCategory[p.category] = [];
         byCategory[p.category].push(p);
       });
 
-      Object.keys(byCategory).sort().forEach(function(cat) {
-        var group = document.createElement("optgroup");
+      Object.keys(byCategory).sort().forEach(cat => {
+        const group = document.createElement("optgroup");
         group.label = cat;
-        byCategory[cat].forEach(function(p) {
-          var o = document.createElement("option");
+        byCategory[cat].forEach(p => {
+          const o = document.createElement("option");
           o.value = String(p.id);
           o.dataset.slug = p.slug;
           o.textContent = p.libelle;
@@ -1551,18 +3153,15 @@
         sel.appendChild(group);
       });
 
-      var defaultOption = sel.querySelector('option[data-slug="boulanger"]');
-      if (defaultOption) {
-        sel.value = defaultOption.value;
-      } else {
-        sel.selectedIndex = 0;
-      }
+      const defaultOption = sel.querySelector('option[data-slug="boulanger"]');
+      if (defaultOption) sel.value = defaultOption.value;
+      else sel.selectedIndex = 0;
     }
 
     async function fetchRegions() {
       const regions = await fetch("/api/regions").then(r => r.json());
       const sel = document.getElementById("region");
-      regions.forEach(function(r) {
+      regions.forEach(r => {
         const o = document.createElement("option");
         o.value = r;
         o.textContent = r.charAt(0).toUpperCase() + r.slice(1).replace(/-/g, " ");
@@ -1570,58 +3169,95 @@
       });
     }
 
-    async function fetchResults() {
-      let url = "/api/results?page=1&limit=5000";
-      if (activeFilter === "found")    url += "&source=found";
-      if (activeFilter === "notfound") url += "&source=non_trouv%C3%A9";
-      if (activeFilter === "mobile")   url += "&phoneType=mobile";
+    async function fetchFilterOptions() {
+      const opts = await fetch("/api/filters").then(r => r.json());
 
-      const data = await fetch(url).then(r => r.json());
+      const selVille = document.getElementById("fVille");
+      opts.villes.forEach(v => {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = v; selVille.appendChild(o);
+      });
 
-      const tbody = document.getElementById("resultsBody");
-      tbody.innerHTML = "";
+      const selDep = document.getElementById("fDep");
+      opts.departements.forEach(d => {
+        const o = document.createElement("option");
+        o.value = d; o.textContent = "Dép. " + d; selDep.appendChild(o);
+      });
 
-      if (!data.data.length) {
-        const msg = "Lancez un scrape pour commencer la prospection.";
-        tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><strong>Aucun résultat</strong>' + msg + '</div></td></tr>';
-      } else {
-        data.data.forEach(function(r) {
-          const bc = r.source === "google" ? "b-google" : "b-non";
-          const sl = r.source === "non_trouvé" ? "non trouvé" : r.source;
+      const selEff = document.getElementById("fEffectif");
+      opts.effectifs.forEach(e => {
+        const o = document.createElement("option");
+        o.value = e.value; o.textContent = e.label; selEff.appendChild(o);
+      });
 
-          const tdNom   = Object.assign(document.createElement("td"), { className: "col-nom",   textContent: r.nom });
-          tdNom.title   = r.nom;
-          const tdVille = Object.assign(document.createElement("td"), { className: "col-ville", textContent: r.ville || "—" });
-          const phone   = r.telephone || "—";
-          const tdTel   = document.createElement("td");
-          tdTel.className = "col-tel";
-          if (r.telephone) {
-            const sp = document.createElement("span");
-            sp.textContent = phone;
-            tdTel.appendChild(sp);
-            var tag = document.createElement("span");
-            var mob = isMobile(r.telephone);
-            tag.className = "phone-tag " + (mob ? "mobile" : "fixe");
-            tag.textContent = mob ? "mobile" : "fixe";
-            tdTel.appendChild(tag);
-            tdTel.title = "Cliquer pour copier";
-            tdTel.addEventListener("click", function() { copyPhone(tdTel, phone); });
-          } else {
-            tdTel.textContent = "—";
-          }
+      const selFj = document.getElementById("fFormeJuridique");
+      opts.formesJuridiques.forEach(f => {
+        const o = document.createElement("option");
+        o.value = f; o.textContent = f; selFj.appendChild(o);
+      });
+    }
 
-          const badge = Object.assign(document.createElement("span"), { className: "badge " + bc, textContent: sl });
-          const tdSrc = document.createElement("td");
-          tdSrc.appendChild(badge);
+    async function refreshCredits() {
+      try {
+        const r = await fetch("/api/credits");
+        if (!r.ok) return;
+        const data = await r.json();
+        currentBalance = data.balance;
+        const el = document.getElementById("creditBalance");
+        const chip = document.getElementById("creditChip");
+        el.textContent = data.balance.toLocaleString("fr-FR");
+        chip.classList.toggle("empty", data.balance <= 0);
+        chip.classList.toggle("low", data.balance > 0 && data.balance <= 10);
+      } catch {}
+    }
 
-          const tr = document.createElement("tr");
-          tr.append(tdNom, tdVille, tdTel, tdSrc);
-          tbody.appendChild(tr);
+    async function loadMe() {
+      try {
+        const r = await fetch("/api/me");
+        if (!r.ok) return;
+        const me = await r.json();
+        if (!me || !me.user) return;
+        const email = me.user.email || "—";
+        document.getElementById("userMenuEmail").textContent = email;
+        const initial = (email[0] || "·").toUpperCase();
+        document.getElementById("userMenuAvatar").textContent = initial;
+        const role = me.user.role === "admin" ? "Administrateur" : "Utilisateur";
+        document.getElementById("userMenuRole").textContent = role;
+        if (me.user.role === "admin") {
+          document.getElementById("navAdmin").classList.remove("hidden");
+        }
+      } catch {}
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       USER MENU
+       ═══════════════════════════════════════════════════════════ */
+    function toggleUserMenu(force) {
+      const m = document.getElementById("userMenu");
+      const should = force !== undefined ? force : !m.classList.contains("open");
+      m.classList.toggle("open", should);
+    }
+
+    async function signOut() {
+      try {
+        const res = await fetch("/api/auth/sign-out", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
         });
+        if (res.ok || res.status === 204 || res.status === 200) {
+          window.location.href = "/login";
+        } else {
+          toast("Impossible de se déconnecter", "error");
+        }
+      } catch {
+        toast("Erreur réseau lors de la déconnexion", "error");
       }
     }
 
-    /* ── Scrape ── */
+    /* ═══════════════════════════════════════════════════════════
+       SCRAPE
+       ═══════════════════════════════════════════════════════════ */
     async function startScrape() {
       const btn = document.getElementById("btnScrape");
 
@@ -1659,7 +3295,7 @@
       });
 
       if (res.status === 409) {
-        toast("Un scrape est déjà en cours", "warn");
+        toast("Une capture est déjà en cours", "warn");
         btn.disabled = false;
         return;
       }
@@ -1672,69 +3308,58 @@
       }
 
       document.getElementById("progressBlock").classList.add("visible");
+      document.getElementById("runningBanner").classList.add("visible");
       if (!pollInterval) pollInterval = setInterval(pollStatus, 1000);
     }
 
-    /* ── Credits ── */
-    let currentBalance = null;
-    async function refreshCredits() {
-      try {
-        const r = await fetch("/api/credits");
-        if (!r.ok) return;
-        const data = await r.json();
-        currentBalance = data.balance;
-        const el = document.getElementById("creditBalance");
-        const chip = document.getElementById("creditChip");
-        el.textContent = data.balance;
-        chip.classList.toggle("empty", data.balance <= 0);
-        chip.classList.toggle("low", data.balance > 0 && data.balance <= 10);
-      } catch {}
-    }
-
-    /* ── Status polling ── */
     async function pollStatus() {
       let state;
-      try { state = await fetch("/api/status").then(r => r.json()); }
-      catch { return; }
+      try { state = await fetch("/api/status").then(r => r.json()); } catch { return; }
 
       const dot  = document.getElementById("statusDot");
+      const chip = document.getElementById("statusChip");
       const text = document.getElementById("statusText");
-      dot.className     = "status-dot " + state.status;
-      text.textContent  =
-        state.status === "running" ? "En cours…" :
+      dot.className  = "status-dot " + state.status;
+      chip.className = "status-chip " + state.status;
+      text.textContent =
+        state.status === "running" ? "En cours" :
         state.status === "done" ? "Terminé" :
         state.status === "stopped_no_credits" ? "Crédits épuisés" :
-        state.status === "error" ? "Erreur" :
-        "En attente";
+        state.status === "error" ? "Erreur" : "En attente";
 
       refreshCredits();
 
       if (state.status === "running") {
         const pct = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
-        document.getElementById("progressFill").style.width  = pct + "%";
-        document.getElementById("progressPct").textContent   = pct + "%";
-        document.getElementById("progressCount").textContent = state.progress + " / " + state.total;
-        document.getElementById("progressLabel").textContent = state.current || "—";
+        document.getElementById("progressFill").style.width   = pct + "%";
+        document.getElementById("progressPct").textContent    = pct + "%";
+        document.getElementById("progressCount").textContent  = state.progress + " / " + state.total;
+        document.getElementById("progressLabel").textContent  = state.current || "—";
+        document.getElementById("runningBannerText").textContent = "Capture · " + (state.current || "initialisation…");
+        document.getElementById("runningBannerCount").textContent = state.progress + " / " + state.total + " · " + pct + "%";
+        document.getElementById("runningBannerFill").style.width = pct + "%";
       }
 
       if (state.status === "error") {
         clearInterval(pollInterval); pollInterval = null;
         document.getElementById("btnScrape").disabled = false;
-        toast("Erreur scrape — " + (state.error || "erreur inconnue"), "warn");
-        setTimeout(function() {
+        toast("Erreur capture — " + (state.error || "erreur inconnue"), "error");
+        setTimeout(() => {
           document.getElementById("progressBlock").classList.remove("visible");
+          document.getElementById("runningBanner").classList.remove("visible");
         }, 4000);
       }
 
       if (state.status === "stopped_no_credits") {
         clearInterval(pollInterval); pollInterval = null;
         document.getElementById("btnScrape").disabled = false;
-        toast("Scrape arrêté — crédits épuisés", "warn");
+        toast("Capture arrêtée — crédits épuisés", "warn");
         openNoCreditsModal();
         fetchStats();
-        fetchResults();
-        setTimeout(function() {
+        fetchCurrentResults();
+        setTimeout(() => {
           document.getElementById("progressBlock").classList.remove("visible");
+          document.getElementById("runningBanner").classList.remove("visible");
         }, 4000);
       }
 
@@ -1752,22 +3377,23 @@
           ];
           const resultRows = document.getElementById("resultRows");
           resultRows.innerHTML = "";
-          rows.forEach(function(r) {
-            const div = document.createElement("div"); div.className = "result-row";
-            const key = document.createElement("span"); key.className = "result-key"; key.textContent = r.label;
-            const val = document.createElement("span"); val.className = "result-val " + r.cls; val.textContent = r.val;
+          rows.forEach(r => {
+            const div = document.createElement("div"); div.className = "result__row";
+            const key = document.createElement("span"); key.className = "result__key"; key.textContent = r.label;
+            const val = document.createElement("span"); val.className = "result__val " + r.cls; val.textContent = r.val;
             div.append(key, val);
             resultRows.appendChild(div);
           });
           document.getElementById("resultBlock").classList.add("visible");
-          toast("Scrape terminé — " + state.result.newCount + " nouveaux prospects", "success");
+          toast("Capture terminée — " + state.result.newCount + " nouveau(x) prospect(s)", "success");
         }
 
         fetchStats();
-        fetchResults();
+        fetchCurrentResults();
 
-        setTimeout(function() {
+        setTimeout(() => {
           document.getElementById("progressBlock").classList.remove("visible");
+          document.getElementById("runningBanner").classList.remove("visible");
         }, 4000);
       }
 
@@ -1776,60 +3402,182 @@
       }
     }
 
-function setExportScope(scope) {
+    /* ═══════════════════════════════════════════════════════════
+       EXPORT
+       ═══════════════════════════════════════════════════════════ */
+    function setExportScope(scope) {
       exportScope = scope;
-      ["all", "mobile", "fixe"].forEach(function(s) {
-        document.getElementById("exportScope" + s.charAt(0).toUpperCase() + s.slice(1))
-          .classList.toggle("active", s === scope);
+      ["All", "Mobile", "Fixe"].forEach(s => {
+        const el = document.getElementById("exportScope" + s);
+        if (el) el.classList.toggle("active", s.toLowerCase() === scope);
       });
     }
 
     function exportCsv() {
-      var params = [];
+      const params = [];
       if (exportScope !== "all") params.push("phoneType=" + exportScope);
-      var url = "/api/export" + (params.length ? "?" + params.join("&") : "");
+      const url = "/api/export" + (params.length ? "?" + params.join("&") : "");
       window.location = url;
-      var labels = { all: "Téléchargement du CSV…", mobile: "Export mobiles…", fixe: "Export fixes…" };
+      const labels = { all: "Téléchargement du CSV…", mobile: "Export des lignes mobiles…", fixe: "Export des lignes fixes…" };
       toast(labels[exportScope] || "Téléchargement du CSV…");
     }
 
-    async function revealAdminLink() {
-      try {
-        const r = await fetch("/api/me");
-        if (!r.ok) return;
-        const me = await r.json();
-        if (me && me.user && me.user.role === "admin") {
-          document.getElementById("navAdmin").style.display = "";
-        }
-      } catch (_) { /* silencieux */ }
+    function exportAdvCsv() {
+      const params = buildAdvParams();
+      const url = "/api/export" + (params.length ? "?" + params.join("&") : "");
+      window.location = url;
+      toast("Téléchargement du CSV filtré…");
     }
 
-    /* ── Init ── */
+    // Export contextual: utilise les filtres avancés + quick filter actif
+    function exportFromContext() {
+      const params = buildAdvParams();
+      if (activeFilter === "found" && !params.some(p => p.startsWith("source="))) params.push("source=found");
+      if (activeFilter === "notfound" && !params.some(p => p.startsWith("source="))) params.push("source=non_trouv%C3%A9");
+      if (activeFilter === "mobile" && !params.some(p => p.startsWith("phoneType="))) params.push("phoneType=mobile");
+      const url = "/api/export" + (params.length ? "?" + params.join("&") : "");
+      window.location = url;
+      toast("Téléchargement du CSV en cours…");
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CHEATSHEET
+       ═══════════════════════════════════════════════════════════ */
+    function toggleCheatsheet(force) {
+      const el = document.getElementById("cheatsheet");
+      const shouldShow = force !== undefined ? force : !el.classList.contains("visible");
+      el.classList.toggle("visible", shouldShow);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       GLOBAL SEARCH (cross-field, client-side)
+       ═══════════════════════════════════════════════════════════ */
+    function onGlobalSearch(q) {
+      clearTimeout(globalSearchTimeout);
+      globalSearchTimeout = setTimeout(() => {
+        globalQuery = (q || "").trim();
+        renderChips();
+        renderTable();
+      }, 150);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       INIT
+       ═══════════════════════════════════════════════════════════ */
+    // Mobile : atelier fermé par défaut (drawer overlay)
+    if (isMobileViewport()) {
+      document.body.classList.add("atelier-collapsed");
+    } else {
+      try {
+        if (localStorage.getItem("atelier-collapsed") === "1") {
+          document.body.classList.add("atelier-collapsed");
+        }
+      } catch {}
+    }
+
+    setupSortableHeaders();
+
+    // Backdrop click (mobile) : ferme l'atelier
+    document.addEventListener("click", e => {
+      if (!isMobileViewport()) return;
+      if (document.body.classList.contains("atelier-collapsed")) return;
+      const atelier = document.getElementById("atelier");
+      const toggleBtn = document.getElementById("btnToggleAtelier");
+      if (atelier.contains(e.target)) return;
+      if (toggleBtn && toggleBtn.contains(e.target)) return;
+      toggleAtelier(true);
+    });
+
+    // Ferme le user-menu au clic extérieur
+    document.addEventListener("click", e => {
+      const menu = document.getElementById("userMenu");
+      if (!menu.classList.contains("open")) return;
+      if (menu.contains(e.target)) return;
+      toggleUserMenu(false);
+    });
+
+    // Watcher resize : ferme l'atelier au passage mobile
+    window.addEventListener("resize", () => {
+      if (isMobileViewport()) {
+        document.body.classList.add("atelier-collapsed");
+      }
+    });
+
+    document.getElementById("globalSearch").addEventListener("input", e => onGlobalSearch(e.target.value));
+
     fetchStats();
-    fetchResults();
+    fetchCurrentResults();
     fetchRegions();
     fetchProfessions();
     fetchFilterOptions();
     refreshCredits();
     pollStatus();
-    revealAdminLink();
+    loadMe();
 
-    /* Auto-refresh résultats toutes les 10s si idle */
-    setInterval(function() {
-      if (!pollInterval) {
-        fetchStats();
-        fetchResults();
+    /* ═══════════════════════════════════════════════════════════
+       KEYBOARD SHORTCUTS
+       ═══════════════════════════════════════════════════════════ */
+    document.addEventListener("keydown", e => {
+      const inInput = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName);
+
+      // "/" focus global search
+      if (e.key === "/" && !inInput) {
+        e.preventDefault();
+        document.getElementById("globalSearch").focus();
+        return;
       }
-    }, 10000);
 
-    /* Keyboard shortcut: Enter dans le formulaire */
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "Enter" && e.target.closest(".sidebar") && !document.getElementById("btnScrape").disabled) {
+      // "?" show cheatsheet
+      if (e.key === "?" && !inInput) {
+        e.preventDefault();
+        toggleCheatsheet();
+        return;
+      }
+
+      // Ctrl+B toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleAtelier();
+        return;
+      }
+
+      // Ctrl+Enter launch scrape
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (!document.getElementById("btnScrape").disabled) startScrape();
+        return;
+      }
+
+      // Enter in sidebar = launch
+      if (e.key === "Enter" && e.target.closest(".atelier") && !document.getElementById("btnScrape").disabled) {
+        e.preventDefault();
         startScrape();
+        return;
       }
+
+      // Escape
       if (e.key === "Escape") {
-        closeNoCreditsModal();
+        if (document.getElementById("dupModal").classList.contains("open")) { closeDupModal(); return; }
+        if (document.getElementById("noCreditsModal").classList.contains("open")) { closeNoCreditsModal(); return; }
+        if (document.getElementById("cheatsheet").classList.contains("visible")) { toggleCheatsheet(false); return; }
+        if (document.getElementById("globalSearch") === document.activeElement) {
+          document.getElementById("globalSearch").value = "";
+          globalQuery = "";
+          document.getElementById("globalSearch").blur();
+          renderChips();
+          renderTable();
+          return;
+        }
+        if (selected.size > 0) { bulkClear(); return; }
       }
+    });
+
+    // Cacher le cheatsheet au clic extérieur
+    document.addEventListener("click", e => {
+      const cs = document.getElementById("cheatsheet");
+      if (!cs.classList.contains("visible")) return;
+      if (cs.contains(e.target) || e.target.closest(".help-bubble")) return;
+      toggleCheatsheet(false);
     });
   </script>
 </body>
