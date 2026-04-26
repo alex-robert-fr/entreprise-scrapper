@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Page `/billing` accessible aux utilisateurs authentifiés, atteignable depuis le chip crédits de la topbar ([#89](https://github.com/alex-robert-fr/entreprise-scrapper/pull/89))
 - Panel `/admin` accessible aux utilisateurs avec le rôle `admin` : liste paginée des users (email, balance, achats, fiches scrapées), recherche par email et modal de gestion manuelle des crédits ([`c180a3b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c180a3b))
 - `GET /api/admin/users` — liste des users avec leurs stats (balance, total achats en crédits, total fiches scrapées) ; filtrable par email via `search`, paginable avec `limit` (max 100) et `offset` ([`c07fa71`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c07fa71))
 - `GET /api/admin/users/:userId` — détail d'un user et ses 50 dernières transactions de crédits (type, montant, note) ([`c07fa71`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c07fa71))
@@ -30,11 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Pages `/login` et `/signup` redesignées dans la DA atelier : split asymétrique, trio typographique Geist + JetBrains Mono + Fraunces italic, champs indexés, CTA brass — comportement et endpoints `/api/auth/*` inchangés ([#89](https://github.com/alex-robert-fr/entreprise-scrapper/pull/89))
 - **BREAKING** — La base de données passe de SQLite à Postgres. L'application nécessite désormais une `DATABASE_URL` ; en local, lancer `docker compose up -d db` puis `npm run db:migrate` avant de démarrer le serveur. L'ancienne base `data/scraper.db` n'est pas migrée (décision produit : on repart from scratch) ([`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160), [`9b0b101`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9b0b101), [`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b))
 - **BREAKING** — Migration requise : `scraped_records` passe à une clé primaire composite `(user_id, siret)` avec contrainte FK `user_id → user.id` (cascade delete) ; lancer `npm run db:migrate` avant de démarrer cette version ([#68](https://github.com/alex-robert-fr/entreprise-scrapper/pull/68))
 
 ### Fixed
 
+- Le chip de solde de crédits dans la topbar affichait un padding disproportionné à 0 crédit à cause d'une collision entre `.credit-chip.empty` et le sélecteur global `.empty { padding: 5rem }` ; renommé en `.credit-chip--empty` (BEM) ([#89](https://github.com/alex-robert-fr/entreprise-scrapper/pull/89))
 - La popup "Crédits épuisés" s'affiche correctement si le solde n'était pas encore chargé au moment du premier clic (race condition au chargement de la page) ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
 - L'insertion d'une fiche et le décrément du crédit s'effectuent dans la même transaction Postgres : un crash ne peut ni débiter sans insérer, ni insérer sans débiter ([`bc3deb9`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/bc3deb9))
 - Les filtres par nom et ville du dashboard sont désormais insensibles à la casse (comportement SQLite restauré sous Postgres via `ILIKE`) ([`86aa1b4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/86aa1b4))

@@ -13,27 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/middleware/auth.ts` : factorisation de `makeAdminGuard(onUnauth, onForbidden)` pour dériver `requireAdminAuth` et `adminDashboardGuard` sans duplication ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
 - `src/db/admin.ts` : sous-requêtes SQL inlinées dans `listUsers`/`getUserDetail` ; `transactionLimit` paramétrable dans `getUserDetail` (défaut 50) ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
 - `src/server.ts` : `ScrapeState.status` étendu avec `"stopped_no_credits"` (pipeline arrêté faute de crédits) et `"error"` (exception inattendue dans le pipeline) ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
-
-### Chore
-
-- Migration `0007_peaceful_rocket_raccoon.sql` : colonne `metadata jsonb NULL` ajoutée sur `credit_transactions` pour tracer l'auteur admin et la note de chaque ajustement manuel ([`a348129`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/a348129))
-- Nouveau module `src/db/admin.ts` : `listUsers` (pagination, recherche, agrégats balance/achats/fiches) et `getUserDetail` ([`15a8083`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/15a8083))
-- Nouveau `src/schemas/admin.schema.ts` : `adminCreditBodySchema` et `adminUsersQuerySchema` (Zod) pour valider les inputs des routes admin ([`42936d3`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/42936d3))
-- `src/views/admin.html` déplacé hors de `public/` pour ne pas être exposé par `express.static` ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
-- `src/server.ts` : commentaire explicite que le pré-check `getBalance` est UX uniquement — la garantie atomique reste la contrainte CHECK Postgres dans `consumeOne` ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
-- `src/server.ts` : `console.warn` émis si `balance <= 0` pour signaler les cas de row `credits` absente (bug de provisioning) vs solde réellement épuisé ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
-- Nouveau module `src/db/credits.ts` : services `getBalance`, `getRecentTransactions`, `grantSignupBonus`, `consumeOne`, `adminGrant` + `InsufficientCreditsError` ([`12a7fbf`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/12a7fbf))
-- Migration `0006_credit_tx_signup_bonus.sql` : ajout de `signup_bonus` dans le CHECK `credit_tx_type_check` de `credit_transactions` ([`eef50cd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/eef50cd))
-- Migration vers ESM (`"type": "module"` + `tsconfig NodeNext`) : 15 fichiers d'imports suffixés `.js`, `__dirname` remplacé par `fileURLToPath` — résout `ERR_REQUIRE_ESM` au démarrage causé par `better-auth/node` (ESM-only) ([`c522acd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c522acd))
-- `src/db/migrate.ts` : runner de migration programmatique utilisant `drizzle-orm/postgres-js/migrator` — remplace le recours au CLI `drizzle-kit` (devDependency absent en prod) ; connexion dédiée `max: 1`, fermée après usage ([`4970442`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/4970442))
-- `src/server.ts` : migrations Drizzle et seed professions lancés automatiquement au boot avant `app.listen` ; `process.exit(1)` si échec ; `cleanupTimer` déplacé après validation boot ; shutdown propre avec `closeDb()` sur SIGTERM/SIGINT ([`31b876d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/31b876d), [`ea2422d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea2422d))
-
-### Docs
-
-- `DEPLOYMENT.md` : migrations en prod documentées comme automatiques au boot ; avertissement scale horizontal (>1 réplica) ; `PORT` à ne pas définir manuellement sur Railway ; distinction CLI `drizzle-kit` vs runner runtime ([`f909258`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/f909258))
-
-### Refactor
-
 - Port de `dedup.ts` (SQLite/better-sqlite3) vers `src/db/` avec Drizzle ORM + postgres-js : `scraped.ts`, `phoneCache.ts`, `client.ts`, `index.ts`, `schema.ts` ([`33639a0`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/33639a0), [`e30efd0`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e30efd0), [`8b7a160`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/8b7a160), [`9b0b101`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/9b0b101))
 - `getPhoneDuplicates`/`getNameDuplicates` : remplace les N+1 non bornés par une requête unique `inArray` + groupement en mémoire ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
 - `server.ts` : wrapper `asyncHandler` + middleware d'erreur global sur toutes les routes async (évite le crash du process sur erreur DB non catchée) ([`e6909ab`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/e6909ab))
@@ -54,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Docs
 
+- `DEPLOYMENT.md` : migrations en prod documentées comme automatiques au boot ; avertissement scale horizontal (>1 réplica) ; `PORT` à ne pas définir manuellement sur Railway ; distinction CLI `drizzle-kit` vs runner runtime ([`f909258`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/f909258))
 - `DEPLOYMENT.md` : section setup Postgres local (docker compose) + commandes `db:generate`, `db:migrate`, `db:push`, `db:studio` + note migrations en prod ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e))
 - `CLAUDE.md` : structure projet et système de déduplication mis à jour ; codes INSEE effectif corrigés (11, 12, 21, 22, 31, 32) ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e), [`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))
 - `.claude/skills/tech-stack/SKILL.md` : stack DB mise à jour (Postgres + Drizzle) ([`d57246e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/d57246e))
@@ -69,6 +49,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Chore
 
+- Tokens CSS brass étendus (`--brass-hi`, `--brass-deep`, `--brass-glow`, `--line-brass`) et classes `display-xl`/`display-lg` (Fraunces opsz 144) propagés sur `src/public/index.html` et `src/views/admin.html` ([#89](https://github.com/alex-robert-fr/entreprise-scrapper/pull/89))
+- `src/server.ts` : route `GET /billing` ajoutée derrière `dashboardGuard` pour servir `src/views/billing.html` ([#89](https://github.com/alex-robert-fr/entreprise-scrapper/pull/89))
+- Migration `0007_peaceful_rocket_raccoon.sql` : colonne `metadata jsonb NULL` ajoutée sur `credit_transactions` pour tracer l'auteur admin et la note de chaque ajustement manuel ([`a348129`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/a348129))
+- Nouveau module `src/db/admin.ts` : `listUsers` (pagination, recherche, agrégats balance/achats/fiches) et `getUserDetail` ([`15a8083`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/15a8083))
+- Nouveau `src/schemas/admin.schema.ts` : `adminCreditBodySchema` et `adminUsersQuerySchema` (Zod) pour valider les inputs des routes admin ([`42936d3`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/42936d3))
+- `src/views/admin.html` déplacé hors de `public/` pour ne pas être exposé par `express.static` ([`ea590e4`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea590e4))
+- `src/server.ts` : commentaire explicite que le pré-check `getBalance` est UX uniquement — la garantie atomique reste la contrainte CHECK Postgres dans `consumeOne` ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
+- `src/server.ts` : `console.warn` émis si `balance <= 0` pour signaler les cas de row `credits` absente (bug de provisioning) vs solde réellement épuisé ([#86](https://github.com/alex-robert-fr/entreprise-scrapper/pull/86))
+- Nouveau module `src/db/credits.ts` : services `getBalance`, `getRecentTransactions`, `grantSignupBonus`, `consumeOne`, `adminGrant` + `InsufficientCreditsError` ([`12a7fbf`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/12a7fbf))
+- Migration `0006_credit_tx_signup_bonus.sql` : ajout de `signup_bonus` dans le CHECK `credit_tx_type_check` de `credit_transactions` ([`eef50cd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/eef50cd))
+- Migration vers ESM (`"type": "module"` + `tsconfig NodeNext`) : 15 fichiers d'imports suffixés `.js`, `__dirname` remplacé par `fileURLToPath` — résout `ERR_REQUIRE_ESM` au démarrage causé par `better-auth/node` (ESM-only) ([`c522acd`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/c522acd))
+- `src/db/migrate.ts` : runner de migration programmatique utilisant `drizzle-orm/postgres-js/migrator` — remplace le recours au CLI `drizzle-kit` (devDependency absent en prod) ; connexion dédiée `max: 1`, fermée après usage ([`4970442`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/4970442))
+- `src/server.ts` : migrations Drizzle et seed professions lancés automatiquement au boot avant `app.listen` ; `process.exit(1)` si échec ; `cleanupTimer` déplacé après validation boot ; shutdown propre avec `closeDb()` sur SIGTERM/SIGINT ([`31b876d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/31b876d), [`ea2422d`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/ea2422d))
 - Suppression de `src/main.ts` (CLI jamais implémentée), `src/exporter.ts` (stub vide — export CSV géré par `server.ts`), et tests live obsolètes (`test-google.ts`, `test-google-live.ts`) ; script npm `start` retiré ([`66852de`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/66852de))
 - Suppression du dead code `phone_cache` : table retirée du schéma Drizzle, `src/db/phoneCache.ts` supprimé, migration `0003_drop_phone_cache.sql` générée (drop de la table en base) ; remplacé à terme par la table `entreprises` normalisée (#66) ([`2c1957e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/2c1957e))
 - `docker-compose.yml` : service Postgres 16-alpine sur le port 5433 (évite tout conflit avec un Postgres système) avec variables d'environnement surchargeables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`) ([`fe0569b`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/fe0569b), [`733402e`](https://github.com/alex-robert-fr/entreprise-scrapper/commit/733402e))

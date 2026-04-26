@@ -3,211 +3,795 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inscription — Scraper</title>
+  <title>Inscription — Atelier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=JetBrains+Mono:wght@300..600&family=Fraunces:opsz,wght@9..144,300..700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:           #080a0f;
-      --bg-card:      #0d1018;
-      --bg-elevated:  #12151e;
-      --border:       rgba(255,255,255,0.06);
-      --border-hover: rgba(255,255,255,0.11);
-      --text:         #e8e2d9;
-      --muted:        #4e5668;
-      --dim:          #303744;
-      --accent:       #e8622a;
-      --accent-glow:  rgba(232,98,42,0.18);
-      --accent-dim:   rgba(232,98,42,0.08);
-      --error:        #ef4444;
-      --error-dim:    rgba(239,68,68,0.1);
-      --mono: 'JetBrains Mono', 'Courier New', monospace;
+      --ink:        #08080a;
+      --canvas:     #0d0d10;
+      --vault:      #131317;
+      --riser:      #18181d;
+      --peak:       #1e1e24;
+
+      --line:       rgba(255,255,255,0.055);
+      --line-hi:    rgba(255,255,255,0.115);
+      --line-ember: rgba(110,168,254,0.28);
+
+      --ivory:      #edeef2;
+      --bone:       #c3c5cc;
+      --sand:       #85878f;
+      --dune:       #55575f;
+      --shadow:     #33343a;
+
+      --ember:      #6ea8fe;
+      --ember-hi:   #9dc4ff;
+      --ember-deep: #3c7ee0;
+      --ember-dim:  rgba(110,168,254,0.10);
+      --ember-glow: rgba(110,168,254,0.28);
+
+      --brass:      #e0c27d;
+      --brass-hi:   #f0d59a;
+      --brass-deep: #b8954a;
+      --brass-dim:  rgba(224,194,125,0.10);
+      --brass-glow: rgba(224,194,125,0.32);
+
+      --sage:       #4ade80;
+      --rust:       #f87171;
+      --rust-dim:   rgba(248,113,113,0.12);
+
+      --sans:    'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono:    'JetBrains Mono', ui-monospace, monospace;
+      --display: 'Fraunces', Georgia, serif;
     }
 
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    /* Display XL — Fraunces opsz 144 */
+    .display-xl {
+      font-family: var(--display);
+      font-weight: 300;
+      font-variation-settings: "opsz" 144, "SOFT" 50;
+      line-height: 0.92;
+      letter-spacing: -0.035em;
+    }
+    .display-xl em {
+      font-style: italic;
+      font-weight: 400;
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+    }
 
-    html, body { height: 100%; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--ink);
+      color: var(--ivory);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: 'ss01','ss02','cv11';
+    }
 
     body {
-      font-family: var(--mono);
-      background: var(--bg);
-      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      opacity: 0.55;
+      mix-blend-mode: overlay;
+    }
+
+    /* ─────────────────────── PANEL GAUCHE — FORMULAIRE ─────────────────────── */
+    .panel {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.012) 0%, transparent 30%),
+        var(--ink);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
-      background-image: radial-gradient(ellipse 900px 500px at 50% -60px, rgba(232,98,42,0.04) 0%, transparent 70%);
+      padding: 2.5rem 2rem;
+      position: relative;
+    }
+    .panel::after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, var(--ember-glow) 40%, var(--ember-glow) 60%, transparent);
+      opacity: 0.6;
     }
 
-    .card {
+    .form-wrap {
       width: 100%;
-      max-width: 360px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 2rem 1.75rem;
+      max-width: 380px;
+      animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    .title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 0.35rem;
-      letter-spacing: 0.01em;
-    }
-
-    .subtitle {
-      font-size: 0.68rem;
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-      letter-spacing: 0.05em;
-    }
-
-    .field { margin-bottom: 0.85rem; }
-
-    .field label {
-      display: block;
-      font-size: 0.58rem;
-      letter-spacing: 0.15em;
+    .form-head { margin-bottom: 2.1rem; }
+    .form-head .ref {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.28em;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.4rem;
+      color: var(--sand);
+      margin-bottom: 0.9rem;
+      display: flex; align-items: center; gap: 0.7rem;
+    }
+    .form-head .ref-dot {
+      width: 5px; height: 5px;
+      background: var(--ember);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--ember-glow);
+    }
+    .form-head h2 {
+      font-family: var(--display);
+      font-weight: 300;
+      font-variation-settings: "opsz" 144, "SOFT" 50;
+      font-size: clamp(2rem, 2.4vw, 2.4rem);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      color: var(--ivory);
+    }
+    .form-head h2 em {
+      font-style: italic;
+      font-weight: 400;
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+      color: var(--brass);
+    }
+    .form-head p {
+      margin-top: 0.55rem;
+      font-size: 0.83rem;
+      color: var(--sand);
+      line-height: 1.5;
+    }
+    .form-head p b {
+      color: var(--brass);
+      font-weight: 500;
     }
 
-    .field input {
+    .field { position: relative; margin-bottom: 1.1rem; }
+    .field-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .field-label {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--sand);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .field-index {
+      color: var(--dune);
+      font-size: 0.55rem;
+      letter-spacing: 0.05em;
+      font-variant-numeric: tabular-nums;
+    }
+    .field-hint {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--dune);
+      transition: color 0.15s;
+    }
+
+    .field-input { position: relative; }
+    .field-input input {
       width: 100%;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-hover);
-      border-radius: 5px;
-      padding: 0.55rem 0.7rem;
-      color: var(--text);
+      background: var(--vault);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.78rem 0.95rem;
+      color: var(--ivory);
+      font-family: var(--sans);
+      font-size: 0.92rem;
+      letter-spacing: -0.005em;
+      outline: none;
+      transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+    }
+    .field-input input:hover { border-color: var(--line-hi); }
+    .field-input input:focus {
+      border-color: var(--ember);
+      background: var(--canvas);
+      box-shadow: 0 0 0 3px var(--ember-dim);
+    }
+    .field-input input::placeholder {
+      color: var(--shadow);
       font-family: var(--mono);
       font-size: 0.78rem;
-      outline: none;
-      transition: border-color 0.15s, background 0.15s;
+      letter-spacing: 0.05em;
     }
-
-    .field input:focus {
-      border-color: var(--accent);
-      background: var(--bg);
+    .field-input .corner {
+      position: absolute;
+      top: 50%;
+      right: 0.95rem;
+      transform: translateY(-50%);
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      color: var(--dune);
+      pointer-events: none;
+      transition: color 0.15s;
     }
+    .field-input input:focus ~ .corner { color: var(--ember); }
 
+    /* Password strength meter */
+    .strength {
+      margin-top: 0.55rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .strength-bars {
+      display: flex;
+      gap: 3px;
+      flex: 1;
+    }
+    .strength-bar {
+      height: 3px;
+      flex: 1;
+      background: var(--line);
+      border-radius: 2px;
+      transition: background 0.25s;
+    }
+    .strength.weak   .strength-bar:nth-child(-n+1) { background: var(--rust); }
+    .strength.fair   .strength-bar:nth-child(-n+2) { background: var(--brass); }
+    .strength.good   .strength-bar:nth-child(-n+3) { background: var(--ember); }
+    .strength.strong .strength-bar               { background: var(--sage); }
+    .strength-label {
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dune);
+      min-width: 56px;
+      text-align: right;
+      transition: color 0.25s;
+    }
+    .strength.weak   .strength-label { color: var(--rust); }
+    .strength.fair   .strength-label { color: var(--brass); }
+    .strength.good   .strength-label { color: var(--ember); }
+    .strength.strong .strength-label { color: var(--sage); }
+
+    /* Buttons */
     .btn {
       width: 100%;
-      border: 1px solid var(--border-hover);
-      background: var(--bg-elevated);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 0.72rem;
+      border: 1px solid var(--line-hi);
+      background: var(--vault);
+      color: var(--ivory);
+      font-family: var(--sans);
       font-weight: 500;
-      letter-spacing: 0.05em;
-      padding: 0.65rem 0.8rem;
-      border-radius: 5px;
+      font-size: 0.88rem;
+      padding: 0.82rem 1rem;
+      border-radius: 6px;
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      transition: all 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
     }
-
     .btn:hover:not(:disabled) {
-      border-color: var(--accent);
-      color: var(--accent);
+      background: var(--riser);
+      transform: translateY(-1px);
     }
-
-    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-      margin-top: 0.4rem;
+      margin-top: 1.2rem;
+      background: var(--brass);
+      border-color: var(--brass);
+      color: #1a1407;
+      font-weight: 600;
+      box-shadow: 0 4px 18px -6px rgba(224,194,125,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
     }
-
     .btn-primary:hover:not(:disabled) {
-      background: #f26f35;
-      border-color: #f26f35;
-      color: #fff;
+      background: var(--brass-hi);
+      border-color: var(--brass-hi);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px -6px rgba(224,194,125,0.55), inset 0 1px 0 rgba(255,255,255,0.3);
     }
+    .btn-primary::after {
+      content: "→";
+      font-family: var(--mono);
+      font-weight: 400;
+      transition: transform 0.2s;
+    }
+    .btn-primary:hover::after { transform: translateX(3px); }
+
+    .google-icon { width: 14px; height: 14px; display: inline-block; }
 
     .divider {
       display: flex;
       align-items: center;
-      gap: 0.7rem;
-      margin: 1.1rem 0;
-      color: var(--muted);
-      font-size: 0.6rem;
-      letter-spacing: 0.2em;
+      gap: 0.9rem;
+      margin: 1.4rem 0 1rem;
+      color: var(--dune);
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
       text-transform: uppercase;
     }
-
     .divider::before, .divider::after {
       content: "";
       flex: 1;
       height: 1px;
-      background: var(--border);
+      background: var(--line);
     }
 
     .error {
       display: none;
-      background: var(--error-dim);
-      border: 1px solid rgba(239,68,68,0.35);
-      color: var(--error);
-      font-size: 0.68rem;
-      padding: 0.55rem 0.7rem;
+      margin-top: 1rem;
+      background: var(--rust-dim);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-left: 2px solid var(--rust);
+      color: var(--rust);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.65rem 0.85rem;
       border-radius: 5px;
-      margin-top: 0.85rem;
-      line-height: 1.4;
+      line-height: 1.5;
+      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
     }
-
     .error.visible { display: block; }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-3px); }
+      40%, 60% { transform: translateX(3px); }
+    }
 
     .footer-link {
-      margin-top: 1.4rem;
+      margin-top: 1.8rem;
       text-align: center;
+      font-family: var(--mono);
       font-size: 0.68rem;
-      color: var(--muted);
+      color: var(--sand);
+      letter-spacing: 0.04em;
     }
-
     .footer-link a {
-      color: var(--accent);
+      color: var(--ember);
       text-decoration: none;
+      border-bottom: 1px dashed var(--line-ember);
+      padding-bottom: 1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .footer-link a:hover {
+      color: var(--ember-hi);
+      border-bottom-color: var(--ember-hi);
     }
 
-    .footer-link a:hover { text-decoration: underline; }
+    .stamp {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 2rem;
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dune);
+      display: flex;
+      gap: 1.2rem;
+      align-items: center;
+    }
+    .stamp .live::before {
+      content: "● ";
+      color: var(--sage);
+      animation: blink 1.6s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ─────────────────────── PANEL DROITE — ATELIER / WELCOME ─────────────────────── */
+    .stage {
+      position: relative;
+      background:
+        radial-gradient(ellipse 700px 400px at 82% 12%, rgba(110,168,254,0.06) 0%, transparent 65%),
+        radial-gradient(ellipse 600px 800px at 10% 90%, rgba(224,194,125,0.04) 0%, transparent 70%),
+        var(--canvas);
+      padding: 2.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.045) 1px, transparent 0);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 80%, transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 80%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      position: relative;
+      z-index: 2;
+    }
+    .brand-mark {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: block;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 14px rgba(110,168,254,0.18))
+              drop-shadow(0 4px 14px rgba(224,194,125,0.10));
+    }
+    .brand-name {
+      font-family: var(--display);
+      font-weight: 400;
+      font-style: italic;
+      font-variation-settings: "opsz" 60, "SOFT" 80;
+      font-size: 1.32rem;
+      letter-spacing: -0.012em;
+      color: var(--ivory);
+    }
+    .brand-tag {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--sand);
+      padding: 0.35rem 0.6rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      display: flex; align-items: center; gap: 0.45rem;
+    }
+    .brand-tag::before {
+      content: "+50";
+      font-size: 0.6rem;
+      color: var(--brass);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .hero {
+      margin-top: auto;
+      margin-bottom: 1.6rem;
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--brass);
+      margin-bottom: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .hero-eyebrow::before {
+      content: "";
+      width: 36px; height: 1px;
+      background: linear-gradient(90deg, var(--brass), transparent);
+    }
+    .hero-eyebrow .ref {
+      color: var(--ember);
+      font-weight: 600;
+    }
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 300;
+      font-variation-settings: "opsz" 144, "SOFT" 50;
+      font-size: clamp(3.4rem, 6vw, 5.6rem);
+      line-height: 0.92;
+      letter-spacing: -0.035em;
+      color: var(--ivory);
+    }
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 400;
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+      color: var(--brass);
+    }
+    .hero h1 .hero-line-tail {
+      display: block;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--bone);
+      font-size: 0.62em;
+      margin-left: 6%;
+      margin-top: 0.05em;
+    }
+    .hero p {
+      margin-top: 1.8rem;
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: var(--bone);
+      max-width: 460px;
+      padding-left: 1.05rem;
+      border-left: 1px solid var(--brass-dim);
+    }
+
+    /* Bullet features */
+    .features {
+      margin-top: 2rem;
+      display: grid;
+      gap: 0.85rem;
+      max-width: 520px;
+      position: relative;
+      z-index: 2;
+    }
+    .feature {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 0.95rem;
+      align-items: start;
+      padding: 0.85rem 0;
+      border-top: 1px solid var(--line);
+    }
+    .feature:last-child {
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-num {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--dune);
+      padding-top: 2px;
+    }
+    .feature-body strong {
+      display: block;
+      font-family: var(--display);
+      font-weight: 400;
+      font-variation-settings: "opsz" 60, "SOFT" 80;
+      font-size: 1.05rem;
+      color: var(--ivory);
+      letter-spacing: -0.012em;
+      margin-bottom: 0.2rem;
+    }
+    .feature-body strong em {
+      font-style: italic;
+      color: var(--brass);
+    }
+    .feature-body span {
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--sand);
+    }
+    .feature-body span b {
+      color: var(--brass);
+      font-weight: 500;
+    }
+
+    .stage-footer {
+      margin-top: 1.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dune);
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Responsive */
+    @media (max-width: 920px) {
+      body { grid-template-columns: 1fr; }
+      .stage { display: none; }
+      .stamp { display: none; }
+    }
   </style>
 </head>
 <body>
-  <main class="card">
-    <h1 class="title">Créer un compte</h1>
-    <p class="subtitle">Démarre avec 50 crédits offerts</p>
 
-    <form id="signup-form" novalidate>
-      <div class="field">
-        <label for="name">Nom</label>
-        <input id="name" name="name" type="text" autocomplete="name" required>
+  <!-- ═════════════════════════ PANEL GAUCHE — FORMULAIRE ═════════════════════════ -->
+  <section class="panel">
+    <div class="form-wrap">
+      <div class="form-head">
+        <div class="ref">
+          <span class="ref-dot"></span>
+          <span>Onboarding · Création de compte</span>
+        </div>
+        <h2>Bienvenue dans<br><em>l'atelier.</em></h2>
+        <p>Configurez votre accès en moins d'une minute. <b>50 crédits offerts</b> pour démarrer votre premier lot.</p>
       </div>
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="email" required>
+
+      <form id="signup-form" novalidate>
+        <div class="field">
+          <div class="field-head">
+            <label for="name" class="field-label">
+              <span class="field-index">01 /</span>
+              <span>Nom</span>
+            </label>
+          </div>
+          <div class="field-input">
+            <input id="name" name="name" type="text" autocomplete="name" placeholder="Jean Dupont" required>
+            <span class="corner">∶</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="email" class="field-label">
+              <span class="field-index">02 /</span>
+              <span>Email</span>
+            </label>
+          </div>
+          <div class="field-input">
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="vous@atelier.fr" required>
+            <span class="corner">@</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="password" class="field-label">
+              <span class="field-index">03 /</span>
+              <span>Mot de passe</span>
+            </label>
+            <span class="field-hint">8 caractères min.</span>
+          </div>
+          <div class="field-input">
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="••••••••••" required>
+            <span class="corner">∎</span>
+          </div>
+          <div class="strength" id="strength">
+            <div class="strength-bars">
+              <span class="strength-bar"></span>
+              <span class="strength-bar"></span>
+              <span class="strength-bar"></span>
+              <span class="strength-bar"></span>
+            </div>
+            <span class="strength-label" id="strength-label">—</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+          <span>Créer mon accès</span>
+        </button>
+      </form>
+
+      <div class="divider">ou continuer avec</div>
+
+      <button type="button" class="btn" id="google-btn">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18a11 11 0 0 0 0 9.86l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        <span>S'inscrire avec Google</span>
+      </button>
+
+      <p class="error" id="error"></p>
+
+      <p class="footer-link">
+        Déjà un compte ? <a href="/login">Se connecter</a>
+      </p>
+    </div>
+
+    <div class="stamp">
+      <span class="live">Inscription ouverte</span>
+      <span id="stamp-time">—</span>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════ PANEL DROITE — WELCOME / FEATURES ═════════════════════════ -->
+  <aside class="stage">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="bm-fill-signup" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#1f1a14"/>
+            <stop offset="1" stop-color="#1a2238"/>
+          </linearGradient>
+          <linearGradient id="bm-stroke-signup" x1="0" y1="2" x2="34" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#f0d59a"/>
+            <stop offset="1" stop-color="#9dc4ff"/>
+          </linearGradient>
+        </defs>
+        <rect x="0.75" y="0.75" width="32.5" height="32.5" rx="7.5" fill="url(#bm-fill-signup)" stroke="url(#bm-stroke-signup)" stroke-width="1"/>
+        <path d="M9.5 24 L17 9 L24.5 24 M12.5 18.5 H21.5" stroke="#edeef2" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.95"/>
+      </svg>
+      <div class="brand-name">Atelier</div>
+      <div class="brand-tag">Crédits offerts</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-eyebrow"><span class="ref">N°00</span> · Première session</div>
+      <h1>Trouvez vos<br><em>artisans</em><span class="hero-line-tail">— sans bruit, sans doublons.</span></h1>
+      <p>L'atelier orchestre SIRENE, Google Maps et l'Annuaire des Entreprises pour livrer des fiches qualifiées en lot — du SIRET au numéro mobile, vérifiés et prêts à appeler.</p>
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <span class="feature-num">01</span>
+        <div class="feature-body">
+          <strong>50 crédits <em>offerts</em></strong>
+          <span>Démarrez sans carte. <b>Un crédit = une fiche</b> avec téléphone vérifié.</span>
+        </div>
       </div>
-      <div class="field">
-        <label for="password">Mot de passe</label>
-        <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+      <div class="feature">
+        <span class="feature-num">02</span>
+        <div class="feature-body">
+          <strong>Déduplication <em>automatique</em></strong>
+          <span>Un SIRET déjà scrapé n'est jamais rescrapé. Votre base reste propre.</span>
+        </div>
       </div>
-      <button type="submit" class="btn btn-primary" id="submit-btn">S'inscrire</button>
-    </form>
+      <div class="feature">
+        <span class="feature-num">03</span>
+        <div class="feature-body">
+          <strong>Export CSV <em>en un clic</em></strong>
+          <span>SIRET, adresse, téléphone, effectif, source. Prêt pour votre CRM.</span>
+        </div>
+      </div>
+    </div>
 
-    <div class="divider">ou</div>
-
-    <button type="button" class="btn" id="google-btn">S'inscrire avec Google</button>
-
-    <p class="error" id="error"></p>
-
-    <p class="footer-link">
-      Déjà un compte ? <a href="/login">Se connecter</a>
-    </p>
-  </main>
+    <div class="stage-footer">
+      <span>Sources · INSEE · Google · Annuaire Entreprises</span>
+      <span>v0.4</span>
+    </div>
+  </aside>
 
   <script>
+    // ─── Live timestamp ───────────────────────────────────────────────────────
+    function updateStamp() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      document.getElementById("stamp-time").textContent = `${hh}:${mm}:${ss} UTC+1`;
+    }
+    updateStamp();
+    setInterval(updateStamp, 1000);
+
+    // ─── Password strength meter ──────────────────────────────────────────────
+    const passwordInput = document.getElementById("password");
+    const strengthBox = document.getElementById("strength");
+    const strengthLabel = document.getElementById("strength-label");
+
+    function computeStrength(pwd) {
+      if (!pwd) return { level: "", label: "—" };
+      let score = 0;
+      if (pwd.length >= 8) score++;
+      if (pwd.length >= 12) score++;
+      if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+      if (/\d/.test(pwd)) score++;
+      if (/[^A-Za-z0-9]/.test(pwd)) score++;
+      if (score <= 1) return { level: "weak",   label: "Faible" };
+      if (score === 2) return { level: "fair",   label: "Moyen" };
+      if (score === 3) return { level: "good",   label: "Bon" };
+      return { level: "strong", label: "Solide" };
+    }
+
+    passwordInput.addEventListener("input", () => {
+      const { level, label } = computeStrength(passwordInput.value);
+      strengthBox.className = "strength" + (level ? " " + level : "");
+      strengthLabel.textContent = label;
+    });
+
+    // ─── Form logic (préservé) ────────────────────────────────────────────────
     const form = document.getElementById("signup-form");
     const submitBtn = document.getElementById("submit-btn");
     const googleBtn = document.getElementById("google-btn");
@@ -215,6 +799,8 @@
 
     function showError(msg) {
       errorBox.textContent = msg;
+      errorBox.classList.remove("visible");
+      void errorBox.offsetWidth;
       errorBox.classList.add("visible");
     }
 
@@ -242,14 +828,18 @@
       e.preventDefault();
       clearError();
       submitBtn.disabled = true;
+      const submitText = submitBtn.querySelector("span");
+      const originalText = submitText.textContent;
+      submitText.textContent = "Création…";
 
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+      const password = passwordInput.value;
 
       if (password.length < 8) {
         showError("Le mot de passe doit contenir au moins 8 caractères.");
         submitBtn.disabled = false;
+        submitText.textContent = originalText;
         return;
       }
 
@@ -264,13 +854,15 @@
         if (!res.ok) {
           showError(extractErrorMessage(data) || `Erreur ${res.status}`);
           submitBtn.disabled = false;
+          submitText.textContent = originalText;
           return;
         }
-        submitBtn.disabled = false;
+        submitText.textContent = "Compte créé";
         window.location.href = "/";
       } catch (err) {
-        showError("Erreur réseau. Réessaye.");
+        showError("Erreur réseau. Réessayez.");
         submitBtn.disabled = false;
+        submitText.textContent = originalText;
       }
     });
 
@@ -290,10 +882,9 @@
           googleBtn.disabled = false;
           return;
         }
-        googleBtn.disabled = false;
         window.location.href = data.url;
       } catch (err) {
-        showError("Erreur réseau. Réessaye.");
+        showError("Erreur réseau. Réessayez.");
         googleBtn.disabled = false;
       }
     });
