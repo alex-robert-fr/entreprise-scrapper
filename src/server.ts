@@ -92,6 +92,10 @@ app.get("/admin", adminDashboardGuard, (_req, res) => {
   res.sendFile(path.join(__dirname, "views", "admin.html"));
 });
 
+app.get("/billing", dashboardGuard, (_req, res) => {
+  res.sendFile(path.join(__dirname, "views", "billing.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
