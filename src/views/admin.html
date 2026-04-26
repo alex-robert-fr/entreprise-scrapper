@@ -35,7 +35,11 @@
       --ember-glow: rgba(110, 168, 254, 0.28);
 
       --brass:      #e0c27d;
+      --brass-hi:   #f0d59a;
+      --brass-deep: #b8954a;
       --brass-dim:  rgba(224, 194, 125, 0.10);
+      --brass-glow: rgba(224, 194, 125, 0.32);
+      --line-brass: rgba(224, 194, 125, 0.28);
 
       --sage:       #4ade80;
       --sage-dim:   rgba(74, 222, 128, 0.12);
@@ -78,6 +82,24 @@
       display: grid;
       grid-template-rows: var(--topbar-h) 1fr;
       min-height: 100vh;
+    }
+
+    /* Display XL — Fraunces opsz 144 */
+    .display-xl, .display-lg {
+      font-family: var(--display);
+      font-weight: 300;
+      font-variation-settings: "opsz" 144, "SOFT" 50;
+      line-height: 0.95;
+      letter-spacing: -0.035em;
+      color: var(--ivory);
+    }
+    .display-xl { font-size: clamp(3rem, 5vw, 4.6rem); }
+    .display-lg { font-size: clamp(1.6rem, 2.4vw, 2.2rem); line-height: 1.05; letter-spacing: -0.025em; }
+    .display-xl em, .display-lg em {
+      font-style: italic;
+      font-weight: 400;
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+      color: var(--brass);
     }
 
     button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
@@ -139,24 +161,19 @@
       border-right: 1px solid var(--line);
     }
     .brand__mark {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       flex-shrink: 0;
-      position: relative;
-      border-radius: 6px;
-      background: linear-gradient(135deg, var(--ember) 0%, var(--ember-deep) 100%);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.25),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(110, 168, 254, 0.18);
+      display: block;
+      filter:
+        drop-shadow(0 2px 6px rgba(110, 168, 254, 0.22))
+        drop-shadow(0 2px 6px rgba(224, 194, 125, 0.10));
+      transition: filter 0.18s;
     }
-    .brand__mark::after {
-      content: '';
-      position: absolute;
-      inset: 6px;
-      border-radius: 2px;
-      background: repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0 2px, transparent 2px 4px);
-      opacity: 0.75;
+    .brand:hover .brand__mark {
+      filter:
+        drop-shadow(0 3px 10px rgba(110, 168, 254, 0.34))
+        drop-shadow(0 3px 10px rgba(224, 194, 125, 0.16));
     }
     .brand__title {
       font-size: 0.95rem;
@@ -244,6 +261,73 @@
       display: flex;
       flex-direction: column;
     }
+
+    /* Page editorial header */
+    .admin-pageheader {
+      padding: 2.4rem 1.5rem 2rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .admin-pageheader__eyebrow {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--brass);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .admin-pageheader__eyebrow::before {
+      content: '';
+      width: 36px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--brass));
+    }
+    .admin-pageheader__eyebrow .ref {
+      color: var(--ember);
+      font-weight: 600;
+    }
+    .admin-pageheader__title {
+      font-family: var(--display);
+      font-weight: 300;
+      font-variation-settings: "opsz" 144, "SOFT" 50;
+      font-size: clamp(2.4rem, 4vw, 3.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.035em;
+      color: var(--ivory);
+    }
+    .admin-pageheader__title em {
+      font-style: italic;
+      font-weight: 400;
+      font-variation-settings: "opsz" 144, "SOFT" 100;
+      color: var(--brass);
+    }
+    .admin-pageheader__lede {
+      margin-top: 0.7rem;
+      max-width: 540px;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--sand);
+    }
+    .admin-pageheader__seal {
+      flex-shrink: 0;
+      width: 96px;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dune);
+      text-align: right;
+      line-height: 1.5;
+    }
+    .admin-pageheader__seal b { color: var(--brass); font-weight: 500; display: block; }
 
     /* Stats hero */
     .hero {
@@ -508,10 +592,13 @@
       margin-bottom: 0.3rem;
     }
     .modal-header__email {
-      font-size: 1rem;
+      font-family: var(--display);
+      font-weight: 400;
+      font-variation-settings: "opsz" 60, "SOFT" 80;
+      font-size: 1.25rem;
       color: var(--ivory);
-      font-weight: 500;
-      letter-spacing: -0.005em;
+      letter-spacing: -0.018em;
+      line-height: 1.15;
     }
 
     .modal-close {
@@ -741,7 +828,20 @@
   <!-- TOPBAR -->
   <header class="topbar">
     <a class="brand" href="/">
-      <span class="brand__mark" aria-hidden="true"></span>
+      <svg class="brand__mark" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="bm-fill-admin" x1="0" y1="0" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#1a2238"/>
+            <stop offset="1" stop-color="#1f1a14"/>
+          </linearGradient>
+          <linearGradient id="bm-stroke-admin" x1="0" y1="2" x2="26" y2="24" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#9dc4ff"/>
+            <stop offset="1" stop-color="#e0c27d"/>
+          </linearGradient>
+        </defs>
+        <rect x="0.6" y="0.6" width="24.8" height="24.8" rx="6" fill="url(#bm-fill-admin)" stroke="url(#bm-stroke-admin)" stroke-width="0.9"/>
+        <path d="M7.2 18.5 L13 6.8 L18.8 18.5 M9.6 14.3 H16.4" stroke="#edeef2" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.95"/>
+      </svg>
       <span class="brand__title">Atelier <em>Prospects</em></span>
     </a>
     <div>
@@ -750,12 +850,25 @@
     <div class="topbar-meta">
       <a class="btn btn--ghost btn--small" href="/">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Retour au dashboard
+        Retour à l'atelier
       </a>
     </div>
   </header>
 
   <main class="admin-main">
+
+    <!-- Page editorial header -->
+    <div class="admin-pageheader">
+      <div>
+        <div class="admin-pageheader__eyebrow"><span class="ref">N°ADM</span> · Console interne</div>
+        <h1 class="admin-pageheader__title">L'atelier <em>en coulisses</em>.</h1>
+        <p class="admin-pageheader__lede">Pilotage des comptes, ajustements de crédits et historique des transactions. Réservé aux administrateurs.</p>
+      </div>
+      <div class="admin-pageheader__seal" aria-hidden="true">
+        <b>Atelier</b>
+        Admin · v0.4
+      </div>
+    </div>
 
     <!-- Hero stats globales (calcul client-side) -->
     <div class="hero">
